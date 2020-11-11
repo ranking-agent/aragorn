@@ -3,6 +3,7 @@ import os
 import logging.config
 import pkg_resources
 import yaml
+from enum import Enum
 from functools import wraps
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 APP = FastAPI(
     title='ARAGORN One Hop',
     version='0.0.1',
-    description='Performs a one-hop operation which spans the usage of numerous ARAGORN services.'
+    description='Performs a one-hop operation which spans numerous ARAGORN services.'
 )
 
 APP.add_middleware(
@@ -38,15 +39,24 @@ APP.add_middleware(
     allow_headers=["*"],
 )
 
+
+# declare the types of answer coalesce methods
+class MethodName(str, Enum):
+    graph = "graph"
+    none = "none"
+    ontology = "ontology"
+    property = "property"
+
+
 @APP.post('/aragorn', response_model=Message, response_model_exclude_none=True)
-async def one_hop_handler(request: Request) -> Message:
-    """ aragorn one-hop operations. """
+async def one_hop_handler(request: Request, answer_coalesce: MethodName) -> Message:
+    """ Aragorn one-hop operations. """
 
     # convert the incoming message into a dict
     message = request.dict()
 
     # call to process the input
-    one_hopped = one_hop(message)
+    one_hopped = one_hop(message, answer_coalesce)
 
     # return the answer
     return Message(**one_hopped)
