@@ -38,7 +38,7 @@ APP.add_middleware(
     allow_headers=["*"],
 )
 
-@APP.post('/aragorn')
+@APP.post('/aragorn', response_model=Message, response_model_exclude_none=True)
 async def one_hop_handler(request: Request) -> Message:
     """ aragorn one-hop operations. """
 
