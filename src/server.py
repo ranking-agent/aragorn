@@ -49,6 +49,7 @@ APP.add_middleware(
 
 # declare the types of answer coalesce methods
 class MethodName(str, Enum):
+    none = 'none'
     graph = "graph"
     ontology = "ontology"
     property = "property"
@@ -56,7 +57,7 @@ class MethodName(str, Enum):
 
 # declare the one and only entry point
 @APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True)
-async def query_handler(request: Request, answer_coalesce_type: MethodName = 'none') -> Message:
+async def query_handler(request: Request, answer_coalesce_type: MethodName = MethodName.none) -> Message:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
