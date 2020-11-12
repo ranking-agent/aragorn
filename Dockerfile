@@ -24,7 +24,7 @@ WORKDIR /repo
 RUN git clone https://github.com/ranking-agent/aragorn.git
 
 # go to the repo dir
-WORKDIR /repo/aragorn-ranker
+WORKDIR /repo/aragorn
 
 # install requirements
 RUN pip install -r requirements.txt
