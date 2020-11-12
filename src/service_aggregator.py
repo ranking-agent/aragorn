@@ -5,16 +5,16 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def one_hop(message, coalesce) -> dict:
+def query(message, coalesce_type='none') -> dict:
     """
-    performs a one hop operation across the strider, aragorn-ranker and answer coalesce services
+    Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 
     :param message: should be of form Message
-    :param coalesce: what kind of answer coalesce should be performed
+    :param coalesce_type: what kind of answer coalesce type should be performed
     :return: the result of the request
     """
     # make the call to traverse the various services to get the data
-    final_answer: dict = strider_and_friends(message, coalesce)
+    final_answer: dict = strider_and_friends(message, coalesce_type)
 
     # return the answer
     return final_answer
@@ -64,7 +64,7 @@ def strider(message) -> dict:
     return strider_answer
 
 
-def strider_and_friends(message, coalesce) -> dict:
+def strider_and_friends(message, coalesce_type) -> dict:
     # call strider service
     strider_answer: dict = strider(message)
 
@@ -77,15 +77,12 @@ def strider_and_friends(message, coalesce) -> dict:
     # call the scoring service
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', {'message': weighted_answer})
 
-    if coalesce != 'none':
+    if coalesce_type != 'none':
         # get the request coalesced answer
-        coalesced_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce}', {'message': scored_answer})
-
-        # put it in Message format
-        final_answer: dict = {'message': scored_answer, 'coalesce': coalesced_answer}
+        final_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce_type}', {'message': scored_answer})
     else:
         # just return the scored result in Message format
-        final_answer: dict = {'message': scored_answer}
+        final_answer: dict = scored_answer
 
     # return the requested data
     return final_answer

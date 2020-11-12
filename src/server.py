@@ -8,13 +8,13 @@ from functools import wraps
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from reasoner_pydantic import Request, Message
-from src.one_hops import one_hop
+from src.service_aggregator import query
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
     config = yaml.safe_load(f.read())
 
-# delacre the log directory
+# declare the log directory
 log_dir = 'logs'
 
 # make the directory if it does not exist
@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 
 # declare the FastAPI details
 APP = FastAPI(
-    title='ARAGORN One Hop',
+    title='ARAGORN',
     version='0.0.1',
-    description='Performs a one-hop operation which spans numerous ARAGORN services.'
+    description='Performs a query operation which compiles data from numerous ARAGORN ranking agent services.'
 )
 
 # declare app access details
@@ -50,23 +50,26 @@ APP.add_middleware(
 # declare the types of answer coalesce methods
 class MethodName(str, Enum):
     graph = "graph"
-    none = "none"
     ontology = "ontology"
     property = "property"
 
+
 # declare the one and only entry point
-@APP.post('/aragorn', response_model=Message, response_model_exclude_none=True)
-async def one_hop_handler(request: Request, answer_coalesce: MethodName) -> Message:
-    """ Aragorn one-hop operations. """
+@APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True)
+async def query_handler(request: Request, answer_coalesce_type: MethodName = 'none') -> Message:
+    """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
+        The services are called in the following order, each passing their output to the next service as an input:
+
+        Strider -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score -> (optional) Answer Coalesce"""
 
     # convert the incoming message into a dict
     message = request.dict()
 
     # call to process the input
-    one_hopped: dict = one_hop(message, answer_coalesce)
+    query_result: dict = query(message, answer_coalesce_type)
 
     # return the answer
-    return Message(**one_hopped)
+    return Message(**query_result)
 
 
 def log_exception(method):
