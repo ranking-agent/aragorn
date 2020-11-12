@@ -1,4 +1,4 @@
-# This Dockerfile is used to build a ranking agent python image
+# This Dockerfile is used to build a aragorn python image
 # starts with the python image
 # creates a directory for the repo
 # gets the aragorn repo
