@@ -5,7 +5,7 @@ import pkg_resources
 import yaml
 from enum import Enum
 from functools import wraps
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from reasoner_pydantic import Request, Message
 from src.service_aggregator import query
