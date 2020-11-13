@@ -36,7 +36,7 @@ def post(name, url, message, params=None):
         response = requests.post(url, json=message, params=params)
 
     if not response.status_code == 200:
-        print(name, 'error:', response.status_code)
+        logger.error(f'Error response from {name}, status code: {response.status_code}')
         return {}
 
     return response.json()
@@ -55,7 +55,7 @@ def strider(message) -> dict:
     num_answers = len(strider_answer['results'])
 
     if (num_answers == 0) or ((num_answers == 1) and (len(strider_answer['results'][0]['node_bindings']) == 0)):
-        print('no answers')
+        logger.error(f'Error response from Strider, no answer returned.')
         return {}
 
     # Strider for some reason doesn't return the query graph
@@ -68,18 +68,43 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call strider service
     strider_answer: dict = strider(message)
 
+    # did we get a good response
+    if len(strider_answer) == 0:
+        logger.error("Error detected getting answer from Strider, aborting.")
+        return {'error': 'Error detected getting answer from Strider, aborting.'}
+
     # call the omnicorp overlay service
     omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', {'message': strider_answer})
+
+    # did we get a good response
+    if len(omni_answer) == 0:
+        logger.error("Error detected getting answer from aragorn-ranker/omnicorp_overlay, aborting.")
+        return {'error': 'Error detected getting answer from aragorn-ranker/omnicorp_overlay, aborting'}
 
     # call the weight correction service
     weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', {'message': omni_answer})
 
+    # did we get a good response
+    if len(weighted_answer) == 0:
+        logger.error("Error detected getting answer from aragorn-ranker/weight_correctness, aborting.")
+        return {'error': 'Error detected getting answer from aragorn-ranker/weight_correctness, aborting.'}
+
     # call the scoring service
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', {'message': weighted_answer})
+
+    # did we get a good response
+    if len(scored_answer) == 0:
+        logger.error("Error detected getting answer from aragorn-ranker/score, aborting.")
+        return {'error': 'Error detected getting answer from aragorn-ranker/score, aborting.'}
 
     if coalesce_type != 'none':
         # get the request coalesced answer
         final_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce_type}', {'message': scored_answer})
+
+        # did we get a good response
+        if len(strider_answer) == 0:
+            logger.error("Error detected getting answer from Answer coalesce, aborting.")
+            return {'error': 'Error detected getting answer from Answer coalesce, aborting.'}
     else:
         # just return the scored result in Message format
         final_answer: dict = scored_answer
