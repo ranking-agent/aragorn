@@ -5,7 +5,7 @@ import pkg_resources
 import yaml
 from enum import Enum
 from functools import wraps
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from reasoner_pydantic import Request, Message
 from src.service_aggregator import query
@@ -56,8 +56,8 @@ class MethodName(str, Enum):
 
 
 # declare the one and only entry point
-@APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True)
-async def query_handler(request: Request, answer_coalesce_type: MethodName = MethodName.none) -> Message:
+@APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True, status_code=200)
+async def query_handler(request: Request, response: Response, answer_coalesce_type: MethodName = MethodName.none) -> Message:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
@@ -68,6 +68,10 @@ async def query_handler(request: Request, answer_coalesce_type: MethodName = Met
 
     # call to process the input
     query_result: dict = query(message, answer_coalesce_type)
+
+    # if there was an error detected make sure the response declares it
+    if 'error' in query_result:
+        response.status_code = 500
 
     # return the answer
     return Message(**query_result)
