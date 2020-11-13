@@ -11,8 +11,6 @@ LABEL maintainer="powen@renci.org"
 
 # install basic tools
 RUN apt-get update
-RUN apt-get install -yq \
-    nano
 
 # make a directory for the repo
 RUN mkdir /repo
