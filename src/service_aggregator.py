@@ -5,7 +5,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def query(message, coalesce_type='none') -> dict:
+def entry(message, coalesce_type='none') -> dict:
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 

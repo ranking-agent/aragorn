@@ -5,10 +5,10 @@ import pkg_resources
 import yaml
 from enum import Enum
 from functools import wraps
-from fastapi import FastAPI, Response
+from fastapi import Body, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
-from reasoner_pydantic import Request, Message
-from src.service_aggregator import query
+from reasoner_pydantic import Message
+from src.service_aggregator import entry
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
@@ -55,19 +55,23 @@ class MethodName(str, Enum):
     property = "property"
 
 
+# define the default request body
+default_request: Body = Body(default={"message": {"query_graph": {"nodes": [{"id": "a", "type": "disease", "curie": "MONDO:0005090"}, {"id": "b", "type": "chemical_substance"}], "edges": [{"id": "ab", "source_id": "b", "target_id": "a", "type": "treats"}]}, "knowledge_graph": {"nodes": [], "edges": []}, "results": []}})
+
+
 # declare the one and only entry point
 @APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True, status_code=200)
-async def query_handler(request: Request, response: Response, answer_coalesce_type: MethodName = MethodName.none) -> Message:
+async def query_handler(response: Response, query: Message = default_request, answer_coalesce_type: MethodName = MethodName.none) -> Message:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score -> (optional) Answer Coalesce"""
 
     # convert the incoming message into a dict
-    message = request.dict()
+    message = query.dict()
 
     # call to process the input
-    query_result: dict = query(message, answer_coalesce_type)
+    query_result: dict = entry(message, answer_coalesce_type)
 
     # if there was an error detected make sure the response declares it
     if 'error' in query_result:
