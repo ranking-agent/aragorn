@@ -73,8 +73,21 @@ def strider_and_friends(message, coalesce_type) -> dict:
         logger.error("Error detected getting answer from Strider, aborting.")
         return {'error': 'Error detected getting answer from Strider, aborting.'}
 
+    # are we doing answer coalesce
+    if coalesce_type != 'none':
+        # get the request coalesced answer
+        coalesce_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce_type}', {'message': strider_answer})
+
+        # did we get a good response
+        if len(strider_answer) == 0:
+            logger.error("Error detected getting answer from Answer coalesce, aborting.")
+            return {'error': 'Error detected getting answer from Answer coalesce, aborting.'}
+    else:
+        # just use the strider result in Message format
+        coalesce_answer: dict = strider_answer
+
     # call the omnicorp overlay service
-    omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', {'message': strider_answer})
+    omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', {'message': coalesce_answer})
 
     # did we get a good response
     if len(omni_answer) == 0:
@@ -97,20 +110,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
         logger.error("Error detected getting answer from aragorn-ranker/score, aborting.")
         return {'error': 'Error detected getting answer from aragorn-ranker/score, aborting.'}
 
-    if coalesce_type != 'none':
-        # get the request coalesced answer
-        final_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce_type}', {'message': scored_answer})
-
-        # did we get a good response
-        if len(strider_answer) == 0:
-            logger.error("Error detected getting answer from Answer coalesce, aborting.")
-            return {'error': 'Error detected getting answer from Answer coalesce, aborting.'}
-    else:
-        # just return the scored result in Message format
-        final_answer: dict = scored_answer
-
     # return the requested data
-    return final_answer
+    return scored_answer
 
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
