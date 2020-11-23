@@ -65,7 +65,7 @@ async def query_handler(response: Response, query: Message = default_request, an
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
-        Strider -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score -> (optional) Answer Coalesce"""
+        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
 
     # convert the incoming message into a dict
     message = query.dict()
