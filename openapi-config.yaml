@@ -7,7 +7,7 @@ description: 'ARAGORN: Performs a query operation which compiles data from numer
 servers:
 - description: Default server
   url: https://aragorn.renci.org
-termsOfService: http://robokop.renci.org:7055/tos?service_long=Answer coalesce &provider_long=RENCI
+termsOfService: http://robokop.renci.org:7055/tos?service_long=ARAGORN&provider_long=RENCI
 title: ARAGORN
 tags:
 - name: translator
