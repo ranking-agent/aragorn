@@ -3,11 +3,12 @@ import os
 import logging.config
 import pkg_resources
 import yaml
+from fastapi.openapi.utils import get_openapi
 from enum import Enum
 from functools import wraps
-from fastapi import Body, FastAPI, Response
+from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from reasoner_pydantic import Message
+from reasoner_pydantic import Response
 from src.service_aggregator import entry
 
 # Set up default logger.
@@ -34,7 +35,6 @@ logger = logging.getLogger(__name__)
 APP = FastAPI(
     title='ARAGORN',
     version='0.0.1',
-    description='Performs a query operation which compiles data from numerous ARAGORN ranking agent services.'
 )
 
 # declare app access details
@@ -55,20 +55,43 @@ class MethodName(str, Enum):
     property = "property"
 
 
+default_input: dict = {
+  "message": {
+    "query_graph": {
+      "nodes": {
+        "n0": {
+          "id": "MONDO:0004979",
+          "category": "biolink:Disease"
+        },
+        "n1": {
+          "category": "biolink:ChemicalSubstance"
+        }
+      },
+      "edges": {
+        "e01": {
+          "subject": "n0",
+          "object": "n1",
+          "predicate": "biolink:correlated_with"
+        }
+      }
+    }
+  }
+}
+
 # define the default request body
-default_request: Body = Body(default={"message": {"query_graph": {"nodes": [{"id": "a", "type": "disease", "curie": "MONDO:0005090"}, {"id": "b", "type": "chemical_substance"}], "edges": [{"id": "ab", "source_id": "b", "target_id": "a", "type": "treats"}]}, "knowledge_graph": {"nodes": [], "edges": []}, "results": []}})
+default_request: Body = Body(default=default_input)
 
 
 # declare the one and only entry point
-@APP.post('/query', name='The query endpoint', response_model=Message, response_model_exclude_none=True, status_code=200)
-async def query_handler(response: Response, query: Message = default_request, answer_coalesce_type: MethodName = MethodName.none) -> Message:
+@APP.post('/query', name='The query endpoint', tags=["ARAGORN"], response_model=Response, response_model_exclude_none=True, status_code=200)
+async def query_handler(response: Response = default_request, answer_coalesce_type: MethodName = MethodName.none) -> Response:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
 
     # convert the incoming message into a dict
-    message = query.dict()
+    message = response.message.dict()
 
     # call to process the input
     query_result: dict = entry(message, answer_coalesce_type)
@@ -78,7 +101,7 @@ async def query_handler(response: Response, query: Message = default_request, an
         response.status_code = 500
 
     # return the answer
-    return Message(**query_result)
+    return Response(**query_result)
 
 
 def log_exception(method):
@@ -97,3 +120,55 @@ def log_exception(method):
             raise Exception(err)
 
     return wrapper
+
+
+def construct_open_api_schema():
+
+    if APP.openapi_schema:
+        return APP.openapi_schema
+
+    open_api_schema = get_openapi(
+        title='ARAGORN',
+        version='0.0.2',
+        routes=APP.routes
+    )
+
+    open_api_extended_file_path = os.path.join(os.path.dirname(__file__), '../openapi-config.yaml')
+
+    with open(open_api_extended_file_path) as open_api_file:
+        open_api_extended_spec = yaml.load(open_api_file, Loader=yaml.SafeLoader)
+
+    x_translator_extension = open_api_extended_spec.get("x-translator")
+    contact_config = open_api_extended_spec.get("contact")
+    terms_of_service = open_api_extended_spec.get("termsOfService")
+    servers_conf = open_api_extended_spec.get("servers")
+    tags = open_api_extended_spec.get("tags")
+    title_override = open_api_extended_spec.get("title") or 'ARAGORN'
+    description = open_api_extended_spec.get("description")
+
+    if tags:
+        open_api_schema['tags'] = tags
+
+    if x_translator_extension:
+        # if x_translator_team is defined amends schema with x_translator extension
+        open_api_schema["info"]["x-translator"] = x_translator_extension
+
+    if contact_config:
+        open_api_schema["info"]["contact"] = contact_config
+
+    if terms_of_service:
+        open_api_schema["info"]["termsOfService"] = terms_of_service
+
+    if description:
+        open_api_schema["info"]["description"] = description
+
+    if title_override:
+        open_api_schema["info"]["title"] = title_override
+
+    if servers_conf:
+        open_api_schema["servers"] = servers_conf
+
+    return open_api_schema
+
+
+APP.openapi_schema = construct_open_api_schema()
