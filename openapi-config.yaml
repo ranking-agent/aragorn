@@ -6,7 +6,7 @@ contact:
 description: 'ARAGORN: Performs a query operation which compiles data from numerous ARAGORN ranking agent services.'
 servers:
 - description: Default server
-  url: https://aragorn.renci.org/docs
+  url: https://aragorn.renci.org
 termsOfService: http://robokop.renci.org:7055/tos?service_long=Answer coalesce &provider_long=RENCI
 title: ARAGORN
 tags:
