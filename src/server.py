@@ -16,7 +16,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
     config = yaml.safe_load(f.read())
 
 # declare the log directory
-log_dir = 'logs'
+log_dir = '../logs'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -30,6 +30,8 @@ logging.config.dictConfig(config)
 
 # create a logger
 logger = logging.getLogger(__name__)
+
+logger.debug('this is a test')
 
 # declare the FastAPI details
 APP = FastAPI(
