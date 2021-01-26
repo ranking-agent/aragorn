@@ -3,6 +3,7 @@ import logging
 import requests
 import json
 import os
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ def entry(message, coalesce_type='none') -> dict:
     :param coalesce_type: what kind of answer coalesce type should be performed
     :return: the result of the request
     """
+
     # make the call to traverse the various services to get the data
     final_answer: dict = strider_and_friends(message, coalesce_type)
 
@@ -71,13 +73,21 @@ def strider(message) -> dict:
 
 
 def strider_and_friends(message, coalesce_type) -> dict:
+
+    # create a guid
+    uid: str = str(uuid.uuid4())
+
     # call strider service
     strider_answer: dict = strider(message)
+
+    logger.debug(f"aragorn post ({uid}): {json.dumps({'message': message})}")
 
     # did we get a good response
     if len(strider_answer) == 0:
         logger.error("Error detected getting answer from Strider, aborting.")
         return {'error': 'Error detected getting answer from Strider, aborting.'}
+    else:
+        logger.debug(f'strider answer ({uid}): {json.dumps(strider_answer)}')
 
     # are we doing answer coalesce
     if coalesce_type != 'none':
@@ -88,6 +98,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
         if len(coalesce_answer) == 0:
             logger.error("Error detected getting answer from Answer coalesce, aborting.")
             return {'error': 'Error detected getting answer from Answer coalesce, aborting.'}
+        else:
+            logger.debug(f'coalesce answer ({uid}): {json.dumps(coalesce_answer)}')
     else:
         # just use the strider result in Message format
         coalesce_answer: dict = strider_answer
@@ -107,6 +119,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
     if len(omni_answer) == 0:
         logger.error("Error detected getting answer from aragorn-ranker/omnicorp_overlay, aborting.")
         return {'error': 'Error detected getting answer from aragorn-ranker/omnicorp_overlay, aborting'}
+    else:
+        logger.debug(f'omni answer ({uid}): {json.dumps(omni_answer)}')
 
     # call the weight correction service
     weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', omni_answer)
@@ -120,6 +134,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
     if len(weighted_answer) == 0:
         logger.error("Error detected getting answer from aragorn-ranker/weight_correctness, aborting.")
         return {'error': 'Error detected getting answer from aragorn-ranker/weight_correctness, aborting.'}
+    else:
+        logger.debug(f'weighted answer ({uid}): {json.dumps(weighted_answer)}')
 
     # call the scoring service
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', {message: weighted_answer})
@@ -133,6 +149,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
     if len(scored_answer) == 0:
         logger.error("Error detected getting answer from aragorn-ranker/score, aborting.")
         return {'error': 'Error detected getting answer from aragorn-ranker/score, aborting.'}
+    else:
+        logger.debug(f'scored answer ({uid}): {json.dumps(scored_answer)}')
 
     # return the requested data
     return scored_answer
