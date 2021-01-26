@@ -31,6 +31,8 @@ logging.config.dictConfig(config)
 # create a logger
 logger = logging.getLogger(__name__)
 
+print(__name__)
+
 logger.debug('this is a test')
 
 # declare the FastAPI details
