@@ -5,20 +5,20 @@ formatters:
 handlers: 
   console: 
     class: logging.StreamHandler
-    level: INFO
+    level: DEBUG
     formatter: default
   file: 
     class: logging.handlers.RotatingFileHandler
-    level: INFO
+    level: DEBUG
     formatter: default
-    filename: "../logs/aragorn.log"
+    filename: "aragorn.log"
     mode: a
     encoding: utf-8
     maxBytes: 1000000
     backupCount: 9
 loggers:
-  ranker:
-      level: INFO
+  src.server:
+      level: DEBUG
       handlers:
         - console
         - file
