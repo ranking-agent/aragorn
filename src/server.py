@@ -83,7 +83,7 @@ default_request: Body = Body(default=default_input)
 
 
 # declare the one and only entry point
-@APP.post('/query', name='The query endpoint', tags=["ARAGORN"], response_model=Response, response_model_exclude_none=True, status_code=200)
+@APP.post('/query', tags=["ARAGORN"], response_model=Response, response_model_exclude_none=True, status_code=200)
 async def query_handler(response: Response = default_request, answer_coalesce_type: MethodName = MethodName.none) -> Response:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
@@ -170,5 +170,5 @@ def construct_open_api_schema():
 
     return open_api_schema
 
-
+# note: this must be commented out for local debugging
 APP.openapi_schema = construct_open_api_schema()
