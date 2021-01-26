@@ -5,11 +5,11 @@ formatters:
 handlers: 
   console: 
     class: logging.StreamHandler
-    level: DEBUG
+    level: INFO
     formatter: default
   file: 
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
+    level: INFO
     formatter: default
     filename: "aragorn.log"
     mode: a
@@ -18,12 +18,12 @@ handlers:
     backupCount: 9
 loggers:
   src.server:
-      level: DEBUG
+      level: INFO
       handlers:
         - console
         - file
   src.service_aggregator:
-      level: DEBUG
+      level: INFO
       handlers:
         - console
         - file
