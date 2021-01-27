@@ -54,14 +54,14 @@ def strider(message) -> dict:
     """
     url = 'http://robokop.renci.org:5781/query'
 
-    # TODO: strider_answer = post(strider, url, message)
+    strider_answer = post(strider, url, message)
 
     # get the path to the test file
-    test_filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'strider_out.json')
-
-    # open the file and load it
-    with open(test_filename, 'r') as tf:
-        strider_answer = json.load(tf)
+    # test_filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'test', 'strider_out.json')
+    #
+    # # open the file and load it
+    # with open(test_filename, 'r') as tf:
+    #     strider_answer = json.load(tf)
 
     num_answers = len(strider_answer['message']['results'])
 
@@ -107,13 +107,13 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call the omnicorp overlay service
     omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', coalesce_answer)
 
-    # get the path of where this file is. everything is relative to that
-    this_path: str = os.path.dirname(os.path.realpath(__file__))
-
-    # open the input and output files
-    with open(os.path.join(this_path, 'omni_answer.json'), 'w') as out_file:
-        # output the upgraded data into the output file
-        json.dump(omni_answer, out_file, indent=2)
+    # # get the path of where this file is. everything is relative to that
+    # this_path: str = os.path.dirname(os.path.realpath(__file__))
+    #
+    # # open the input and output files
+    # with open(os.path.join(this_path, '..', 'test', 'omni_answer.json'), 'w') as out_file:
+    #     # output the upgraded data into the output file
+    #     json.dump(omni_answer, out_file, indent=2)
 
     # did we get a good response
     if len(omni_answer) == 0:
@@ -125,10 +125,10 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call the weight correction service
     weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', omni_answer)
 
-    # open the input and output files
-    with open(os.path.join(this_path, 'weighted_answer.json'), 'w') as out_file:
-        # output the upgraded data into the output file
-        json.dump(weighted_answer, out_file, indent=2)
+    # # open the input and output files
+    # with open(os.path.join(this_path, '..', 'test', 'weighted_answer.json'), 'w') as out_file:
+    #     # output the upgraded data into the output file
+    #     json.dump(weighted_answer, out_file, indent=2)
 
     # did we get a good response
     if len(weighted_answer) == 0:
@@ -140,10 +140,10 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call the scoring service
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', {message: weighted_answer})
 
-    # open the input and output files
-    with open(os.path.join(this_path, 'scored_answer.json'), 'w') as out_file:
-        # output the upgraded data into the output file
-        json.dump(scored_answer, out_file, indent=2)
+    # # open the input and output files
+    # with open(os.path.join(this_path, '..', 'test', 'scored_answer.json'), 'w') as out_file:
+    #     # output the upgraded data into the output file
+    #     json.dump(scored_answer, out_file, indent=2)
 
     # did we get a good response
     if len(scored_answer) == 0:
