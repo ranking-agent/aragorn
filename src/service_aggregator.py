@@ -82,10 +82,6 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # was there an error getting data
     if strider_answer is None:
         return {'message': message, 'error': 'Error detected. Strider failed to return an answer, aborting.'}
-
-        # # open the file and load it
-        # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'test', 'strider_out.json'), 'r') as tf:
-        #     strider_answer = json.load(tf)
     else:
         logger.debug(f"aragorn post ({uid}): {json.dumps({'message': message})}")
 
