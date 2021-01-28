@@ -14,7 +14,7 @@ handlers:
     filename: "aragorn.log"
     mode: a
     encoding: utf-8
-    maxBytes: 1000000
+    maxBytes: 100000000
     backupCount: 9
 loggers:
   src.server:
