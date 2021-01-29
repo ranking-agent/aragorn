@@ -96,8 +96,8 @@ async def query_handler(response: Response = default_request, answer_coalesce_ty
     # call to process the input
     query_result: dict = entry(message, answer_coalesce_type)
 
-    # if there was an error detected make sure the response declares it
-    if query_result.get('error') is not None:
+    # if there was an error detected make sure the response status shows it
+    if query_result is None or query_result.get('error') is not None:
         response.status_code = 500
 
     # return the answer
