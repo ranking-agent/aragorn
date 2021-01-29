@@ -15,7 +15,7 @@ handlers:
     mode: a
     encoding: utf-8
     maxBytes: 100000000
-    backupCount: 9
+    backupCount: 30
 loggers:
   src.server:
       level: INFO
