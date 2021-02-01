@@ -16,7 +16,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
     config = yaml.safe_load(f.read())
 
 # declare the log directory
-log_dir = 'logs'
+log_dir = './logs'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -96,8 +96,8 @@ async def query_handler(response: Response = default_request, answer_coalesce_ty
     # call to process the input
     query_result: dict = entry(message, answer_coalesce_type)
 
-    # if there was an error detected make sure the response declares it
-    if 'error' in query_result:
+    # if there was an error detected make sure the response status shows it
+    if query_result is None or query_result.get('error') is not None:
         response.status_code = 500
 
     # return the answer

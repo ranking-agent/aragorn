@@ -9,16 +9,21 @@ handlers:
     formatter: default
   file: 
     class: logging.handlers.RotatingFileHandler
-    level: INFO
+    level: DEBUG
     formatter: default
-    filename: "../logs/aragorn.log"
+    filename: "aragorn.log"
     mode: a
     encoding: utf-8
-    maxBytes: 1000000
-    backupCount: 9
+    maxBytes: 100000000
+    backupCount: 30
 loggers:
-  ranker:
+  src.server:
       level: INFO
+      handlers:
+        - console
+        - file
+  src.service_aggregator:
+      level: DEBUG
       handlers:
         - console
         - file
