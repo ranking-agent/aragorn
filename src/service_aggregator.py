@@ -101,7 +101,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
         message['status'] = 'Error detected. Got an empty result from strider, aborting.'
         return message
     else:
-        logger.debug(f"aragorn post ({uid}): {json.dumps(strider_answer)}")
+        logger.debug(f"strider in ({uid}): {json.dumps(message)}")
+        logger.debug(f"strider out ({uid}): {json.dumps(strider_answer)}")
 
     # are we doing answer coalesce
     if coalesce_type != 'none':
@@ -119,7 +120,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
             message['status'] = 'Error detected: Got an empty answer from Answer coalesce, aborting.'
             return message
         else:
-            logger.debug(f'coalesce answer ({uid}): {json.dumps(coalesce_answer)}')
+            logger.debug(f'coalesce out ({uid}): {json.dumps(coalesce_answer)}')
     else:
         # just use the strider result in Message format
         coalesce_answer: dict = strider_answer
@@ -142,7 +143,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.'
         return message
     else:
-        logger.debug(f'omni answer ({uid}): {json.dumps(omni_answer)}')
+        logger.debug(f'omni out ({uid}): {json.dumps(omni_answer)}')
 
     # call the weight correction service
     weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', omni_answer)
@@ -161,7 +162,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         logger.error('Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.')
         message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.'
     else:
-        logger.debug(f'weighted answer ({uid}): {json.dumps(weighted_answer)}')
+        logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
 
     # call the scoring service
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', weighted_answer)
@@ -181,7 +182,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/score, aborting.'
         return message
     else:
-        logger.debug(f'scored answer ({uid}): {json.dumps(scored_answer)}')
+        logger.debug(f'scored out ({uid}): {json.dumps(scored_answer)}')
 
     # return the requested data
     return scored_answer
