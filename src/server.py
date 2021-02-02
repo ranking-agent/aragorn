@@ -84,7 +84,7 @@ default_request: Body = Body(default=default_input)
 
 # declare the one and only entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=Response, response_model_exclude_none=True, status_code=200)
-async def query_handler(response: Response = default_request, answer_coalesce_type: MethodName = MethodName.none) -> Response:
+async def query_handler(response: Response = default_request, answer_coalesce_type: MethodName = MethodName.graph) -> Response:
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
