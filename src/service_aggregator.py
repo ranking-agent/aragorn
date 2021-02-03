@@ -68,16 +68,6 @@ def strider(message) -> dict:
         logger.error(f'Error response from Strider, no result data returned.')
         return {}
 
-    # scan for missing attribute types. put one in if there isnt one already three ("type": "EDAM:data_0006")
-    kg_nodes = strider_answer['message']['knowledge_graph']['nodes']
-
-    for node in kg_nodes:
-        attribs = kg_nodes[node]['attributes']
-
-        for attrib in attribs:
-            if "type" not in attrib:
-                attrib['type'] = 'EDAM:data_0006'
-
     return strider_answer
 
 
@@ -86,21 +76,33 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # create a guid
     uid: str = str(uuid.uuid4())
 
-    message['error'] = None
-
     # call strider service
     strider_answer: dict = strider(message)
 
     # was there an error getting data
     if strider_answer is None:
         #logger.error("Error detected. Strider failed to return anything, aborting.")
-        message['status'] = 'Error detected. Strider didnt return anything, aborting.'
+        message['error'] = 'Error detected. Strider didnt return anything, aborting.'
         return message
     elif len(strider_answer) == 0:
         #logger.error("Error detected. Got an empty answer from strider, aborting.")
-        message['status'] = 'Error detected. Got an empty result from strider, aborting.'
+        message['error'] = 'Error detected. Got an empty result from strider, aborting.'
         return message
     else:
+    #     # scan for missing attribute types. put one in if there isnt one already there ("type": "EDAM:data_0006")
+    #     kg_nodes = strider_answer['message']['knowledge_graph']['nodes']
+    #
+    #     for node in kg_nodes:
+    #         if 'name' in kg_nodes[node] and 'attributes' in kg_nodes[node]:
+    #             attribs = kg_nodes[node]['attributes']
+    #
+    #             for attrib in attribs:
+    #                 if "type" not in attrib:
+    #                     attrib['type'] = 'EDAM:data_0006'
+    #         else:
+    #             message['error'] = f'Error detected. Got kgraph node from strider missing the name or attributes ({node}), aborting.'
+    #             return message
+
         logger.debug(f"strider in ({uid}): {json.dumps(message)}")
         logger.debug(f"strider out ({uid}): {json.dumps(strider_answer)}")
 
@@ -112,12 +114,12 @@ def strider_and_friends(message, coalesce_type) -> dict:
         # was there an error getting data
         if coalesce_answer is None:
             logger.error("Error detected: Got no answer from Answer coalesce, aborting.")
-            message['status'] = 'Error detected: Answer coalesce failed to return an answer, aborting.'
+            message['error'] = 'Error detected: Answer coalesce failed to return an answer, aborting.'
             return message
         # did we get a good response
         elif len(coalesce_answer) == 0:
             logger.error("Error detected: Got an empty answer from Answer coalesce, aborting.")
-            message['status'] = 'Error detected: Got an empty answer from Answer coalesce, aborting.'
+            message['error'] = 'Error detected: Got an empty answer from Answer coalesce, aborting.'
             return message
         else:
             logger.debug(f'coalesce out ({uid}): {json.dumps(coalesce_answer)}')
@@ -135,12 +137,12 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # was there an error getting data
     if omni_answer is None:
         logger.error('Error detected: Aragorn-ranker/omnicorp_overlay failed to return an answer, aborting.')
-        message['status'] = 'Error detected: Aragorn-ranker/omnicorp_overlay failed to return an answer, aborting.'
+        message['error'] = 'Error detected: Aragorn-ranker/omnicorp_overlay failed to return an answer, aborting.'
         return message
     # did we get a good response
     elif len(omni_answer) == 0:
         logger.error('Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.')
-        message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.'
+        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.'
         return message
     else:
         logger.debug(f'omni out ({uid}): {json.dumps(omni_answer)}')
@@ -155,12 +157,12 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # was there an error getting data
     if weighted_answer is None:
         logger.error('Error detected: Aragorn-ranker/weight_correctness failed to return an answer, aborting.')
-        message['status'] = 'Error detected: Aragorn-ranker/weight_correctness failed to return an answer, aborting.'
+        message['error'] = 'Error detected: Aragorn-ranker/weight_correctness failed to return an answer, aborting.'
         return message
     # did we get a good response
     elif len(weighted_answer) == 0:
         logger.error('Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.')
-        message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.'
+        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.'
     else:
         logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
 
@@ -174,12 +176,12 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # was there an error getting data
     if scored_answer is None:
         logger.error('Error detected: Aragorn-ranker/score failed to return an answer, aborting.')
-        message['status'] = 'Error detected: Aragorn-ranker/score failed to return an answer, aborting.'
+        message['error'] = 'Error detected: Aragorn-ranker/score failed to return an answer, aborting.'
         return message
     # did we get a good response
     elif len(scored_answer) == 0:
         logger.error('Error detected: Got an empty answer from Aragorn-ranker/score, aborting.')
-        message['status'] = 'Error detected: Got an empty answer from Aragorn-ranker/score, aborting.'
+        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/score, aborting.'
         return message
     else:
         logger.debug(f'scored out ({uid}): {json.dumps(scored_answer)}')
