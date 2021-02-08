@@ -91,7 +91,10 @@ async def query_handler(response: Response = default_request, answer_coalesce_ty
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
 
     # convert the incoming message into a dict
-    message = response.dict()
+    if type(response) is dict:
+        message = response['message']
+    else:
+        message = response.dict()
 
     # call to process the input
     query_result: dict = entry(message, answer_coalesce_type)
