@@ -92,7 +92,7 @@ async def query_handler(response: Response = default_request, answer_coalesce_ty
 
     # convert the incoming message into a dict
     if type(response) is dict:
-        message = response['message']
+        message = response
     else:
         message = response.dict()
 
@@ -102,10 +102,12 @@ async def query_handler(response: Response = default_request, answer_coalesce_ty
     # if there was an error detected make sure the response status shows it
     if query_result is None:
         message['error'] = 'Error. Nothing returned from call.'
-        response.status_code = 500
+        if type(response) is not dict:
+            response.status_code = 500
     elif query_result.get('error') is not None:
         final_msg = query_result
-        response.status_code = 500
+        if type(response) is not dict:
+            response.status_code = 500
     else:
         final_msg = query_result
 
