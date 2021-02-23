@@ -8,4 +8,4 @@ httptools==0.1.1
 pyyaml==5.3.1
 requests==2.25.0
 git+https://github.com/ranking-agent/reasoner#egg=reasoner
-git+https://github.com/TranslatorSRI/reasoner-pydantic@v1.0#egg=reasoner-pydantic
+git+https://github.com/TranslatorSRI/reasoner-pydantic#egg=reasoner-pydantic
