@@ -8,7 +8,7 @@ import uuid
 logger = logging.getLogger(__name__)
 
 
-def entry(message, coalesce_type='none') -> dict:
+def entry(message, coalesce_type='all') -> dict:
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 
@@ -130,8 +130,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call the omnicorp overlay service
     omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', coalesce_answer)
 
-    # # open the test file
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'test', 'omni_answer.json'), 'r') as tf:
+    # # open the tests file
+    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'omni_answer.json'), 'r') as tf:
     #     omni_answer = json.load(tf)
 
     # was there an error getting data
@@ -150,8 +150,8 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # call the weight correction service
     weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', omni_answer)
 
-    # open the test file
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'test', 'weighted_answer.json'), 'r') as tf:
+    # open the tests file
+    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'weighted_answer.json'), 'r') as tf:
     #     weighted_answer = json.load(tf)
 
     # was there an error getting data
@@ -170,7 +170,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
     scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', weighted_answer)
 
     # # open the input and output files
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'test', 'scored_answer.json'), 'r') as tf:
+    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'scored_answer.json'), 'r') as tf:
     #     json.dump(scored_answer, out_file, indent=2)
 
     # was there an error getting data
@@ -192,7 +192,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
     """
-    Creates a test message.
+    Creates a tests message.
     :param curie_a:
     :param type_a:
     :param type_b:
