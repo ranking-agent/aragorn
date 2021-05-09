@@ -3,11 +3,11 @@
         "query_graph": {
             "nodes": {
                 "n0": {
-                    "id": "NCBIGENE:1017",
+                    "id": "UniProtKB:P52788",
                     "category": "biolink:Gene"
                 },
                 "n1": {
-                    "category": "biolink:Pathway"
+                    "category": "biolink:ChemicalSubstance"
                 }
             },
             "edges": {
