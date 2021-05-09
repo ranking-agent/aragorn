@@ -13,36 +13,30 @@ The ARAGORN tool relies on a number of external services to perform a standardiz
 
  - Strider - Accepts a query and provides knowledge-provider querying, answer generation and ranking.
  - Answer Coalesce - Accepts a query containing Strider answers and returns answers that have been coalesced by property, graph and/or ontology analysis.
- - Node normalization - Accepts a query containing coalesced answers and provides the preferred CURIE and equivalent identifiers for data in the query.
+ - Node normalization - A Translator SRI service that provides the preferred CURIE and equivalent identifiers for data in the query.
  - ARAGORN Ranker - Accepts a query and provides Omnicorp overlays, score and weight-correctness rankings of coalesced answers.
 
 ## Demonstration
 
 A live version of the API can be found [here](https://aragorn.renci.org/docs).
 
-This version of ARAGORN has all links to subordinate services hard coded. Some adjustment will be needed here to support your installation.
-
 ## Source Code
 Below you will find references that detail the standards, web services and supporting tools that are part of ARAGORN. 
 
 * [Strider](https://github.com/ranking-agent/strider)
 * [Answer Coalescence](https://github.com/ranking-agent/AnswerCoalesce)
-* [Node normalization](https://github.com/TranslatorSRI/NodeNormalization)
 * [ARAGORN ranker](https://github.com/ranking-agent/aragorn-ranker)
 
-### Aditional resources
-* [KP Registry](https://github.com/ranking-agent/kp_registry)
-* [Reasoner (TRAPI->cypher transpiler)](https://github.com/ranking-agent/reasoner)
-* [ReasonerAPI](https://github.com/NCATSTranslator/ReasonerAPI)  
-* [ReasonerStdAPI Message Jupyter Notebook visualizer](https://github.com/ranking-agent/gamma-viewer)
-
 ## Installation
+
+This version of ARAGORN has all links to subordinate services hard coded. In the future, these links will be defined in the Kubernetes configuration files. 
+
+In the meantime some manual edits will be needed in the src/service_aggregator.py file to support your installation.
 
 ### Subordinate services
 The ARAGORN subordinate services will have to be deployed prior to the stand-up of ARAGRON. Please reference the following READMEs for more information on standing those up:
 * [Strider readme](https://github.com/ranking-agent/strider#readme)
 * [Answer Coalescence readme](https://github.com/ranking-agent/AnswerCoalesce#readme)
-* [Node normalization readme](https://github.com/TranslatorSRI/NodeNormalization#readme)
 * [ARAGORN ranker readme](https://github.com/ranking-agent/aragorn-ranker#readme)
 
 ### Command line installation
