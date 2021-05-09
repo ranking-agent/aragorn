@@ -20,24 +20,32 @@ The ARAGORN tool relies on a number of external services to perform a standardiz
 
 A live version of the API can be found [here](https://aragorn.renci.org/docs).
 
+This version of ARAGORN has all links to subordinate services hard coded. Some adjustment will be needed here to support your installation.
+
 ## Source Code
 Below you will find references that detail the standards, web services and supporting tools that are part of ARAGORN. 
 
+* [Strider](https://github.com/ranking-agent/strider)
 * [Answer Coalescence](https://github.com/ranking-agent/AnswerCoalesce)
-* [ARAGORN](https://github.com/ranking-agent/aragorn)
-* [KP Registry](https://github.com/ranking-agent/kp_registry)
-* [Node normalization](https://github.com/TranslatorSRI/NodeNormalization )
+* [Node normalization](https://github.com/TranslatorSRI/NodeNormalization)
 * [ARAGORN ranker](https://github.com/ranking-agent/aragorn-ranker)
+
+### Aditional resources
+* [KP Registry](https://github.com/ranking-agent/kp_registry)
 * [Reasoner (TRAPI->cypher transpiler)](https://github.com/ranking-agent/reasoner)
 * [ReasonerAPI](https://github.com/NCATSTranslator/ReasonerAPI)  
 * [ReasonerStdAPI Message Jupyter Notebook visualizer](https://github.com/ranking-agent/gamma-viewer)
-* [Strider](https://github.com/ranking-agent/strider)
 
-### Installation
+## Installation
 
-To run the web server directly:
+### Subordinate services
+The ARAGORN subordinate services will have to be deployed prior to the stand-up of ARAGRON. Please reference the following READMEs for more information on standing those up:
+* [Strider readme](https://github.com/ranking-agent/strider#readme)
+* [Answer Coalescence readme](https://github.com/ranking-agent/AnswerCoalesce#readme)
+* [Node normalization readme](https://github.com/TranslatorSRI/NodeNormalization#readme)
+* [ARAGORN ranker readme](https://github.com/ranking-agent/aragorn-ranker#readme)
 
-#### Create a virtual Environment and activate.
+### Command line installation
 
     cd <aragorn codebase root>
 
@@ -54,7 +62,7 @@ To run the web server directly:
 
     ./main.sh
     
- ### DOCKER 
+### DOCKER installation
    Or build an image and run it.
 
     cd <aragorn root>
