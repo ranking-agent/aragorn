@@ -179,9 +179,8 @@ def construct_open_api_schema():
         open_api_schema["info"]["title"] = title_override
 
     if servers_conf:
-        root_path = APP.root_path
         for s in servers_conf:
-            s['url'] = s['url'] + root_path
+            s['url'] = s['url'] + '/1.1'
         open_api_schema["servers"] = servers_conf
 
     return open_api_schema
