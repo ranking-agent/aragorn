@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from reasoner_pydantic import Response
 from src.service_aggregator import entry
 
+
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
     config = yaml.safe_load(f.read())
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='0.1.3',
+    version='0.1.3'
 )
 
 # declare app access details
@@ -178,6 +179,9 @@ def construct_open_api_schema():
         open_api_schema["info"]["title"] = title_override
 
     if servers_conf:
+        root_path = APP.root_path
+        for s in servers_conf:
+            s['url'] = s['url'] + root_path
         open_api_schema["servers"] = servers_conf
 
     return open_api_schema
