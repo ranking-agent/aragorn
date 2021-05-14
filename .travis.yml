@@ -1,0 +1,16 @@
+dist: xenial
+language: python
+python:
+  - "3.8.5"
+notifications:
+  email:
+    - powen@renci.org
+services:
+  - docker
+install:
+  - pip install tox psycopg2 python-dotenv httpx
+  - mkdir logs
+  - mkdir cache
+script:
+  - tox
+
