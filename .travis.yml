@@ -5,14 +5,13 @@ python:
 notifications:
   email:
     - powen@renci.org
-services:
-  - docker
 install:
-  - pip install tox httpx
-  - mkdir logs
+  - pip install -r requirements.txt
 env:
   global:
     - PYTHONPATH=$PWD
+# command to run tests
 script:
-  - tox
+  - pytest -p no:warnings tests
+
 
