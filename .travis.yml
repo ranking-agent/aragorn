@@ -5,6 +5,7 @@ python:
 notifications:
   email:
     - powen@renci.org
+    - bizon@renci.org
 install:
   - pip install -r requirements.txt
 env:
