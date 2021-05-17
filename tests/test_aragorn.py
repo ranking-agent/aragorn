@@ -5,7 +5,7 @@ import json
 
 client = TestClient(APP)
 
-jsondir = 'InputJson_1.0'
+jsondir = 'InputJson_1.1'
 
 
 def test_standup_1():
