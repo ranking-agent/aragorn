@@ -2,7 +2,6 @@
 import logging
 import requests
 import json
-import os
 import uuid
 
 logger = logging.getLogger(__name__)
