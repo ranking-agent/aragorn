@@ -2,18 +2,18 @@
     "message": {
       "query_graph": {
         "nodes": {
-          "n00": {
+          "n0": {
             "id": "MONDO:0005784",
             "category": "biolink:Disease"
           },
-          "n01": {
+          "n1": {
             "category": "biolink:Disease"
           }
         },
         "edges": {
-          "e00": {
-            "subject": "n00",
-            "object": "n01",
+          "e01": {
+            "subject": "n0",
+            "object": "n1",
             "predicate": "biolink:subclass_of"
           }
         }
