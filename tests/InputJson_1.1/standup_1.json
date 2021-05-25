@@ -4,10 +4,10 @@
             "nodes": {
                 "n0": {
                     "id": "UniProtKB:P52788",
-                    "category": "biolink:Gene"
+                    "categories": "biolink:Gene"
                 },
                 "n1": {
-                    "category": "biolink:ChemicalSubstance"
+                    "categories": "biolink:ChemicalSubstance"
                 }
             },
             "edges": {
