@@ -54,7 +54,7 @@ def strider(message) -> dict:
     :param message:
     :return:
     """
-    url = 'https://strider.renci.org/query'
+    url = 'https://strider.renci.org/1.1/query'
 
     strider_answer = post('strider', url, message)
 
