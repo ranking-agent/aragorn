@@ -63,17 +63,17 @@ default_input: dict = {
       "nodes": {
         "n0": {
           "id": "MONDO:0004979",
-          "category": "biolink:Disease"
+          "categories": "biolink:Disease"
         },
         "n1": {
-          "category": "biolink:ChemicalSubstance"
+          "categories": "biolink:ChemicalSubstance"
         }
       },
       "edges": {
         "e01": {
           "subject": "n0",
           "object": "n1",
-          "predicate": "biolink:correlated_with"
+          "predicates": "biolink:correlated_with"
         }
       }
     }
@@ -179,11 +179,11 @@ def construct_open_api_schema():
         open_api_schema["info"]["title"] = title_override
 
     if servers_conf:
-        for s in servers_conf:
-            s['url'] = s['url'] + '/1.1'
+        # for s in servers_conf:
+        #     s['url'] = s['url'] + '/1.1'
         open_api_schema["servers"] = servers_conf
 
     return open_api_schema
 
 # note: this must be commented out for local debugging
-APP.openapi_schema = construct_open_api_schema()
+#APP.openapi_schema = construct_open_api_schema()
