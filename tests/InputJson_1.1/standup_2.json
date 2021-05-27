@@ -4,10 +4,10 @@
         "nodes": {
           "n00": {
             "id": "MONDO:0005784",
-            "category": "biolink:Disease"
+            "categories": "biolink:Disease"
           },
           "n01": {
-            "category": "biolink:Disease"
+            "categories": "biolink:Disease"
           }
         },
         "edges": {

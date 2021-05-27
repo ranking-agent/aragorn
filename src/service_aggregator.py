@@ -2,7 +2,6 @@
 import logging
 import requests
 import json
-import os
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ def strider(message) -> dict:
     :param message:
     :return:
     """
-    url = 'https://strider.renci.org/query'
+    url = 'https://strider.renci.org/1.1/query'
 
     strider_answer = post('strider', url, message)
 
@@ -109,7 +108,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
     # are we doing answer coalesce
     if coalesce_type != 'none':
         # get the request coalesced answer
-        coalesce_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/coalesce/{coalesce_type}', strider_answer)
+        coalesce_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', strider_answer)
 
         # was there an error getting data
         if coalesce_answer is None:
@@ -128,7 +127,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         coalesce_answer: dict = strider_answer
 
     # call the omnicorp overlay service
-    omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/omnicorp_overlay', coalesce_answer)
+    omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', coalesce_answer)
 
     # # open the tests file
     # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'omni_answer.json'), 'r') as tf:
@@ -148,7 +147,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         logger.debug(f'omni out ({uid}): {json.dumps(omni_answer)}')
 
     # call the weight correction service
-    weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/weight_correctness', omni_answer)
+    weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/1.1/weight_correctness', omni_answer)
 
     # open the tests file
     # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'weighted_answer.json'), 'r') as tf:
@@ -167,7 +166,7 @@ def strider_and_friends(message, coalesce_type) -> dict:
         logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
 
     # call the scoring service
-    scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/score', weighted_answer)
+    scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/1.1/score', weighted_answer)
 
     # # open the input and output files
     # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'scored_answer.json'), 'r') as tf:
