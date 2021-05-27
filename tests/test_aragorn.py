@@ -33,7 +33,7 @@ def test_standup_1():
     assert(len(ret) == 3)
 
     # make sure we got the expected number of results
-    assert(len(ret['results']) == 95)
+    assert(len(ret['results']) == 61)
 
     # strider should have created knowledge graph nodes and edges
     assert (len(ret['knowledge_graph']['nodes']) > 1)
@@ -55,25 +55,35 @@ def test_standup_1():
 
     # AC augments knowledge graph nodes categories and attributes. find a node with len()s > 1 to confirm
     for n in kg_node_list:
-        if 'category' in n[1] and len(n[1]['category']) > 1 and 'attributes' in n[1] and len(n[1]['attributes']) > 0:
+        if 'categories' in n[1] and len(n[1]['categories']) > 0 and 'attributes' in n[1] and len(n[1]['attributes']) > 0:
             target_kgnode = n
+            break
 
     assert target_kgnode
+
+    found = False
 
     # insure AC node norm did something in the knowledge graph.
     # node normalization should have added some number of equivalent ids
     for a in target_kgnode[1]['attributes']:
-        if 'type' in a and a['type'].startswith('biolink:same_as'):
+        if 'attribute_type_id' in a and a['attribute_type_id'].startswith('biolink:same_as'):
             assert(len(a['value']) >= 1)
+            found = True
             break
+
+    assert found
+
+    found = False
 
     # insure AC added p-values and a coalesce method in the results.
     for r in ret['results']:
         if 'node_bindings' in r:
-            if len(r['node_bindings']['n1']) > 1:
-                assert ('p_value' in r['node_bindings']['n1'][0])
-                assert ('coalescence_method' in r['node_bindings']['n1'][0])
-                break
+            for nb in r['node_bindings']:
+                if len(r['node_bindings'][nb][0]) > 1 and 'p_value' in r['node_bindings'][nb][0] and 'coalescence_method' in r['node_bindings'][nb][0]:
+                    found = True
+                    break
+
+    assert found
 
     found = False
 
@@ -81,11 +91,11 @@ def test_standup_1():
     for n in kg_node_list:
         if 'attributes' in n[1] and len(n[1]['attributes']) > 0:
             for a in n[1]['attributes']:
-                if a['name'] == 'omnicorp_article_count':
+                if a['original_attribute_name'].startswith('omnicorp_article_count'):
                     found = True
                     break
-            if found:
-                break
+        if found:
+            break
 
     assert found
 
@@ -98,8 +108,8 @@ def test_standup_1():
                 if str(a['value']).startswith('omnicorp') or str(a['value']).startswith('omnicorp.term_to_term'):
                     found = True
                     break
-            if found:
-                break
+        if found:
+            break
 
     assert found
 
@@ -108,13 +118,12 @@ def test_standup_1():
     # insure that ranker/weight added the weight element
     for r in ret['results']:
         if 'edge_bindings' in r:
-            if len(r['edge_bindings']['e01']) > 1:
-                for e in r['edge_bindings']['e01']:
-                    if 'weight' in e:
-                        found = True
-                        break
-                if found:
+            for nb in r['edge_bindings']:
+                if len(r['edge_bindings'][nb][0]) > 1 and 'weight' in r['edge_bindings'][nb][0]:
+                    found = True
                     break
+        if found:
+            break
 
     assert found
 
@@ -154,7 +163,7 @@ def test_standup_2():
     assert(len(ret) == 3)
 
     # make sure we got the expected number of results
-    assert(len(ret['results']) == 26)
+    assert(len(ret['results']) == 21)
 
     # strider should have created knowledge graph nodes and edges
     assert (len(ret['knowledge_graph']['nodes']) > 1)
@@ -176,25 +185,37 @@ def test_standup_2():
 
     # AC augments knowledge graph nodes categories and attributes. find a node with len()s > 1 to confirm
     for n in kg_node_list:
-        if 'category' in n[1] and len(n[1]['category']) > 1 and 'attributes' in n[1] and len(n[1]['attributes']) > 0:
+        if 'categories' in n[1] and len(n[1]['categories']) > 1 and 'attributes' in n[1] and len(n[1]['attributes']) > 0:
             target_kgnode = n
+            break
 
     assert target_kgnode
+
+    found = False
 
     # insure AC node norm did something in the knowledge graph.
     # node normalization should have added some number of equivalent ids
     for a in target_kgnode[1]['attributes']:
-        if 'type' in a and a['type'].startswith('biolink:same_as'):
+        if 'attribute_type_id' in a and a['attribute_type_id'].startswith('biolink:same_as'):
             assert(len(a['value']) >= 1)
+            found = True
             break
+
+    assert found
+
+    found = False
 
     # insure AC added p-values and a coalesce method in the results.
     for r in ret['results']:
         if 'node_bindings' in r:
-            if len(r['node_bindings']['n1']) > 1:
-                assert ('p_value' in r['node_bindings']['n1'][0])
-                assert ('coalescence_method' in r['node_bindings']['n1'][0])
-                break
+            for nb in r['node_bindings']:
+                if len(r['node_bindings'][nb][0]) > 1 and 'p_value' in r['node_bindings'][nb][0] and 'coalescence_method' in r['node_bindings'][nb][0]:
+                    found = True
+                    break
+        if found:
+            break
+
+    assert found
 
     found = False
 
@@ -202,11 +223,11 @@ def test_standup_2():
     for n in kg_node_list:
         if 'attributes' in n[1] and len(n[1]['attributes']) > 0:
             for a in n[1]['attributes']:
-                if a['name'] == 'omnicorp_article_count':
+                if a['original_attribute_name'].startswith('omnicorp_article_count'):
                     found = True
                     break
-            if found:
-                break
+        if found:
+            break
 
     assert found
 
@@ -219,8 +240,8 @@ def test_standup_2():
                 if str(a['value']).startswith('omnicorp') or str(a['value']).startswith('omnicorp.term_to_term'):
                     found = True
                     break
-            if found:
-                break
+        if found:
+            break
 
     assert found
 
@@ -229,13 +250,12 @@ def test_standup_2():
     # insure that ranker/weight added the weight element
     for r in ret['results']:
         if 'edge_bindings' in r:
-            if len(r['edge_bindings']['e01']) > 1:
-                for e in r['edge_bindings']['e01']:
-                    if 'weight' in e:
-                        found = True
-                        break
-                if found:
+            for nb in r['edge_bindings']:
+                if len(r['edge_bindings'][nb][0]) > 1 and 'weight' in r['edge_bindings'][nb][0]:
+                    found = True
                     break
+        if found:
+            break
 
     assert found
 
