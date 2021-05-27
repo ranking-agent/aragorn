@@ -24,8 +24,6 @@ RUN git clone https://github.com/ranking-agent/aragorn.git
 # go to the repo dir
 WORKDIR /repo/aragorn
 
-RUN git checkout TRAPI_1.1
-
 # install requirements
 RUN pip install -r requirements.txt
 
