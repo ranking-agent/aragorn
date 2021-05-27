@@ -87,7 +87,7 @@ def test_standup_1():
 
     found = False
 
-    # insure that ranker/omnicorp overlay the omni article count
+    # insure that ranker/omnicorp overlay added the omni article count
     for n in kg_node_list:
         if 'attributes' in n[1] and len(n[1]['attributes']) > 0:
             for a in n[1]['attributes']:
