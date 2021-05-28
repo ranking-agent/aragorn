@@ -3,14 +3,16 @@ import os
 import logging.config
 import pkg_resources
 import yaml
-from fastapi.openapi.utils import get_openapi
+
 from enum import Enum
 from functools import wraps
-from fastapi import Body, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from reasoner_pydantic import Response
+from reasoner_pydantic import Response as PDResponse
 from src.service_aggregator import entry
-
+from fastapi import Body, FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
@@ -85,36 +87,41 @@ default_request: Body = Body(default=default_input)
 
 
 # declare the one and only entry point
-@APP.post('/query', tags=["ARAGORN"], response_model=Response, response_model_exclude_none=True, status_code=200)
-async def query_handler(response: Response = default_request, answer_coalesce_type: MethodName = MethodName.all) -> Response:
+@APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
+async def query_handler(request: PDResponse = default_request, answer_coalesce_type: MethodName = MethodName.all):
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
 
     # convert the incoming message into a dict
-    if type(response) is dict:
-        message = response
+    if type(request) is dict:
+        message = request
     else:
-        message = response.dict()
+        message = request.dict()
 
     # call to process the input
-    query_result: dict = entry(message, answer_coalesce_type)
+    query_result, status_code = entry(message, answer_coalesce_type)
 
-    # if there was an error detected make sure the response status shows it
-    if query_result is None:
-        message['error'] = 'Error. Nothing returned from call.'
-        if type(response) is not dict:
-            response.status_code = 500
-    elif query_result.get('error') is not None:
-        final_msg = query_result
-        if type(response) is not dict:
-            response.status_code = 500
-    else:
+    # if there was an error detected make sure the response has it
+    if query_result.get('error') is not None:
+        # add the error to the log
+        query_result['logs'].append({'Error': query_result.get('error')})
+
+        # no need for this value anymore
+        query_result.pop('error')
+
+    try:
+        # validate the result
+        final_msg = jsonable_encoder(PDResponse(**query_result))
+    except Exception as e:
+        # put the error in the response
+        status_code = 500
+        query_result['logs'].append({'Exception': str(e)})
         final_msg = query_result
 
-    # return the answer
-    return Response(**final_msg)
+    # return the result
+    return JSONResponse(content=final_msg, status_code=status_code)
 
 
 def log_exception(method):
