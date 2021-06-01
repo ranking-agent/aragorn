@@ -91,17 +91,8 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
         return strider_answer, status_code
     # good html status code, but still do some checking
     elif status_code == 200:
-        # are there some results
-        num_results = len(strider_answer['message']['results'])
-
-        # was there some actual results returned
-        if (num_results == 0) or ((num_results == 1) and (len(strider_answer['results'][0]['node_bindings']) == 0)):
-            logger.error(f'Strider error: No results data returned.')
-            strider_answer['error'] = f'Strider error: No results data returned.'
-            return strider_answer, status_code
-        else:
-            logger.debug(f"strider in ({uid}): {json.dumps(message)}")
-            logger.debug(f"strider out ({uid}): {json.dumps(strider_answer)}")
+        logger.debug(f"strider in ({uid}): {json.dumps(message)}")
+        logger.debug(f"strider out ({uid}): {json.dumps(strider_answer)}")
 
     # are we doing answer coalesce
     if coalesce_type != 'none':
@@ -119,16 +110,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
             return coalesce_answer, status_code
         # good html status code, but still do some checking
         elif status_code == 200:
-            # are there some results
-            num_results = len(strider_answer['message']['results'])
-
-            # was there some actual results returned
-            if (num_results == 0) or ((num_results == 1) and (len(coalesce_answer['results'][0]['node_bindings']) == 0)):
-                logger.error(f'Answer coalesce error: No results data returned.')
-                coalesce_answer['error'] = f'Answer coalesce error: No results data returned.'
-                return coalesce_answer, status_code
-            else:
-                logger.debug(f'coalesce out ({uid}): {json.dumps(coalesce_answer)}')
+            logger.debug(f'coalesce out ({uid}): {json.dumps(coalesce_answer)}')
     else:
         # just use the strider result in Message format
         coalesce_answer: dict = strider_answer
@@ -151,23 +133,10 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
         return omni_answer, status_code
     # good html status code, but still do some checking
     elif status_code == 200:
-        # are there some results
-        num_results = len(omni_answer['message']['results'])
-
-        # was there some actual results returned
-        if (num_results == 0) or ((num_results == 1) and (len(omni_answer['results'][0]['node_bindings']) == 0)):
-            logger.error(f'Ranker/Omnicorp overlay error: No results data returned.')
-            omni_answer['error'] = f'Ranker/Omnicorp overlay error: No results data returned.'
-            return omni_answer, status_code
-        else:
-            logger.debug(f'coalesce out ({uid}): {json.dumps(omni_answer)}')
+        logger.debug(f'coalesce out ({uid}): {json.dumps(omni_answer)}')
 
     # call the weight correction service
     weighted_answer, status_code = post('weight', 'https://aragorn-ranker.renci.org/1.1/weight_correctness', omni_answer)
-
-    # open the tests file
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'weighted_answer.json'), 'r') as tf:
-    #     weighted_answer = json.load(tf)
 
     # was any data returned
     if len(weighted_answer) == 0:
@@ -180,23 +149,10 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
         return weighted_answer, status_code
     # good html status code, but still do some checking
     elif status_code == 200:
-        # are there some results
-        num_results = len(weighted_answer['message']['results'])
-
-        # was there some actual results returned
-        if (num_results == 0) or ((num_results == 1) and (len(weighted_answer['results'][0]['node_bindings']) == 0)):
-            logger.error(f'Ranker/Weight correctness error: No results data returned.')
-            message['error'] = f'Ranker/Weight correctness error: No results data returned.'
-            return weighted_answer, status_code
-        else:
-            logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
+        logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
 
     # call the scoring service
     scored_answer, status_code = post('score', 'https://aragorn-ranker.renci.org/1.1/score', weighted_answer)
-
-    # # open the input and output files
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'scored_answer.json'), 'r') as tf:
-    #     json.dump(scored_answer, out_file, indent=2)
 
     # was any data returned
     if len(scored_answer) == 0:
@@ -209,16 +165,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
         return scored_answer, status_code
     # good html status code, but still do some checking
     elif status_code == 200:
-        # are there some results
-        num_results = len(scored_answer['message']['results'])
-
-        # was there some actual results returned
-        if (num_results == 0) or ((num_results == 1) and (len(scored_answer['results'][0]['node_bindings']) == 0)):
-            logger.error(f'Ranker/Score error: No results data returned.')
-            scored_answer['error'] = f'Ranker/Score error: No results data returned.'
-            return scored_answer, status_code
-        else:
-            logger.debug(f'scored out ({uid}): {json.dumps(scored_answer)}')
+        logger.debug(f'scored out ({uid}): {json.dumps(scored_answer)}')
 
     # return the requested data
     return scored_answer, status_code
