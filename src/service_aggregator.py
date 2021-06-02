@@ -116,7 +116,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
     # are we doing answer coalesce
     if coalesce_type != 'none':
         # get the request coalesced answer
-        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/{coalesce_type}', running_answer) # http://127.0.0.1:5001/coalesce/
+        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', running_answer) # http://127.0.0.1:5001/coalesce/
 
         # html error code returned
         if status_code != 200:
