@@ -60,27 +60,53 @@ class MethodName(str, Enum):
     property = "property"
 
 
+# default_input: dict = {
+#   "message": {
+#     "query_graph": {
+#       "nodes": {
+#         "n0": {
+#           "id": "MONDO:0004979",
+#           "categories": "biolink:Disease"
+#         },
+#         "n1": {
+#           "categories": "biolink:ChemicalSubstance"
+#         }
+#       },
+#       "edges": {
+#         "e01": {
+#           "subject": "n0",
+#           "object": "n1",
+#           "predicates": "biolink:correlated_with"
+#         }
+#       }
+#     }
+#   }
+# }
+
 default_input: dict = {
-  "message": {
-    "query_graph": {
-      "nodes": {
-        "n0": {
-          "id": "MONDO:0004979",
-          "categories": "biolink:Disease"
-        },
-        "n1": {
-          "categories": "biolink:ChemicalSubstance"
+    "message": {
+        "query_graph": {
+            "nodes": {
+                "n0": {
+                    "categories": [
+                        "biolink:PhenotypicFeature"
+                    ]
+                },
+                "n1": {
+                    "ids": [
+                        "HGNC:6284"
+                    ],
+		    "categories":["biolink:Gene"]
+                }
+            },
+            "edges": {
+                "e0": {
+                    "subject": "n0",
+                    "object": "n1"
+                }
+            }
         }
-      },
-      "edges": {
-        "e01": {
-          "subject": "n0",
-          "object": "n1",
-          "predicates": "biolink:correlated_with"
-        }
-      }
     }
-  }
 }
 
 # define the default request body
