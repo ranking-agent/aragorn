@@ -106,8 +106,8 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
     # good html status code
     else:
         # check the results. if none returned then abort the pipeline
-        if len(running_answer['results']) == 0:
-            running_answer['logs'].append(create_log_entry(f'Strider warning: Noe results returned', "WARNING"))
+        if len(running_answer['message']['results']) == 0:
+            running_answer['logs'].append(create_log_entry(f'Strider warning: No results returned', "WARNING"))
             return running_answer, status_code
         else:
             logger.debug(f"strider in ({uid}): {json.dumps(message)}")
@@ -116,7 +116,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
     # are we doing answer coalesce
     if coalesce_type != 'none':
         # get the request coalesced answer
-        running_answer, status_code = post('coalesce', f'http://127.0.0.1:5001/coalesce/{coalesce_type}', running_answer)
+        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/{coalesce_type}', running_answer) # http://127.0.0.1:5001/coalesce/
 
         # html error code returned
         if status_code != 200:
