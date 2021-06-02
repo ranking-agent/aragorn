@@ -116,7 +116,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
     # are we doing answer coalesce
     if coalesce_type != 'none':
         # get the request coalesced answer
-        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', running_answer) # http://127.0.0.1:5001/coalesce/
+        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', running_answer) # https://answercoalesce.renci.org/1.1/coalesce/ http://127.0.0.1:5001/coalesce/
 
         # html error code returned
         if status_code != 200:
@@ -128,7 +128,7 @@ def strider_and_friends(message, coalesce_type) -> (dict, int):
             logger.debug(f'coalesce out ({uid}): {json.dumps(running_answer)}')
 
     # call the omnicorp overlay service
-    running_answer, status_code = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', running_answer)
+    running_answer, status_code = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', running_answer)  # https://aragorn-ranker.renci.org/1.1/ http://127.0.0.1:5002/
 
     # html error code returned
     if status_code != 200:
