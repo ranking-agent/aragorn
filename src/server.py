@@ -4,6 +4,7 @@ import logging.config
 import pkg_resources
 import yaml
 
+from datetime import datetime
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Response as PDResponse
@@ -100,28 +101,46 @@ async def query_handler(request: PDResponse = default_request, answer_coalesce_t
     else:
         message = request.dict()
 
-    # call to process the input
-    query_result, status_code = entry(message, answer_coalesce_type)
+    if 'logs' not in message or message['logs'] is None:
+        message['logs'] = []
 
-    # if there was an error detected make sure the response has it
-    if query_result.get('error') is not None:
-        # add the error to the log
-        query_result['logs'].append({'Error': query_result.get('error')})
-
-        # no need for this value anymore
-        query_result.pop('error')
+    query_result = message
 
     try:
+        # call to process the input
+        query_result, status_code = entry(message, answer_coalesce_type)
+
         # validate the result
         final_msg = jsonable_encoder(PDResponse(**query_result))
     except Exception as e:
         # put the error in the response
         status_code = 500
-        query_result['logs'].append({'Exception': str(e)})
+        query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
     # return the result
     return JSONResponse(content=final_msg, status_code=status_code)
+
+
+def create_log_entry(msg: str, err_level, code=None) -> dict:
+    """
+    Creates a trapi log message
+
+    :param msg:
+    :param err_level:
+    :param code:
+    :return: dict of the data passed
+    """
+    # load the data
+    ret_val = {
+        'timestamp': str(datetime.now()),
+        'level': err_level,
+        'message': msg,
+        'code': code
+    }
+
+    # return to the caller
+    return ret_val
 
 
 def log_exception(method):
@@ -193,5 +212,5 @@ def construct_open_api_schema():
 
     return open_api_schema
 
-# note: this must be commented out for local debugging
+
 APP.openapi_schema = construct_open_api_schema()
