@@ -4,26 +4,29 @@ import requests
 import json
 import uuid
 
+from datetime import datetime
+from requests.exceptions import ConnectionError
+
 logger = logging.getLogger(__name__)
 
 
-def entry(message, coalesce_type='all') -> dict:
+def entry(message, coalesce_type='all') -> (dict, int):
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 
-    :param message: should be of form Message
+    :param message: should be of a TRAPI Message
     :param coalesce_type: what kind of answer coalesce type should be performed
-    :return: the result of the request
+    :return: the result of the request and the status code
     """
 
     # make the call to traverse the various services to get the data
-    final_answer: dict = strider_and_friends(message, coalesce_type)
+    final_answer, status_code = strider_and_friends(message, coalesce_type)
 
     # return the answer
-    return final_answer
+    return final_answer, status_code
 
 
-def post(name, url, message, params=None):
+def post(name, url, message, params=None) -> (dict, int):
     """
     launches a post request, returns the response.
 
@@ -31,24 +34,51 @@ def post(name, url, message, params=None):
     :param url: the url of the service
     :param message: the message to post to the service
     :param params: the parameters passed to the service
-    :return: dict, the result
+    :return: dict, status code
     """
+    # init return values
+    ret_val = message
+
     try:
         if params is None:
             response = requests.post(url, json=message)
         else:
             response = requests.post(url, json=message, params=params)
 
-        if not response.status_code == 200:
+        # save the response code
+        status_code = response.status_code
+
+        if status_code != 200:
             logger.error(f'Error response from {name}, status code: {response.status_code}')
-            return {}
 
-        return response.json()
+        # regardless of the error code if there is a response return it
+        if len(response.json()):
+            ret_val = response.json()
+
+    except ConnectionError as ce:
+        status_code = 404
+        logger.error(ce)
     except Exception as e:
+        status_code = 500
         logger.error(e)
-        return None
 
-def strider(message) -> dict:
+    return ret_val, status_code
+
+
+def create_log_entry(msg: str, err_level, code=None) -> dict:
+    # load the data
+    ret_val = {
+        'timestamp': str(datetime.now()),
+        'level': err_level,
+        'message': msg,
+        'code': code
+    }
+
+    # return to the caller
+    return ret_val
+
+
+def strider(message) -> (dict, int):
     """
     Calls strider
     :param message:
@@ -56,137 +86,82 @@ def strider(message) -> dict:
     """
     url = 'https://strider.renci.org/1.1/query'
 
-    strider_answer = post('strider', url, message)
+    strider_answer, status_code = post('strider', url, message)
 
-    if strider_answer is None or len(strider_answer) == 0:
-        return {}
-
-    num_answers = len(strider_answer['message']['results'])
-
-    if (num_answers == 0) or ((num_answers == 1) and (len(strider_answer['results'][0]['node_bindings']) == 0)):
-        logger.error(f'Error response from Strider, no result data returned.')
-        return {}
-
-    return strider_answer
+    return strider_answer, status_code
 
 
-def strider_and_friends(message, coalesce_type) -> dict:
-
+def strider_and_friends(message, coalesce_type) -> (dict, int):
     # create a guid
     uid: str = str(uuid.uuid4())
 
-    # call strider service
-    strider_answer: dict = strider(message)
+    # call the strider service
+    running_answer, status_code = strider(message)
 
-    # was there an error getting data
-    if strider_answer is None:
-        #logger.error("Error detected. Strider failed to return anything, aborting.")
-        message['error'] = 'Error detected. Strider didnt return anything, aborting.'
-        return message
-    elif len(strider_answer) == 0:
-        #logger.error("Error detected. Got an empty answer from strider, aborting.")
-        message['error'] = 'Error detected. Got an empty result from strider, aborting.'
-        return message
+    # html error code returned
+    if status_code != 200:
+        logger.error(f'Strider error: HTML error status code {status_code} returned.')
+        running_answer['logs'].append(create_log_entry(f'Strider error: HTML error status code {status_code} returned.', "ERROR"))
+        return running_answer, status_code
+    # good html status code
     else:
-    #     # scan for missing attribute types. put one in if there isnt one already there ("type": "EDAM:data_0006")
-    #     kg_nodes = strider_answer['message']['knowledge_graph']['nodes']
-    #
-    #     for node in kg_nodes:
-    #         if 'name' in kg_nodes[node] and 'attributes' in kg_nodes[node]:
-    #             attribs = kg_nodes[node]['attributes']
-    #
-    #             for attrib in attribs:
-    #                 if "type" not in attrib:
-    #                     attrib['type'] = 'EDAM:data_0006'
-    #         else:
-    #             message['error'] = f'Error detected. Got kgraph node from strider missing the name or attributes ({node}), aborting.'
-    #             return message
-
-        logger.debug(f"strider in ({uid}): {json.dumps(message)}")
-        logger.debug(f"strider out ({uid}): {json.dumps(strider_answer)}")
+        # check the results. if none returned then abort the pipeline
+        if len(running_answer['message']['results']) == 0:
+            running_answer['logs'].append(create_log_entry(f'Strider warning: No results returned', "WARNING"))
+            return running_answer, status_code
+        else:
+            logger.debug(f"strider in ({uid}): {json.dumps(message)}")
+            logger.debug(f"strider out ({uid}): {json.dumps(running_answer)}")
 
     # are we doing answer coalesce
     if coalesce_type != 'none':
         # get the request coalesced answer
-        coalesce_answer: dict = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', strider_answer)
+        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', running_answer) # https://answercoalesce.renci.org/1.1/coalesce/ http://127.0.0.1:5001/coalesce/
 
-        # was there an error getting data
-        if coalesce_answer is None:
-            logger.error("Error detected: Got no answer from Answer coalesce, aborting.")
-            message['error'] = 'Error detected: Answer coalesce failed to return an answer, aborting.'
-            return message
-        # did we get a good response
-        elif len(coalesce_answer) == 0:
-            logger.error("Error detected: Got an empty answer from Answer coalesce, aborting.")
-            message['error'] = 'Error detected: Got an empty answer from Answer coalesce, aborting.'
-            return message
+        # html error code returned
+        if status_code != 200:
+            logger.error(f'Answer coalesce error: HTML error status code {status_code} returned.')
+            running_answer['logs'].append(create_log_entry(f'Answer coalesce error: HTML error status code {status_code} returned.', "WARNING"))
+
+        # good html status code
         else:
-            logger.debug(f'coalesce out ({uid}): {json.dumps(coalesce_answer)}')
-    else:
-        # just use the strider result in Message format
-        coalesce_answer: dict = strider_answer
+            logger.debug(f'coalesce out ({uid}): {json.dumps(running_answer)}')
 
     # call the omnicorp overlay service
-    omni_answer: dict = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', coalesce_answer)
+    running_answer, status_code = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', running_answer)  # https://aragorn-ranker.renci.org/1.1/ http://127.0.0.1:5002/
 
-    # # open the tests file
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'omni_answer.json'), 'r') as tf:
-    #     omni_answer = json.load(tf)
-
-    # was there an error getting data
-    if omni_answer is None:
-        logger.error('Error detected: Aragorn-ranker/omnicorp_overlay failed to return an answer, aborting.')
-        message['error'] = 'Error detected: Aragorn-ranker/omnicorp_overlay failed to return an answer, aborting.'
-        return message
-    # did we get a good response
-    elif len(omni_answer) == 0:
-        logger.error('Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.')
-        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/omnicorp_overlay, aborting.'
-        return message
+    # html error code returned
+    if status_code != 200:
+        logger.error(f'Ranker/Omnicorp overlay error: HTML error status code {status_code} returned.')
+        running_answer['logs'].append(create_log_entry(f'Ranker/Omnicorp overlay error: HTML error status code {status_code} returned.', "WARNING"))
+    # good html status code
     else:
-        logger.debug(f'omni out ({uid}): {json.dumps(omni_answer)}')
+        logger.debug(f'omnicorp out ({uid}): {json.dumps(running_answer)}')
 
     # call the weight correction service
-    weighted_answer: dict = post('weight', 'https://aragorn-ranker.renci.org/1.1/weight_correctness', omni_answer)
+    running_answer, status_code = post('weight', 'https://aragorn-ranker.renci.org/1.1/weight_correctness', running_answer)
 
-    # open the tests file
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'weighted_answer.json'), 'r') as tf:
-    #     weighted_answer = json.load(tf)
-
-    # was there an error getting data
-    if weighted_answer is None:
-        logger.error('Error detected: Aragorn-ranker/weight_correctness failed to return an answer, aborting.')
-        message['error'] = 'Error detected: Aragorn-ranker/weight_correctness failed to return an answer, aborting.'
-        return message
-    # did we get a good response
-    elif len(weighted_answer) == 0:
-        logger.error('Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.')
-        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/weight_correctness, aborting.'
+    # html error code returned
+    if status_code != 200:
+        logger.error(f'Ranker/Weight correctness error: HTML error status code {status_code} returned.')
+        running_answer['logs'].append(create_log_entry(f'Ranker/Weight correctness error: HTML error status code {status_code} returned.', "WARNING"))
+    # good html status code
     else:
-        logger.debug(f'weighted out ({uid}): {json.dumps(weighted_answer)}')
+        logger.debug(f'weighted out ({uid}): {json.dumps(running_answer)}')
 
     # call the scoring service
-    scored_answer: dict = post('score', 'https://aragorn-ranker.renci.org/1.1/score', weighted_answer)
+    running_answer, status_code = post('score', 'https://aragorn-ranker.renci.org/1.1/score', running_answer)
 
-    # # open the input and output files
-    # with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'tests', 'scored_answer.json'), 'r') as tf:
-    #     json.dump(scored_answer, out_file, indent=2)
-
-    # was there an error getting data
-    if scored_answer is None:
-        logger.error('Error detected: Aragorn-ranker/score failed to return an answer, aborting.')
-        message['error'] = 'Error detected: Aragorn-ranker/score failed to return an answer, aborting.'
-        return message
-    # did we get a good response
-    elif len(scored_answer) == 0:
-        logger.error('Error detected: Got an empty answer from Aragorn-ranker/score, aborting.')
-        message['error'] = 'Error detected: Got an empty answer from Aragorn-ranker/score, aborting.'
-        return message
+    # html error code returned
+    if status_code != 200:
+        logger.error(f'Ranker/Score error: HTML error status code {status_code} returned.')
+        running_answer['logs'].append(create_log_entry(f'Ranker/Score error: HTML error status code {status_code} returned.', "WARNING"))
+    # good html status code, but still do some checking
     else:
-        logger.debug(f'scored out ({uid}): {json.dumps(scored_answer)}')
+        logger.debug(f'scored out ({uid}): {json.dumps(running_answer)}')
 
     # return the requested data
-    return scored_answer
+    return running_answer, status_code
 
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
