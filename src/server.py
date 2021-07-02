@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='1.0.0'
+    version='1.1.0'
 )
 
 # declare app access details
@@ -194,7 +194,7 @@ def construct_open_api_schema():
 
     open_api_schema = get_openapi(
         title='ARAGORN',
-        version='1.0.0',
+        version='1.1.0',
         routes=APP.routes
     )
 
