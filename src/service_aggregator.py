@@ -26,13 +26,15 @@ def entry(message, coalesce_type='all') -> (dict, int):
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
     known_operations = {'lookup': strider,
-                        'enrich_results': partial(answercoalesce,coalsece_type=coalesce_type),
+                        'enrich_results': partial(answercoalesce,coalesce_type=coalesce_type),
                         'connect_knodes': omnicorp,
                         'score': score}
 
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
     if 'workflow' in message:
-        workfow_def = message['workflow']
+        workflow_def = message['workflow']
+        #The underlying tools (strider) don't want the workflow element and will 400
+        del message['workflow']
     else:
         workflow_def = ['lookup','enrich_results','connect_knodes','score']
 
@@ -45,6 +47,9 @@ def entry(message, coalesce_type='all') -> (dict, int):
             return f"Unimplemented Operation: {op}", 501
 
     final_answer, status_code = run_workflow(message, workflow)
+
+    #return the workflow def so that the caller can see what we did
+    final_answer['workflow'] = workflow_def
 
     # return the answer
     return final_answer, status_code
@@ -62,6 +67,8 @@ def post(name, url, message, params=None) -> (dict, int):
     """
     # init return values
     ret_val = message
+
+    logger.debug(f"Calling {url}")
 
     try:
         if params is None:
@@ -91,6 +98,8 @@ def post(name, url, message, params=None) -> (dict, int):
     # good html status code
     elif len(ret_val['message']['results']) == 0:
         ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+    else:
+        logger.debug(f'Returned. {len(ret_val["message"]["results"])} results.')
 
     return ret_val, status_code
 
@@ -144,7 +153,7 @@ def score(message) -> (dict,int):
     :return:
     """
     weight_url='https://aragorn-ranker.renci.org/1.1/weight_correctness'
-    score_url='https://aragorn-ranker.renci.org/1.1/score_correctness'
+    score_url='https://aragorn-ranker.renci.org/1.1/score'
     message, status_code = post('weight', weight_url , message)
     return  post('score', score_url, message)
 
@@ -155,6 +164,7 @@ def run_workflow(message, workflow) -> (dict, int):
     # do we still want this?  What's the purpose?
     #uid: str = str(uuid.uuid4())
 
+    logger.debug(message)
     for operator_function in workflow:
         message, status_code = operator_function(message)
 
