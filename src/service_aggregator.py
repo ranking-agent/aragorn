@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 from requests.exceptions import ConnectionError
 
+from functools import partial
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,8 +21,35 @@ def entry(message, coalesce_type='all') -> (dict, int):
     :return: the result of the request and the status code
     """
 
-    # make the call to traverse the various services to get the data
-    final_answer, status_code = strider_and_friends(message, coalesce_type)
+    # A map from operations advertised in our x-trapi to functions
+    # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
+    #  e.g. our score operation will include both weighting and scoring for now.
+    # Also gives us a place to handle function specific logic
+    known_operations = {'lookup': strider,
+                        'enrich_results': partial(answercoalesce,coalesce_type=coalesce_type),
+                        'connect_knodes': omnicorp,
+                        'score': score}
+
+    # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
+    if 'workflow' in message:
+        workflow_def = message['workflow']
+        #The underlying tools (strider) don't want the workflow element and will 400
+        del message['workflow']
+    else:
+        workflow_def = ['lookup','enrich_results','connect_knodes','score']
+
+    #convert the workflow def into function calls.   Raise a 501 if we find one we don't actually know how to do.
+    workflow = []
+    for op in workflow_def:
+        try:
+            workflow.append(known_operations[op])
+        except KeyError:
+            return f"Unimplemented Operation: {op}", 501
+
+    final_answer, status_code = run_workflow(message, workflow)
+
+    #return the workflow def so that the caller can see what we did
+    final_answer['workflow'] = workflow_def
 
     # return the answer
     return final_answer, status_code
@@ -39,6 +68,8 @@ def post(name, url, message, params=None) -> (dict, int):
     # init return values
     ret_val = message
 
+    logger.debug(f"Calling {url}")
+
     try:
         if params is None:
             response = requests.post(url, json=message)
@@ -47,9 +78,6 @@ def post(name, url, message, params=None) -> (dict, int):
 
         # save the response code
         status_code = response.status_code
-
-        if status_code != 200:
-            logger.error(f'Error response from {name}, status code: {response.status_code}')
 
         # regardless of the error code if there is a response return it
         if len(response.json()):
@@ -61,6 +89,17 @@ def post(name, url, message, params=None) -> (dict, int):
     except Exception as e:
         status_code = 500
         logger.error(e)
+
+    # html error code returned
+    if status_code != 200:
+        error_string=f'{name} error: HTML error status code {status_code} returned.'
+        logger.error(error_string)
+        ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
+    # good html status code
+    elif len(ret_val['message']['results']) == 0:
+        ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+    else:
+        logger.debug(f'Returned. {len(ret_val["message"]["results"])} results.')
 
     return ret_val, status_code
 
@@ -85,84 +124,52 @@ def strider(message) -> (dict, int):
     :return:
     """
     url = 'https://strider.renci.org/1.1/query'
+    return post('strider', url, message)
 
-    strider_answer, status_code = post('strider', url, message)
+def answercoalesce(message,coalesce_type='all') -> (dict,int):
+    """
+    Calls answercoalesce
+    :param message:
+    :param coalesce_type:
+    :return:
+    """
+    url = f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}'
+    return post('answer_coalesce',url, message)
 
-    return strider_answer, status_code
+def omnicorp(message) -> (dict,int):
+    """
+    Calls omnicorp
+    :param message:
+    :param coalesce_type:
+    :return:
+    """
+    url='https://aragorn-ranker.renci.org/1.1/omnicorp_overlay'
+    return post('omnicorp',url, message)
+
+def score(message) -> (dict,int):
+    """
+    Calls weight correctness followed by scoring
+    :param message:
+    :return:
+    """
+    weight_url='https://aragorn-ranker.renci.org/1.1/weight_correctness'
+    score_url='https://aragorn-ranker.renci.org/1.1/score'
+    message, status_code = post('weight', weight_url , message)
+    return  post('score', score_url, message)
 
 
-def strider_and_friends(message, coalesce_type) -> (dict, int):
+
+def run_workflow(message, workflow) -> (dict, int):
     # create a guid
-    uid: str = str(uuid.uuid4())
+    # do we still want this?  What's the purpose?
+    #uid: str = str(uuid.uuid4())
 
-    # call the strider service
-    running_answer, status_code = strider(message)
-
-    # html error code returned
-    if status_code != 200:
-        logger.error(f'Strider error: HTML error status code {status_code} returned.')
-        running_answer['logs'].append(create_log_entry(f'Strider error: HTML error status code {status_code} returned.', "ERROR"))
-        return running_answer, status_code
-    # good html status code
-    else:
-        # check the results. if none returned then abort the pipeline
-        if len(running_answer['message']['results']) == 0:
-            running_answer['logs'].append(create_log_entry(f'Strider warning: No results returned', "WARNING"))
-            return running_answer, status_code
-        else:
-            logger.debug(f"strider in ({uid}): {json.dumps(message)}")
-            logger.debug(f"strider out ({uid}): {json.dumps(running_answer)}")
-
-    # are we doing answer coalesce
-    if coalesce_type != 'none':
-        # get the request coalesced answer
-        running_answer, status_code = post('coalesce', f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}', running_answer) # https://answercoalesce.renci.org/1.1/coalesce/ http://127.0.0.1:5001/coalesce/
-
-        # html error code returned
-        if status_code != 200:
-            logger.error(f'Answer coalesce error: HTML error status code {status_code} returned.')
-            running_answer['logs'].append(create_log_entry(f'Answer coalesce error: HTML error status code {status_code} returned.', "WARNING"))
-
-        # good html status code
-        else:
-            logger.debug(f'coalesce out ({uid}): {json.dumps(running_answer)}')
-
-    # call the omnicorp overlay service
-    running_answer, status_code = post('omnicorp', 'https://aragorn-ranker.renci.org/1.1/omnicorp_overlay', running_answer)  # https://aragorn-ranker.renci.org/1.1/ http://127.0.0.1:5002/
-
-    # html error code returned
-    if status_code != 200:
-        logger.error(f'Ranker/Omnicorp overlay error: HTML error status code {status_code} returned.')
-        running_answer['logs'].append(create_log_entry(f'Ranker/Omnicorp overlay error: HTML error status code {status_code} returned.', "WARNING"))
-    # good html status code
-    else:
-        logger.debug(f'omnicorp out ({uid}): {json.dumps(running_answer)}')
-
-    # call the weight correction service
-    running_answer, status_code = post('weight', 'https://aragorn-ranker.renci.org/1.1/weight_correctness', running_answer)
-
-    # html error code returned
-    if status_code != 200:
-        logger.error(f'Ranker/Weight correctness error: HTML error status code {status_code} returned.')
-        running_answer['logs'].append(create_log_entry(f'Ranker/Weight correctness error: HTML error status code {status_code} returned.', "WARNING"))
-    # good html status code
-    else:
-        logger.debug(f'weighted out ({uid}): {json.dumps(running_answer)}')
-
-    # call the scoring service
-    running_answer, status_code = post('score', 'https://aragorn-ranker.renci.org/1.1/score', running_answer)
-
-    # html error code returned
-    if status_code != 200:
-        logger.error(f'Ranker/Score error: HTML error status code {status_code} returned.')
-        running_answer['logs'].append(create_log_entry(f'Ranker/Score error: HTML error status code {status_code} returned.', "WARNING"))
-    # good html status code, but still do some checking
-    else:
-        logger.debug(f'scored out ({uid}): {json.dumps(running_answer)}')
+    logger.debug(message)
+    for operator_function in workflow:
+        message, status_code = operator_function(message)
 
     # return the requested data
-    return running_answer, status_code
-
+    return message, status_code
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
     """

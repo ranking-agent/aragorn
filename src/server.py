@@ -204,6 +204,7 @@ def construct_open_api_schema():
         open_api_extended_spec = yaml.load(open_api_file, Loader=yaml.SafeLoader)
 
     x_translator_extension = open_api_extended_spec.get("x-translator")
+    x_trapi_extension = open_api_extended_spec.get("x-trapi")
     contact_config = open_api_extended_spec.get("contact")
     terms_of_service = open_api_extended_spec.get("termsOfService")
     servers_conf = open_api_extended_spec.get("servers")
@@ -217,6 +218,10 @@ def construct_open_api_schema():
     if x_translator_extension:
         # if x_translator_team is defined amends schema with x_translator extension
         open_api_schema["info"]["x-translator"] = x_translator_extension
+
+    if x_trapi_extension:
+        # if x_translator_team is defined amends schema with x_translator extension
+        open_api_schema["info"]["x-trapi"] = x_trapi_extension
 
     if contact_config:
         open_api_schema["info"]["contact"] = contact_config

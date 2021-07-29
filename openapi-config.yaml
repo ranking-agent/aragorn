@@ -16,3 +16,10 @@ x-translator:
   component: ARA
   team:
   - Ranking Agent
+x-trapi:
+  version: 1.1.0
+  operations:
+  - lookup
+  - enrich_results
+  - connect_knodes
+  - score
