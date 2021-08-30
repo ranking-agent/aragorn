@@ -3,13 +3,14 @@ import os
 import logging.config
 import pkg_resources
 import yaml
+import requests
 
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from reasoner_pydantic import Response as PDResponse
+from reasoner_pydantic import Response as PDResponse, AsyncQuery as PDAsyncQuery
 from src.service_aggregator import entry
-from fastapi import Body, FastAPI
+from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,7 +39,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='1.1.1'
+    version='2.0.0'
 )
 
 # declare app access details
@@ -59,29 +60,6 @@ class MethodName(str, Enum):
     ontology = "ontology"
     property = "property"
 
-
-# default_input: dict = {
-#   "message": {
-#     "query_graph": {
-#       "nodes": {
-#         "n0": {
-#           "id": "MONDO:0004979",
-#           "categories": "biolink:Disease"
-#         },
-#         "n1": {
-#           "categories": "biolink:ChemicalSubstance"
-#         }
-#       },
-#       "edges": {
-#         "e01": {
-#           "subject": "n0",
-#           "object": "n1",
-#           "predicates": "biolink:correlated_with"
-#         }
-#       }
-#     }
-#   }
-# }
 
 default_input: dict = {
     "message": {
@@ -113,14 +91,47 @@ default_input: dict = {
 default_request: Body = Body(default=default_input)
 
 
-# declare the one and only entry point
+from pydantic import BaseModel
+#Why isn't there a pydantic model for this?
+class AsyncReturn(BaseModel):
+    description: str
+
+#async entry point
+@APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
+async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
+    try:
+        # convert the incoming message into a dict
+        if type(request) is dict:
+            message = request
+        else:
+            message = request.dict()
+        callback_url = message['callback']
+    except KeyError as e:
+        return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
+    background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url)
+    return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
+
+async def execute_with_callback(request,answer_coalesece_type,callback_url):
+    #Go off and run the query, and when done, post it back to the callback
+    del request['callback']
+    final_msg, status_code = await execute(request,answer_coalesece_type)
+    await callback(callback_url,final_msg)
+
+#This is pulled out to make it easy to mock without interfering with other posts.
+async def callback(callback_url,final_msg):
+    requests.post(callback_url,json=final_msg)
+
+# synchronous entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
 async def query_handler(request: PDResponse = default_request, answer_coalesce_type: MethodName = MethodName.all):
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
+    final_msg, status_code = await execute(request,answer_coalesce_type)
+    return JSONResponse(content=final_msg, status_code=status_code)
 
+async def execute(request,answer_coalesce_type):
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -135,7 +146,13 @@ async def query_handler(request: PDResponse = default_request, answer_coalesce_t
     try:
         # call to process the input
         query_result, status_code = entry(message, answer_coalesce_type)
-
+        query_result['status'] = 'Success'
+        #Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
+        for edge_id,edge_data in query_result['message']['knowledge_graph']['edges'].items():
+            if 'relation' in edge_data:
+                del edge_data['relation']
+        #This is also bogus, not sure why it's not validating
+        del query_result['workflow']
         # validate the result
         final_msg = jsonable_encoder(PDResponse(**query_result))
     except Exception as e:
@@ -144,8 +161,7 @@ async def query_handler(request: PDResponse = default_request, answer_coalesce_t
         query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
-    # return the result
-    return JSONResponse(content=final_msg, status_code=status_code)
+    return final_msg, status_code
 
 
 def create_log_entry(msg: str, err_level, code=None) -> dict:
@@ -194,7 +210,7 @@ def construct_open_api_schema():
 
     open_api_schema = get_openapi(
         title='ARAGORN',
-        version='1.1.1',
+        version='2.0.0',
         routes=APP.routes
     )
 

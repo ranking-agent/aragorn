@@ -31,7 +31,7 @@ def entry(message, coalesce_type='all') -> (dict, int):
                         'score': score}
 
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
-    if 'workflow' in message:
+    if 'workflow' in message and not (message['workflow'] is None):
         workflow_def = message['workflow']
         #The underlying tools (strider) don't want the workflow element and will 400
         del message['workflow']
@@ -67,6 +67,8 @@ def post(name, url, message, params=None) -> (dict, int):
     """
     # init return values
     ret_val = message
+    if 'workflow' in message and message['workflow'] is None:
+        del message['workflow']
 
     logger.debug(f"Calling {url}")
 
@@ -124,7 +126,8 @@ def strider(message) -> (dict, int):
     :return:
     """
     url = 'https://strider.renci.org/1.1/query'
-    return post('strider', url, message)
+    response = post('strider', url, message)
+    return response
 
 def answercoalesce(message,coalesce_type='all') -> (dict,int):
     """
