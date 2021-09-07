@@ -101,7 +101,7 @@ class AsyncReturn(BaseModel):
 async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
     try:
         # convert the incoming message into a dict
-        if type(request) is dict:
+        if isinstance(request, dict):
             message = request
         else:
             message = request.dict()
