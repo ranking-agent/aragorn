@@ -20,7 +20,7 @@ x-translator:
   team:
   - Ranking Agent
 x-trapi:
-  version: 1.2.0.2
+  version: 1.2.0
   operations:
   - lookup
   - enrich_results
