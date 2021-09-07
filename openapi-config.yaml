@@ -12,7 +12,9 @@ title: ARAGORN
 tags:
 - name: translator
 - name: ARA
+- name: ARAGORN
 x-translator:
+  biolink-version: 2.1.0
   component: ARA
   team:
   - Ranking Agent
