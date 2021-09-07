@@ -1,0 +1,35 @@
+{
+    "workflow": [
+        {
+            "id": "lookup"
+        }
+    ],
+    "message": {
+        "query_graph": {
+            "nodes": {
+                "n0": {
+                    "categories": [
+                        "biolink:Gene"
+                    ]
+                },
+                "n1": {
+                    "ids": [
+                        "CHEBI:45783"
+                    ],
+                    "categories": [
+                        "biolink:ChemicalSubstance"
+                    ]
+                }
+            },
+            "edges": {
+                "e01": {
+                    "subject": "n0",
+                    "object": "n1",
+                    "predicates": [
+                        "biolink:related_to"
+                    ]
+                }
+            }
+        }
+    }
+}

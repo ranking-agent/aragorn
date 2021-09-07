@@ -8,7 +8,7 @@ import requests
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from reasoner_pydantic import Response as PDResponse, AsyncQuery as PDAsyncQuery
+from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from src.service_aggregator import entry
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
@@ -123,7 +123,7 @@ async def callback(callback_url,final_msg):
 
 # synchronous entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
-async def query_handler(request: PDResponse = default_request, answer_coalesce_type: MethodName = MethodName.all):
+async def query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
     """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
@@ -146,6 +146,8 @@ async def execute(request,answer_coalesce_type):
     try:
         # call to process the input
         query_result, status_code = entry(message, answer_coalesce_type)
+        if status_code != 200:
+            return query_result,status_code
         query_result['status'] = 'Success'
         #Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
         for edge_id,edge_data in query_result['message']['knowledge_graph']['edges'].items():

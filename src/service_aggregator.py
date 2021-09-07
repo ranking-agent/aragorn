@@ -36,15 +36,17 @@ def entry(message, coalesce_type='all') -> (dict, int):
         #The underlying tools (strider) don't want the workflow element and will 400
         del message['workflow']
     else:
-        workflow_def = ['lookup','enrich_results','connect_knodes','score']
+        workflow_def = [{'id':'lookup'},{'id':'enrich_results'},{'id':'connect_knodes'},{'id':'score'}]
 
-    #convert the workflow def into function calls.   Raise a 501 if we find one we don't actually know how to do.
+    #convert the workflow def into function calls.   Raise a 422 if we find one we don't actually know how to do.
+    # We told the world what we can do!
+    #Workflow will be a list of the functions, and the parameters if there are any
     workflow = []
     for op in workflow_def:
         try:
-            workflow.append(known_operations[op])
+            workflow.append((known_operations[op['id']],op.get('parameters',{})))
         except KeyError:
-            return f"Unimplemented Operation: {op}", 501
+            return f"Unknown Operation: {op}", 422
 
     final_answer, status_code = run_workflow(message, workflow)
 
@@ -119,7 +121,7 @@ def create_log_entry(msg: str, err_level, code=None) -> dict:
     return ret_val
 
 
-def strider(message) -> (dict, int):
+def strider(message,params) -> (dict, int):
     """
     Calls strider
     :param message:
@@ -129,7 +131,7 @@ def strider(message) -> (dict, int):
     response = post('strider', url, message)
     return response
 
-def answercoalesce(message,coalesce_type='all') -> (dict,int):
+def answercoalesce(message,params,coalesce_type='all') -> (dict,int):
     """
     Calls answercoalesce
     :param message:
@@ -139,7 +141,7 @@ def answercoalesce(message,coalesce_type='all') -> (dict,int):
     url = f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}'
     return post('answer_coalesce',url, message)
 
-def omnicorp(message) -> (dict,int):
+def omnicorp(message,params) -> (dict,int):
     """
     Calls omnicorp
     :param message:
@@ -149,7 +151,7 @@ def omnicorp(message) -> (dict,int):
     url='https://aragorn-ranker.renci.org/1.1/omnicorp_overlay'
     return post('omnicorp',url, message)
 
-def score(message) -> (dict,int):
+def score(message,params) -> (dict,int):
     """
     Calls weight correctness followed by scoring
     :param message:
@@ -160,16 +162,14 @@ def score(message) -> (dict,int):
     message, status_code = post('weight', weight_url , message)
     return  post('score', score_url, message)
 
-
-
 def run_workflow(message, workflow) -> (dict, int):
     # create a guid
     # do we still want this?  What's the purpose?
     #uid: str = str(uuid.uuid4())
 
     logger.debug(message)
-    for operator_function in workflow:
-        message, status_code = operator_function(message)
+    for operator_function, params in workflow:
+        message, status_code = operator_function(message,params)
 
     # return the requested data
     return message, status_code
