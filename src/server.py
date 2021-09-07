@@ -255,7 +255,7 @@ def construct_open_api_schema():
 
     if servers_conf:
         for s in servers_conf:
-            s['url'] = s['url'] + '/1.1'
+            s['url'] = s['url'] + '/1.2'
 
         open_api_schema["servers"] = servers_conf
 
