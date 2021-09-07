@@ -1,6 +1,6 @@
 ###############
-# test workflow for Answer coalesce
-# powen, 8/11/2021
+# test workflow for ARAGORN
+# powen, 9/7/2021
 ###############
 
 name: 'test'
