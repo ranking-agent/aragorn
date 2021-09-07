@@ -10,8 +10,6 @@ servers:
 termsOfService: http://robokop.renci.org:7055/tos?service_long=ARAGORN&provider_long=RENCI
 title: ARAGORN
 tags:
-- name: translator
-- name: ARA
 - name: ARAGORN
 x-translator:
   biolink-version: 2.1.0
