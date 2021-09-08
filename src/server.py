@@ -111,14 +111,14 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url)
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
-async def execute_with_callback(request,answer_coalesece_type,callback_url):
+def execute_with_callback(request,answer_coalesece_type,callback_url):
     #Go off and run the query, and when done, post it back to the callback
     del request['callback']
-    final_msg, status_code = await execute(request,answer_coalesece_type)
-    await callback(callback_url,final_msg)
+    final_msg, status_code = execute(request,answer_coalesece_type)
+    callback(callback_url,final_msg)
 
 #This is pulled out to make it easy to mock without interfering with other posts.
-async def callback(callback_url,final_msg):
+def callback(callback_url,final_msg):
     requests.post(callback_url,json=final_msg)
 
 # synchronous entry point
@@ -128,10 +128,13 @@ async def query_handler(request: PDQuery = default_request, answer_coalesce_type
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
-    final_msg, status_code = await execute(request,answer_coalesce_type)
+    final_msg, status_code = await asyncexecute(request,answer_coalesce_type)
     return JSONResponse(content=final_msg, status_code=status_code)
 
-async def execute(request,answer_coalesce_type):
+async def asyncexecute(request,answer_coalesce_type):
+    execute(request,answer_coalesce_type)
+
+def execute(request, answer_coalesce_type):
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
