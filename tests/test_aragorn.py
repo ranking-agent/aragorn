@@ -134,20 +134,19 @@ def test_workflow_A1():
 
     assert found
 
-    found = False
-
-
-    # ensure that ranker/omnicorp overlay added the omnicorp data
-    for e in kg_edge_list:
-        if 'attributes' in e[1]:
-            for a in e[1]['attributes']:
-                if a['attribute_type_id'] == 'biolink:has_count' and a['original_attribute_name'] == 'num_publications':
-                    found = True
-                    break
-        if found:
-            break
-
-    assert found
+    # found = False
+    #
+    # # ensure that ranker/omnicorp overlay added the omnicorp data
+    # for e in kg_edge_list:
+    #     if 'attributes' in e[1]:
+    #         for a in e[1]['attributes']:
+    #             if a['attribute_type_id'] == 'biolink:has_count' and a['original_attribute_name'] == 'num_publications':
+    #                 found = True
+    #                 break
+    #     if found:
+    #         break
+    #
+    # assert found
 
     found = False
 
