@@ -127,7 +127,7 @@ def strider(message,params) -> (dict, int):
     :param message:
     :return:
     """
-    url = 'https://strider.renci.org/1.1/query'
+    url = 'https://strider.renci.org/1.2/query'
     response = post('strider', url, message)
     return response
 
