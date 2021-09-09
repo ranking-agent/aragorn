@@ -9,4 +9,4 @@ httptools==0.1.1
 pyyaml==5.3.1
 requests==2.25.0
 reasoner-transpiler==1.8.1
-reasoner-pydantic==1.2.0.2
+reasoner-pydantic==1.2.0.3

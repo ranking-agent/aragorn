@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='2.0.0'
+    version='2.0.1'
 )
 
 # declare app access details
@@ -132,7 +132,7 @@ async def query_handler(request: PDQuery = default_request, answer_coalesce_type
     return JSONResponse(content=final_msg, status_code=status_code)
 
 async def asyncexecute(request,answer_coalesce_type):
-    execute(request,answer_coalesce_type)
+    return execute(request,answer_coalesce_type)
 
 def execute(request, answer_coalesce_type):
     # convert the incoming message into a dict
@@ -215,7 +215,7 @@ def construct_open_api_schema():
 
     open_api_schema = get_openapi(
         title='ARAGORN',
-        version='2.0.0',
+        version='2.0.1',
         routes=APP.routes
     )
 
