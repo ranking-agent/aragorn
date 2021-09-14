@@ -27,7 +27,7 @@ def entry(message, coalesce_type='all') -> (dict, int):
     # Also gives us a place to handle function specific logic
     known_operations = {'lookup': strider,
                         'enrich_results': partial(answercoalesce,coalesce_type=coalesce_type),
-                        'connect_knodes': omnicorp,
+                        'overlay_connect_knodes': omnicorp,
                         'score': score}
 
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
@@ -36,7 +36,7 @@ def entry(message, coalesce_type='all') -> (dict, int):
         #The underlying tools (strider) don't want the workflow element and will 400
         del message['workflow']
     else:
-        workflow_def = [{'id':'lookup'},{'id':'enrich_results'},{'id':'connect_knodes'},{'id':'score'}]
+        workflow_def = [{'id':'lookup'},{'id':'enrich_results'},{'id':'overlay_connect_knodes'},{'id':'score'}]
 
     #convert the workflow def into function calls.   Raise a 422 if we find one we don't actually know how to do.
     # We told the world what we can do!
@@ -86,6 +86,7 @@ def post(name, url, message, params=None) -> (dict, int):
         # regardless of the error code if there is a response return it
         if len(response.json()):
             ret_val = response.json()
+
 
     except ConnectionError as ce:
         status_code = 404
@@ -170,6 +171,17 @@ def run_workflow(message, workflow) -> (dict, int):
     logger.debug(message)
     for operator_function, params in workflow:
         message, status_code = operator_function(message,params)
+        #This is a hack...This is a hack...Clean out attributes with a null value.
+        kg = message['message']['knowledge_graph']
+        for nid,node in kg['nodes'].items():
+            if 'attributes' in node:
+                newatts = [{k:v for k,v in att.items() if v is not None } for att in node['attributes']]
+                node['attributes'] = newatts
+        for eid, edge in kg['edges'].items():
+            if 'attributes' in edge:
+                newatts = [{k: v for k, v in att.items() if v is not None} for att in edge['attributes']]
+                edge['attributes'] = newatts
+
 
     # return the requested data
     return message, status_code
