@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 client = TestClient(APP)
 
-jsondir = 'InputJson_1.1'
+jsondir = 'InputJson_1.2'
 
 @patch('src.server.callback')
 def test_async(mock_callback):
@@ -123,12 +123,14 @@ def test_workflow_A1():
 
     # ensure that ranker/omnicorp overlay added the omni article count
     for n in kg_node_list:
-        if 'attributes' in n[1] and len(n[1]['attributes']) > 0:
-            for a in n[1]['attributes']:
-                oan = a['original_attribute_name']
-                if oan is not None and oan.startswith('omnicorp_article_count'):
-                    found = True
-                    break
+        atts = n[1].get('attributes',[])
+        if atts is None:
+            atts = []
+        for a in atts:
+            oan = a['original_attribute_name']
+            if oan is not None and oan.startswith('omnicorp_article_count'):
+                found = True
+                break
         if found:
             break
 
