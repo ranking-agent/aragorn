@@ -171,17 +171,6 @@ def run_workflow(message, workflow) -> (dict, int):
     logger.debug(message)
     for operator_function, params in workflow:
         message, status_code = operator_function(message,params)
-        #This is a hack...This is a hack...Clean out attributes with a null value.
-        kg = message['message']['knowledge_graph']
-        for nid,node in kg['nodes'].items():
-            if 'attributes' in node:
-                newatts = [{k:v for k,v in att.items() if v is not None } for att in node['attributes']]
-                node['attributes'] = newatts
-        for eid, edge in kg['edges'].items():
-            if 'attributes' in edge:
-                newatts = [{k: v for k, v in att.items() if v is not None} for att in edge['attributes']]
-                edge['attributes'] = newatts
-
 
     # return the requested data
     return message, status_code
