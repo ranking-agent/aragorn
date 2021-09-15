@@ -139,7 +139,7 @@ def answercoalesce(message,params,coalesce_type='all') -> (dict,int):
     :param coalesce_type:
     :return:
     """
-    url = f'https://answercoalesce.renci.org/1.1/coalesce/{coalesce_type}'
+    url = f'https://answercoalesce.renci.org/1.2/coalesce/{coalesce_type}'
     return post('answer_coalesce',url, message)
 
 def omnicorp(message,params) -> (dict,int):
@@ -149,7 +149,7 @@ def omnicorp(message,params) -> (dict,int):
     :param coalesce_type:
     :return:
     """
-    url='https://aragorn-ranker.renci.org/1.1/omnicorp_overlay'
+    url='https://aragorn-ranker.renci.org/1.2/omnicorp_overlay'
     return post('omnicorp',url, message)
 
 def score(message,params) -> (dict,int):
@@ -158,8 +158,8 @@ def score(message,params) -> (dict,int):
     :param message:
     :return:
     """
-    weight_url='https://aragorn-ranker.renci.org/1.1/weight_correctness'
-    score_url='https://aragorn-ranker.renci.org/1.1/score'
+    weight_url='https://aragorn-ranker.renci.org/1.2/weight_correctness'
+    score_url='https://aragorn-ranker.renci.org/1.2/score'
     message, status_code = post('weight', weight_url , message)
     return  post('score', score_url, message)
 
