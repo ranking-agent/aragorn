@@ -3,11 +3,9 @@ import logging
 import requests
 import json
 import uuid
-
-from datetime import datetime
 from requests.exceptions import ConnectionError
-
 from functools import partial
+from src.utils import create_log_entry
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +93,9 @@ def post(name, url, message, params=None) -> (dict, int):
         status_code = 500
         logger.error(e)
 
+    if 'logs' not in ret_val:
+        ret_val['logs'] = []
+
     # html error code returned
     if status_code != 200:
         error_string=f'{name} error: HTML error status code {status_code} returned.'
@@ -107,19 +108,6 @@ def post(name, url, message, params=None) -> (dict, int):
         logger.debug(f'Returned. {len(ret_val["message"]["results"])} results.')
 
     return ret_val, status_code
-
-
-def create_log_entry(msg: str, err_level, code=None) -> dict:
-    # load the data
-    ret_val = {
-        'timestamp': str(datetime.now()),
-        'level': err_level,
-        'message': msg,
-        'code': code
-    }
-
-    # return to the caller
-    return ret_val
 
 
 def strider(message,params) -> (dict, int):
