@@ -10,11 +10,11 @@ from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from src.service_aggregator import entry
+from src.util import create_log_entry
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.encoders import jsonable_encoder
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='2.0.3'
+    version='2.0.4'
 )
 
 # declare app access details
@@ -67,14 +67,14 @@ default_input: dict = {
             "nodes": {
                 "n0": {
                     "categories": [
-                        "biolink:PhenotypicFeature"
+                        "biolink: PhenotypicFeature"
                     ]
                 },
                 "n1": {
                     "ids": [
                         "HGNC:6284"
                     ],
-		    "categories":["biolink:Gene"]
+                "categories": ["biolink:Gene"]
                 }
             },
             "edges": {
@@ -92,7 +92,7 @@ default_request: Body = Body(default=default_input)
 
 
 from pydantic import BaseModel
-#Why isn't there a pydantic model for this?
+# Why isn't there a pydantic model for this?
 class AsyncReturn(BaseModel):
     description: str
 
@@ -149,17 +149,22 @@ def execute(request, answer_coalesce_type):
     try:
         # call to process the input
         query_result, status_code = entry(message, answer_coalesce_type)
+
         if status_code != 200:
             return query_result,status_code
+
         query_result['status'] = 'Success'
+
         #Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
         for edge_id,edge_data in query_result['message']['knowledge_graph']['edges'].items():
             if 'relation' in edge_data:
                 del edge_data['relation']
+
         #This is also bogus, not sure why it's not validating
         del query_result['workflow']
+
         # validate the result
-        final_msg = jsonable_encoder(PDResponse(**query_result))
+        final_msg = query_result
     except Exception as e:
         # put the error in the response
         status_code = 500
@@ -167,27 +172,6 @@ def execute(request, answer_coalesce_type):
         final_msg = query_result
 
     return final_msg, status_code
-
-
-def create_log_entry(msg: str, err_level, code=None) -> dict:
-    """
-    Creates a trapi log message
-
-    :param msg:
-    :param err_level:
-    :param code:
-    :return: dict of the data passed
-    """
-    # load the data
-    ret_val = {
-        'timestamp': str(datetime.now()),
-        'level': err_level,
-        'message': msg,
-        'code': code
-    }
-
-    # return to the caller
-    return ret_val
 
 
 def log_exception(method):
@@ -215,7 +199,7 @@ def construct_open_api_schema():
 
     open_api_schema = get_openapi(
         title='ARAGORN',
-        version='2.0.3',
+        version='2.0.4',
         routes=APP.routes
     )
 
