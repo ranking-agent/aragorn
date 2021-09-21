@@ -37,4 +37,6 @@ def test_lookup_only():
     assert (response.status_code == 200)
     results = response.json()['message']['results']
     assert len(results) > 0
-    assert results[0]['score'] is None
+
+    if 'score' in results[0] and results[0]['score'] is not None:
+        assert False
