@@ -5,7 +5,7 @@ import json
 import uuid
 from requests.exceptions import ConnectionError
 from functools import partial
-from src.utils import create_log_entry
+from src.util import create_log_entry
 
 logger = logging.getLogger(__name__)
 
