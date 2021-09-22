@@ -139,7 +139,7 @@ def execute(request, answer_coalesce_type):
     if type(request) is dict:
         message = request
     else:
-        message = request.dict()
+        message = request.dict(exclude_unset=True)
 
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
