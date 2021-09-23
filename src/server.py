@@ -23,6 +23,9 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 # declare the log directory
 log_dir = './logs'
 
+# set the app version
+APP_VERSION = '2.0.6'
+
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -39,7 +42,7 @@ logger = logging.getLogger(__name__)
 # declare the FastAPI details
 APP = FastAPI(
     title='ARAGORN',
-    version='2.0.4'
+    version=APP_VERSION
 )
 
 # declare app access details
@@ -199,7 +202,7 @@ def construct_open_api_schema():
 
     open_api_schema = get_openapi(
         title='ARAGORN',
-        version='2.0.4',
+        version=APP_VERSION,
         routes=APP.routes
     )
 
