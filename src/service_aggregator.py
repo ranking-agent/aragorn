@@ -159,6 +159,8 @@ def run_workflow(message, workflow) -> (dict, int):
     logger.debug(message)
     for operator_function, params in workflow:
         message, status_code = operator_function(message,params)
+        if len(message['message']['results']) == 0:
+            break
 
     # return the requested data
     return message, status_code
