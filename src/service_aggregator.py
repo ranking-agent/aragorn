@@ -6,9 +6,10 @@ import uuid
 from requests.exceptions import ConnectionError
 from functools import partial
 from src.util import create_log_entry
+import os
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
-
 
 def entry(message, coalesce_type='all') -> (dict, int):
     """
@@ -67,6 +68,12 @@ def post(name, url, message, params=None) -> (dict, int):
     """
     # init return values
     ret_val = message
+
+    debug = os.environ.get('DEBUG_TIMING', 'False')
+
+    if debug == 'True':
+        dt_start = datetime.now()
+
     if 'workflow' in message and message['workflow'] is None:
         del message['workflow']
 
@@ -84,7 +91,6 @@ def post(name, url, message, params=None) -> (dict, int):
         # regardless of the error code if there is a response return it
         if len(response.json()):
             ret_val = response.json()
-
 
     except ConnectionError as ce:
         status_code = 404
@@ -106,6 +112,10 @@ def post(name, url, message, params=None) -> (dict, int):
         ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
     else:
         logger.debug(f'Returned. {len(ret_val["message"]["results"])} results.')
+
+    if debug == 'True':
+        diff = datetime.now() - dt_start
+        ret_val['logs'].append(create_log_entry(f'End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
 
     return ret_val, status_code
 
