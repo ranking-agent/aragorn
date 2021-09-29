@@ -88,16 +88,23 @@ def post(name, url, message, params=None) -> (dict, int):
         # save the response code
         status_code = response.status_code
 
-        # regardless of the error code if there is a response return it
-        if len(response.json()):
-            ret_val = response.json()
+        logger.debug(f'{name} returnd with {status_code}')
+
+        if status_code == 200:
+            try:
+                # regardless of the error code if there is a response return it
+                if len(response.json()):
+                    ret_val = response.json()
+            except Exception as e:
+                status_code = 500
+                logger.error("ARAGORN Error translating json:",e)
 
     except ConnectionError as ce:
         status_code = 404
         logger.error(ce)
     except Exception as e:
         status_code = 500
-        logger.error(e)
+        logger.error(f"ARAGORN Error posting to {name}:",e)
 
     if 'logs' not in ret_val:
         ret_val['logs'] = []
