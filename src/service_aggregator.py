@@ -97,14 +97,14 @@ def post(name, url, message, params=None) -> (dict, int):
                     ret_val = response.json()
             except Exception as e:
                 status_code = 500
-                logger.exception("ARAGORN Error translating json from post to {name}")
+                logger.exception(f"ARAGORN Exception {e} translating json from post to {name}")
 
     except ConnectionError as ce:
         status_code = 404
-        logger.exception(f'ARAGORN ConnectionError posting to {name}')
+        logger.exception(f'ARAGORN ConnectionError {ce} posting to {name}')
     except Exception as e:
         status_code = 500
-        logger.exception(f"ARAGORN Exception posting to {name}")
+        logger.exception(f"ARAGORN Exception {e} posting to {name}")
 
     if 'logs' not in ret_val:
         ret_val['logs'] = []
