@@ -4,13 +4,15 @@ import logging.config
 import pkg_resources
 import yaml
 import requests
+import uuid
 
 from datetime import datetime
+from src.util import create_log_entry
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from src.service_aggregator import entry
-from src.util import create_log_entry
+
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -24,7 +26,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.9'
+APP_VERSION = '2.0.10'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -144,6 +146,9 @@ def execute(request, answer_coalesce_type):
     else:
         message = request.dict(exclude_unset=True)
 
+    # create a guid that will be used for tagging the log entries
+    guid = str(uuid.uuid4()).split('-')[-1]
+
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
 
@@ -151,7 +156,7 @@ def execute(request, answer_coalesce_type):
 
     try:
         # call to process the input
-        query_result, status_code = entry(message, answer_coalesce_type)
+        query_result, status_code = entry(message, guid, answer_coalesce_type)
 
         if status_code != 200:
             return query_result,status_code
@@ -171,7 +176,7 @@ def execute(request, answer_coalesce_type):
     except Exception as e:
         # put the error in the response
         status_code = 500
-        logger.exception(f'Exception {e} in execute()')
+        logger.exception(f'{guid}: Exception {e} in execute()')
         # query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
