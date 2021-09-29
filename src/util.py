@@ -5,7 +5,7 @@ def create_log_entry(msg: str, err_level, code=None) -> dict:
 
     # load the data
     ret_val = {
-        'timestamp': now.strftime("%m-%d-%Y %H:%M:%S"),
+        'time stamp': now.strftime("%m-%d-%Y %H:%M:%S"),
         'level': err_level,
         'message': msg,
         'code': code
