@@ -171,7 +171,8 @@ def execute(request, answer_coalesce_type):
     except Exception as e:
         # put the error in the response
         status_code = 500
-        query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
+        logger.exception(f'Exception in execute()')
+        # query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
     return final_msg, status_code
