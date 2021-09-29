@@ -88,7 +88,7 @@ def post(name, url, message, params=None) -> (dict, int):
         # save the response code
         status_code = response.status_code
 
-        logger.debug(f'{name} returned with {status_code}')
+        logger.info(f'{name} returned with {status_code}')
 
         if status_code == 200:
             try:
