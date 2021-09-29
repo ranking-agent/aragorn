@@ -88,7 +88,7 @@ def post(name, url, message, params=None) -> (dict, int):
         # save the response code
         status_code = response.status_code
 
-        logger.debug(f'{name} returnd with {status_code}')
+        logger.info(f'{name} returned with {status_code}')
 
         if status_code == 200:
             try:
@@ -97,14 +97,14 @@ def post(name, url, message, params=None) -> (dict, int):
                     ret_val = response.json()
             except Exception as e:
                 status_code = 500
-                logger.error("ARAGORN Error translating json:",e)
+                logger.exception(f"ARAGORN Exception {e} translating json from post to {name}")
 
     except ConnectionError as ce:
         status_code = 404
-        logger.error(ce)
+        logger.exception(f'ARAGORN ConnectionError {ce} posting to {name}')
     except Exception as e:
         status_code = 500
-        logger.error(f"ARAGORN Error posting to {name}:",e)
+        logger.exception(f"ARAGORN Exception {e} posting to {name}")
 
     if 'logs' not in ret_val:
         ret_val['logs'] = []
@@ -113,12 +113,13 @@ def post(name, url, message, params=None) -> (dict, int):
     if status_code != 200:
         error_string=f'{name} error: HTML error status code {status_code} returned.'
         logger.error(error_string)
-        ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
+        # ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
     # good html status code
     elif len(ret_val['message']['results']) == 0:
-        ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+        logger.error(f'{name} error: No results returned.')
+        #ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
     else:
-        logger.debug(f'Returned. {len(ret_val["message"]["results"])} results.')
+        logger.info(f'{name} returned {len(ret_val["message"]["results"])} results.')
 
     if debug == 'True':
         diff = datetime.now() - dt_start

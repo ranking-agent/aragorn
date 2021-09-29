@@ -24,7 +24,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.8'
+APP_VERSION = '2.0.9'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -171,7 +171,8 @@ def execute(request, answer_coalesce_type):
     except Exception as e:
         # put the error in the response
         status_code = 500
-        query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
+        logger.exception(f'Exception {e} in execute()')
+        # query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
     return final_msg, status_code
