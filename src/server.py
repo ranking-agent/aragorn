@@ -4,12 +4,14 @@ import logging.config
 import pkg_resources
 import yaml
 import requests
+import socket
+import uuid
 
 from datetime import datetime
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
-from src.service_aggregator import entry
+from src.service_aggregator import entry, queues
 from src.util import create_log_entry
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
@@ -44,6 +46,7 @@ APP = FastAPI(
     title='ARAGORN',
     version=APP_VERSION
 )
+
 
 # declare app access details
 APP.add_middleware(
@@ -131,13 +134,13 @@ async def query_handler(request: PDQuery = default_request, answer_coalesce_type
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
-    final_msg, status_code = await asyncexecute(request,answer_coalesce_type)
+    final_msg, status_code = await execute(request,answer_coalesce_type)
     return JSONResponse(content=final_msg, status_code=status_code)
 
-async def asyncexecute(request,answer_coalesce_type):
-    return execute(request,answer_coalesce_type)
+#async def asyncexecute(request,answer_coalesce_type):
+#    return execute(request,answer_coalesce_type)
 
-def execute(request, answer_coalesce_type):
+async def execute(request, answer_coalesce_type):
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -151,7 +154,7 @@ def execute(request, answer_coalesce_type):
 
     try:
         # call to process the input
-        query_result, status_code = entry(message, answer_coalesce_type)
+        query_result, status_code = await entry(message, answer_coalesce_type)
 
         if status_code != 200:
             return query_result,status_code
@@ -176,6 +179,20 @@ def execute(request, answer_coalesce_type):
         final_msg = query_result
 
     return final_msg, status_code
+
+
+@APP.post("/callback/{pid}")
+async def receive_async_response(response: PDResponse, pid: str) -> int:
+    """For receiving callbacks for async calls made from ARAGORN"""
+    #pid indicates the query that we sent, put the response somewhere that the caller can find it
+    if pid not in queues:
+        logger.error(f'{pid} not found in queues')
+        logger.debug(f'{len(queues)} valid pids are:')
+        for x in queues:
+            logger.debug(x)
+        return 404
+    await queues[pid].put(response)
+    return 200
 
 
 def log_exception(method):
