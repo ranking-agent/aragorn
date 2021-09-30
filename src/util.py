@@ -1,11 +1,9 @@
-from datetime import datetime
+import datetime
 
 def create_log_entry(msg: str, err_level, code=None) -> dict:
-    now = datetime.now()
-
     # load the data
     ret_val = {
-        'time stamp': now.strftime("%m-%d-%Y %H:%M:%S"),
+        'timestamp': datetime.datetime.now().isoformat(),
         'level': err_level,
         'message': msg,
         'code': code
