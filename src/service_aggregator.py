@@ -112,11 +112,11 @@ def post(name, url, message, guid, params=None) -> (dict, int):
     if status_code != 200:
         error_string=f'{guid}: {name} HTML error status code {status_code} returned.'
         logger.error(error_string)
-        # ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
+        ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
     # good html status code
     elif len(ret_val['message']['results']) == 0:
         logger.error(f'{guid}: {name} No results returned.')
-        #ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+        ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
     else:
         logger.info(f'{guid}: {name} returned {len(ret_val["message"]["results"])} results.')
 
