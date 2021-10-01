@@ -177,7 +177,10 @@ def run_workflow(message, workflow, guid) -> (dict, int):
 
     for operator_function, params in workflow:
         message, status_code = operator_function(message, params, guid)
-        if len(message['message']['results']) == 0:
+
+        if status_code != 200 or 'results' not in message['message']:
+            break
+        elif len(message['message']['results']) == 0:
             break
 
     # return the requested data
