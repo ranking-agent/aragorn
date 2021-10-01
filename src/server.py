@@ -117,6 +117,8 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
         if len(callback_url) == 0:
             raise ValueError('callback URL empty')
 
+        logger.info(f'{guid}: async message call. callback URL is: {callback_url}')
+
     except KeyError as e:
         logger.error(f'{guid}: async message call. callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
