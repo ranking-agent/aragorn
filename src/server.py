@@ -11,6 +11,7 @@ from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from src.service_aggregator import entry
+from pydantic import BaseModel
 
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
@@ -94,8 +95,6 @@ default_input: dict = {
 # define the default request body
 default_request: Body = Body(default=default_input)
 
-
-from pydantic import BaseModel
 # Why isn't there a pydantic model for this?
 class AsyncReturn(BaseModel):
     description: str
@@ -112,9 +111,18 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
             message = request
         else:
             message = request.dict()
+
         callback_url = message['callback']
+
+        if len(callback_url) == 0:
+            raise ValueError('callback URL empty')
+
     except KeyError as e:
+        logger.error(f'{guid}: async message call. callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
+    except ValueError as e:
+        logger.error(f'{guid}: async message call. callback URL was empty')
+        return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
 
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid)
 
@@ -130,7 +138,8 @@ def execute_with_callback(request, answer_coalesece_type, callback_url, guid):
 
 #This is pulled out to make it easy to mock without interfering with other posts.
 def callback(callback_url, final_msg, guid):
-    logger.info(f'{guid}: callback - ')
+
+    logger.info(f'{guid}: handling callback({callback_url})')
 
     requests.post(callback_url,json=final_msg)
 
