@@ -12,11 +12,11 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-#A place to transmit results from async queries
-#it's a dict from ids to async result queues
+# A place to transmit results from async queries
+# it's a dict from ids to async result queues
 queues = {}
 
-async def entry(message, coalesce_type='all') -> (dict, int):
+async def entry(message, guid, coalesce_type='all') -> (dict, int):
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 
@@ -30,21 +30,21 @@ async def entry(message, coalesce_type='all') -> (dict, int):
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
     known_operations = {'lookup': strider,
-                        'enrich_results': partial(answercoalesce,coalesce_type=coalesce_type),
+                        'enrich_results': partial(answercoalesce, coalesce_type=coalesce_type),
                         'overlay_connect_knodes': omnicorp,
                         'score': score}
 
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
     if 'workflow' in message and not (message['workflow'] is None):
         workflow_def = message['workflow']
-        #The underlying tools (strider) don't want the workflow element and will 400
+        # The underlying tools (strider) don't want the workflow element and will 400
         del message['workflow']
     else:
-        workflow_def = [{'id':'lookup'},{'id':'enrich_results'},{'id':'overlay_connect_knodes'},{'id':'score'}]
+        workflow_def = [{'id': 'lookup'}, {'id': 'enrich_results'}, {'id': 'overlay_connect_knodes'}, {'id': 'score'}]
 
-    #convert the workflow def into function calls.   Raise a 422 if we find one we don't actually know how to do.
+    # convert the workflow def into function calls.   Raise a 422 if we find one we don't actually know how to do.
     # We told the world what we can do!
-    #Workflow will be a list of the functions, and the parameters if there are any
+    # Workflow will be a list of the functions, and the parameters if there are any
     workflow = []
     for op in workflow_def:
         try:
@@ -52,15 +52,16 @@ async def entry(message, coalesce_type='all') -> (dict, int):
         except KeyError:
             return f"Unknown Operation: {op}", 422
 
-    final_answer, status_code = await run_workflow(message, workflow)
+    final_answer, status_code = await run_workflow(message, workflow, guid)
 
-    #return the workflow def so that the caller can see what we did
+    # return the workflow def so that the caller can see what we did
     final_answer['workflow'] = workflow_def
 
     # return the answer
     return final_answer, status_code
 
 
+def post(name, url, message, guid, params=None) -> (dict, int):
 #This should perhaps come from some environment variable/helm chart/whatever
 PORT=4868
 def get_ip():
@@ -104,13 +105,14 @@ async def postit(host_url, query, params=None):
     del queues[pid]
     return message
 
-async def post(name, url, message, asyncquery=False, params=None) -> (dict, int):
+async def post(name, url, message, asyncquery=False, guid, params=None) -> (dict, int):
     """
     launches a post request, returns the response.
 
     :param name: name of service
     :param url: the url of the service
     :param message: the message to post to the service
+    :param guid: run identifier
     :param params: the parameters passed to the service
     :return: dict, status code
     """
@@ -125,7 +127,7 @@ async def post(name, url, message, asyncquery=False, params=None) -> (dict, int)
     if 'workflow' in message and message['workflow'] is None:
         del message['workflow']
 
-    logger.debug(f"Calling {url}")
+    logger.debug(f"{guid}: Calling {url}")
 
     try:
         #I should probably look at the url to decide rather than passing in a boolean
@@ -140,7 +142,7 @@ async def post(name, url, message, asyncquery=False, params=None) -> (dict, int)
         # save the response code
         status_code = response.status_code
 
-        logger.info(f'{name} returned with {status_code}')
+        logger.info(f'{guid}: {name} returned with {status_code}')
 
         if status_code == 200:
             try:
@@ -149,48 +151,48 @@ async def post(name, url, message, asyncquery=False, params=None) -> (dict, int)
                     ret_val = response.json()
             except Exception as e:
                 status_code = 500
-                logger.exception(f"ARAGORN Exception {e} translating json from post to {name}")
+                logger.exception(f"{guid}: ARAGORN Exception {e} translating json from post to {name}")
 
     except ConnectionError as ce:
         status_code = 404
-        logger.exception(f'ARAGORN ConnectionError {ce} posting to {name}')
+        logger.exception(f'{guid}: ARAGORN ConnectionError {ce} posting to {name}')
     except Exception as e:
         status_code = 500
-        logger.exception(f"ARAGORN Exception {e} posting to {name}")
+        logger.exception(f"{guid}: ARAGORN Exception {e} posting to {name}")
 
     if 'logs' not in ret_val:
         ret_val['logs'] = []
 
     # html error code returned
     if status_code != 200:
-        error_string=f'{name} error: HTML error status code {status_code} returned.'
+        error_string=f'{guid}: {name} HTML error status code {status_code} returned.'
         logger.error(error_string)
-        # ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
+        ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
     # good html status code
     elif len(ret_val['message']['results']) == 0:
-        logger.error(f'{name} error: No results returned.')
-        #ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+        logger.error(f'{guid}: {name} No results returned.')
+        ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
     else:
-        logger.info(f'{name} returned {len(ret_val["message"]["results"])} results.')
+        logger.info(f'{guid}: {name} returned {len(ret_val["message"]["results"])} results.')
 
     if debug == 'True':
         diff = datetime.now() - dt_start
-        ret_val['logs'].append(create_log_entry(f'End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
+        ret_val['logs'].append(create_log_entry(f'{guid}: End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
 
     return ret_val, status_code
 
 
-async def strider(message,params) -> (dict, int):
+def strider(message, params, guid) -> (dict, int):
     """
     Calls strider
     :param message:
     :return:
     """
-    url = 'https://strider.renci.org/1.2/asyncquery'
-    response = await post('strider', url, message, asyncquery=True)
+    url = 'https://strider.renci.org/1.2/query'
+    response = post('strider', url, message, guid)
     return response
 
-async def answercoalesce(message,params,coalesce_type='all') -> (dict,int):
+def answercoalesce(message, params, guid, coalesce_type='all') -> (dict,int):
     """
     Calls answercoalesce
     :param message:
@@ -198,9 +200,9 @@ async def answercoalesce(message,params,coalesce_type='all') -> (dict,int):
     :return:
     """
     url = f'https://answercoalesce.renci.org/1.2/coalesce/{coalesce_type}'
-    return await post('answer_coalesce',url, message)
+    return post('answer_coalesce', url, message, guid)
 
-async def omnicorp(message,params) -> (dict,int):
+def omnicorp(message, params, guid) -> (dict,int):
     """
     Calls omnicorp
     :param message:
@@ -208,9 +210,9 @@ async def omnicorp(message,params) -> (dict,int):
     :return:
     """
     url='https://aragorn-ranker.renci.org/1.2/omnicorp_overlay'
-    return await post('omnicorp',url, message)
+    return post('omnicorp', url, message, guid)
 
-async def score(message,params) -> (dict,int):
+def score(message, params, guid) -> (dict,int):
     """
     Calls weight correctness followed by scoring
     :param message:
@@ -218,18 +220,22 @@ async def score(message,params) -> (dict,int):
     """
     weight_url='https://aragorn-ranker.renci.org/1.2/weight_correctness'
     score_url='https://aragorn-ranker.renci.org/1.2/score'
-    message, status_code = await post('weight', weight_url , message)
-    return  await post('score', score_url, message)
+    message, status_code = post('weight', weight_url, message, guid)
+    return  post('score', score_url, message, guid)
 
-async def run_workflow(message, workflow) -> (dict, int):
+def run_workflow(message, workflow, guid) -> (dict, int):
     # create a guid
     # do we still want this?  What's the purpose?
     #uid: str = str(uuid.uuid4())
 
-    logger.debug(message)
+    logger.debug(f'{guid}: {message}')
+
     for operator_function, params in workflow:
-        message, status_code = await operator_function(message,params)
-        if len(message['message'].get('results',[])) == 0:
+        message, status_code = await operator_function(message, params, guid)
+
+        if status_code != 200 or 'results' not in message['message']:
+            break
+        elif len(message['message']['results']) == 0:
             break
 
     # return the requested data

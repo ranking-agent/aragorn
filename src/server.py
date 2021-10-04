@@ -4,15 +4,18 @@ import logging.config
 import pkg_resources
 import yaml
 import requests
-import socket
 import uuid
+import socket
 
-from datetime import datetime
+from src.util import create_log_entry
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
+from src.service_aggregator import entry
+from pydantic import BaseModel
 from src.service_aggregator import entry, queues
 from src.util import create_log_entry
+
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -26,7 +29,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.9'
+APP_VERSION = '2.0.12'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -96,8 +99,6 @@ default_input: dict = {
 # define the default request body
 default_request: Body = Body(default=default_input)
 
-
-from pydantic import BaseModel
 # Why isn't there a pydantic model for this?
 class AsyncReturn(BaseModel):
     description: str
@@ -105,26 +106,47 @@ class AsyncReturn(BaseModel):
 #async entry point
 @APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
 async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
+    # create a guid that will be used for tagging the log entries
+    guid = str(uuid.uuid4()).split('-')[-1]
+
     try:
         # convert the incoming message into a dict
         if isinstance(request, dict):
             message = request
         else:
             message = request.dict()
+
         callback_url = message['callback']
+
+        if len(callback_url) == 0:
+            raise ValueError('callback URL empty')
+
+        logger.info(f'{guid}: async message call. callback URL is: {callback_url}')
+
     except KeyError as e:
+        logger.error(f'{guid}: async message call. callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
-    background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url)
+    except ValueError as e:
+        logger.error(f'{guid}: async message call. callback URL was empty')
+        return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
+
+    background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid)
+
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
-def execute_with_callback(request,answer_coalesece_type,callback_url):
+def execute_with_callback(request, answer_coalesece_type, callback_url, guid):
     #Go off and run the query, and when done, post it back to the callback
     del request['callback']
-    final_msg, status_code = execute(request,answer_coalesece_type)
-    callback(callback_url,final_msg)
+
+    final_msg, status_code = execute(request, answer_coalesece_type, guid)
+
+    callback(callback_url, final_msg, guid)
 
 #This is pulled out to make it easy to mock without interfering with other posts.
-def callback(callback_url,final_msg):
+def callback(callback_url, final_msg, guid):
+
+    logger.info(f'{guid}: handling callback({callback_url})')
+
     requests.post(callback_url,json=final_msg)
 
 # synchronous entry point
@@ -134,13 +156,17 @@ async def query_handler(request: PDQuery = default_request, answer_coalesce_type
         The services are called in the following order, each passing their output to the next service as an input:
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
-    final_msg, status_code = await execute(request,answer_coalesce_type)
+
+    # create a guid that will be used for tagging the log entries
+    guid = str(uuid.uuid4()).split('-')[-1]
+
+    final_msg, status_code = await asyncexecute(request,answer_coalesce_type, guid)
     return JSONResponse(content=final_msg, status_code=status_code)
 
-#async def asyncexecute(request,answer_coalesce_type):
-#    return execute(request,answer_coalesce_type)
+async def asyncexecute(request,answer_coalesce_type, guid):
+    return execute(request,answer_coalesce_type, guid)
 
-async def execute(request, answer_coalesce_type):
+def execute(request, answer_coalesce_type, guid):
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -154,7 +180,7 @@ async def execute(request, answer_coalesce_type):
 
     try:
         # call to process the input
-        query_result, status_code = await entry(message, answer_coalesce_type)
+        query_result, status_code = await entry(message, guid, answer_coalesce_type)
 
         if status_code != 200:
             return query_result,status_code
@@ -174,8 +200,8 @@ async def execute(request, answer_coalesce_type):
     except Exception as e:
         # put the error in the response
         status_code = 500
-        logger.exception(f'Exception {e} in execute()')
-        # query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
+        logger.exception(f'{guid}: Exception {e} in execute()')
+        query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
         final_msg = query_result
 
     return final_msg, status_code
