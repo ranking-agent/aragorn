@@ -5,17 +5,13 @@ import pkg_resources
 import yaml
 import requests
 import uuid
-import socket
 
-from src.util import create_log_entry
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
-from src.service_aggregator import entry
 from pydantic import BaseModel
-from src.service_aggregator import entry, queues
+from src.service_aggregator import queues, entry
 from src.util import create_log_entry
-
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -73,23 +69,28 @@ class MethodName(str, Enum):
 default_input: dict = {
     "message": {
         "query_graph": {
+            "edges": {
+                "e01": {
+                    "object": "n0",
+                    "subject": "n1",
+                    "predicates": [
+                        "biolink:entity_negatively_regulates_entity"
+                    ]
+                }
+            },
             "nodes": {
                 "n0": {
+                    "ids": [
+                        "NCBIGene:23221"
+                    ],
                     "categories": [
-                        "biolink: PhenotypicFeature"
+                        "biolink:Gene"
                     ]
                 },
                 "n1": {
-                    "ids": [
-                        "HGNC:6284"
-                    ],
-                "categories": ["biolink:Gene"]
-                }
-            },
-            "edges": {
-                "e0": {
-                    "subject": "n0",
-                    "object": "n1"
+                    "categories": [
+                        "biolink:Gene"
+                    ]
                 }
             }
         }
@@ -99,15 +100,17 @@ default_input: dict = {
 # define the default request body
 default_request: Body = Body(default=default_input)
 
+
 # Why isn't there a pydantic model for this?
 class AsyncReturn(BaseModel):
     description: str
 
-#async entry point
+
+# async entry point
 @APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
 async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid.uuid4()).split('-')[-1]
+    guid = str(uuid.uuid1())
 
     try:
         # convert the incoming message into a dict
@@ -124,30 +127,48 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
         logger.info(f'{guid}: async message call. callback URL is: {callback_url}')
 
     except KeyError as e:
-        logger.error(f'{guid}: async message call. callback URL was not specified')
+        logger.error(f'{guid}: async message call Error {e}. callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
     except ValueError as e:
-        logger.error(f'{guid}: async message call. callback URL was empty')
+        logger.error(f'{guid}: async message call. Error {e} callback URL was empty')
         return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
 
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid)
 
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
-def execute_with_callback(request, answer_coalesece_type, callback_url, guid):
-    #Go off and run the query, and when done, post it back to the callback
+
+def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
+    """
+
+    :param request:
+    :param answer_coalesce_type:
+    :param callback_url:
+    :param guid:
+    :return:
+    """
+    # Go off and run the query, and when done, post it back to the callback
     del request['callback']
 
-    final_msg, status_code = execute(request, answer_coalesece_type, guid)
+    final_msg, status_code = asyncexecute(request, answer_coalesce_type, guid)
 
     callback(callback_url, final_msg, guid)
 
-#This is pulled out to make it easy to mock without interfering with other posts.
+
 def callback(callback_url, final_msg, guid):
+    """
+    This is pulled out to make it easy to mock without interfering with other posts.
+
+    :param callback_url:
+    :param final_msg:
+    :param guid:
+    :return:
+    """
 
     logger.info(f'{guid}: handling callback({callback_url})')
 
-    requests.post(callback_url,json=final_msg)
+    requests.post(callback_url, json=final_msg)
+
 
 # synchronous entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
@@ -160,13 +181,12 @@ async def query_handler(request: PDQuery = default_request, answer_coalesce_type
     # create a guid that will be used for tagging the log entries
     guid = str(uuid.uuid4()).split('-')[-1]
 
-    final_msg, status_code = await asyncexecute(request,answer_coalesce_type, guid)
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
+
     return JSONResponse(content=final_msg, status_code=status_code)
 
-async def asyncexecute(request,answer_coalesce_type, guid):
-    return execute(request,answer_coalesce_type, guid)
 
-def execute(request, answer_coalesce_type, guid):
+async def asyncexecute(request, answer_coalesce_type, guid):
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -183,16 +203,16 @@ def execute(request, answer_coalesce_type, guid):
         query_result, status_code = await entry(message, guid, answer_coalesce_type)
 
         if status_code != 200:
-            return query_result,status_code
+            return query_result, status_code
 
         query_result['status'] = 'Success'
 
-        #Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
-        for edge_id,edge_data in query_result['message']['knowledge_graph']['edges'].items():
+        # Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
+        for edge_id, edge_data in query_result['message']['knowledge_graph']['edges'].items():
             if 'relation' in edge_data:
                 del edge_data['relation']
 
-        #This is also bogus, not sure why it's not validating
+        # This is also bogus, not sure why it's not validating
         del query_result['workflow']
 
         # validate the result
@@ -201,7 +221,9 @@ def execute(request, answer_coalesce_type, guid):
         # put the error in the response
         status_code = 500
         logger.exception(f'{guid}: Exception {e} in execute()')
+
         query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
+
         final_msg = query_result
 
     return final_msg, status_code
@@ -209,15 +231,21 @@ def execute(request, answer_coalesce_type, guid):
 
 @APP.post("/callback/{pid}")
 async def receive_async_response(response: PDResponse, pid: str) -> int:
-    """For receiving callbacks for async calls made from ARAGORN"""
-    #pid indicates the query that we sent, put the response somewhere that the caller can find it
+    """
+    For receiving callbacks for async calls made from ARAGORN
+    """
+    # pid indicates the query that we sent, put the response somewhere that the caller can find it
     if pid not in queues:
         logger.error(f'{pid} not found in queues')
         logger.debug(f'{len(queues)} valid pids are:')
+
         for x in queues:
             logger.debug(x)
+
         return 404
+
     await queues[pid].put(response)
+
     return 200
 
 
@@ -232,6 +260,7 @@ def log_exception(method):
         """Log exception encountered in method, then pass."""
         try:
             return await method(*args, **kwargs)
+
         except Exception as err:
             logger.exception(err)
             raise Exception(err)
