@@ -205,23 +205,25 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
 
     # html error code returned
     if status_code != 200:
-        error_string = f'{guid}: {name} HTML error status code {status_code} returned.'
+        msg = f'{name} HTML error status code {status_code} returned.'
 
-        logger.error(error_string)
+        logger.error(f'{guid}: {msg}')
 
-        ret_val['logs'].append(create_log_entry(error_string, "ERROR"))
+        ret_val['logs'].append(create_log_entry(msg, "ERROR"))
     # good html status code
     elif len(ret_val['message']['results']) == 0:
-        logger.error(f'{guid}: {name} No results returned.')
+        msg = f'{name} No results returned.'
 
-        ret_val['logs'].append(create_log_entry(f'warning: empty returned', "WARNING"))
+        logger.warning(f'{guid}: {msg}')
+
+        ret_val['logs'].append(create_log_entry(msg, "WARNING"))
     else:
         logger.info(f'{guid}: {name} returned {len(ret_val["message"]["results"])} results.')
 
     if debug == 'True':
         diff = datetime.now() - dt_start
 
-        ret_val['logs'].append(create_log_entry(f'{guid}: End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
+        ret_val['logs'].append(create_log_entry(f'End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
 
     return ret_val, status_code
 
