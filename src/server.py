@@ -6,7 +6,7 @@ import yaml
 import httpx
 import requests
 
-from uuid import uuid1
+from uuid import uuid4
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
@@ -117,7 +117,7 @@ async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyn
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid1())
+    guid = str(uuid4()).split('-')[-1]
 
     try:
         # convert the incoming message into a dict
@@ -158,7 +158,7 @@ async def sync_query_handler(request: PDQuery = default_request, answer_coalesce
     """
 
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid1())
+    guid = str(uuid4()).split('-')[-1]
 
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
@@ -249,6 +249,9 @@ async def asyncexecute(request, answer_coalesce_type, guid):
 
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
+
+    # add in a log entry for the pid
+    message['logs'].append(create_log_entry(f'PID: {guid}', "INFO"))
 
     query_result = message
 
