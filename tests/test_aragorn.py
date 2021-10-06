@@ -22,6 +22,7 @@ def test_async(mock_callback):
         query = json.load(tf)
 
     query['callback']='http://mock.mock/mock'
+    query['test'] = ''
 
     # make a good request
     response = client.post('/asyncquery', json=query)
@@ -32,7 +33,7 @@ def test_async(mock_callback):
     assert 'description' in initial_response
     assert isinstance(initial_response['description'],str)
 
-    #Now, it's going to be some amount of time until this comes back, but it should be less than 1 minutes?
+    # Now, it's going to be some amount of time until this comes back, but it should be less than 1 minutes?
     start = dt.now()
     timelimit = timedelta(minutes=1)
     now = dt.now()
