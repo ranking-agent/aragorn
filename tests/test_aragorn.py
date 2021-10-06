@@ -51,6 +51,8 @@ def test_workflow_A1():
     with open(test_filename, 'r') as tf:
         query = json.load(tf)
 
+    query['test'] = ''
+
     # make a good request
     response = client.post('/query', json=query)
 
