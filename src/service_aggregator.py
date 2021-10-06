@@ -44,7 +44,8 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
     else:
         workflow_def = [{'id': 'lookup'}, {'id': 'enrich_results'}, {'id': 'overlay_connect_knodes'}, {'id': 'score'}]
 
-    # convert the workflow def into function calls.   Raise a 422 if we find one we don't actually know how to do.
+    # convert the workflow def into function calls.
+    # Raise a 422 if we find one we don't actually know how to do.
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
     workflow = []
@@ -66,7 +67,9 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
 
 async def post_async(host_url, query, guid, params=None):
     """
-    Post an asynchronous message
+    Post an asynchronous message.
+
+    Note: this method can return either a "request.models.Response " or a "reasoner-pydantic.message.response"
 
     :param host_url:
     :param query:
@@ -96,21 +99,23 @@ async def post_async(host_url, query, guid, params=None):
     else:
         post_response = requests.post(host_url, json=query, params=params)
 
-    # we could get an error posting the query, e.g. if the host_url is down
+    # we could get an error posting the query. if there is
+    # this will return a <requests.models.Response> type
     if post_response.status_code != 200:
         return post_response
 
     try:
-        # wait for the callback
+        # wait for the callback. if this was successful it will
+        # return a 'reasoner-pydantic' response type
         response = await queues[guid].get()
-
-        # if we got this far make it a good callback
-        response.status_code = 200
 
     except Exception as e:
         error_string = f'Queue error exception {e} for callback {query["callback"]}'
         logger.exception(error_string)
         raise HTTPException(500, error_string)
+
+    # if we got this far make it a good callback
+    response.status_code = 200
 
     # remove the item from the queue
     del queues[guid]
@@ -134,36 +139,35 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
     # init return values
     ret_val = message
 
+    # are we goign to include the timings
     debug = os.environ.get('DEBUG_TIMING', 'False')
 
+    # if we are capturing the timings
     if debug == 'True':
         dt_start = datetime.now()
     else:
         dt_start = None
 
+    # remove the workflow element
     if 'workflow' in message and message['workflow'] is None:
         del message['workflow']
 
     logger.debug(f"{guid}: Calling {url}")
 
     try:
-        # I should probably look at the url to decide rather than passing in a boolean
+        # launch the post depending on the query type and get the response
         if asyncquery:
-            # this can be either a normal Response object (that is an error) or the trapi message
+            # note there are two possible "Response" types that post_async() can return.
+            # if it is of type "request.models.Response" it is most likely an HTML error.
+            # else, it is a "reasoner-pydantic.message.Response" that contains a trapi message.
             response = await post_async(url, message, guid, params)
 
             # save the response code
             status_code = response.status_code
 
-            response = response.dict()
-
-            # remove the callback element
-            if 'callback' in response:
-                del response['callback']
-
-            # remove the status code element
-            if 'status_code' in response:
-                del response['status_code']
+            # if this is a trapi message get the dict of it. it doesnt have a .json() method
+            if str(response.__class__).find("reasoner") > -1:
+                response = response.dict()
         else:
             if params is None:
                 response = requests.post(url, json=message)
@@ -173,14 +177,14 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
             # save the response code
             status_code = response.status_code
 
-        logger.info(f'{guid}: {name} returned with {status_code}')
+        logger.debug(f'{guid}: {name} returned with {status_code}')
 
         if status_code == 200:
             try:
                 # this could be a dict if it was an async call
                 if isinstance(response, dict) and len(response) > 0:
                     ret_val = response
-                # if there is a response return it
+                # if there is a response return it as a dict
                 elif len(response.json()):
                     ret_val = response.json()
 
@@ -231,9 +235,17 @@ async def strider(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = 'https://strider.renci.org/1.2/asyncquery'
+    url = 'https://strider.renci.org/1.2/'
 
-    response = await post('strider', url, message, guid, asyncquery=True)
+    # select the type of query post. "test" will come from the tester
+    if 'test' in message:
+        url += 'query'
+        asyncquery = False
+    else:
+        url += 'asyncquery'
+        asyncquery = True
+
+    response = await post('strider', url, message, guid, asyncquery=asyncquery)
 
     return response
 
