@@ -139,7 +139,7 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
     # init return values
     ret_val = message
 
-    # are we goign to include the timings
+    # are we going to include the timings
     debug = os.environ.get('DEBUG_TIMING', 'False')
 
     # if we are capturing the timings
