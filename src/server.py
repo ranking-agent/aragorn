@@ -3,9 +3,10 @@ import os
 import logging.config
 import pkg_resources
 import yaml
+import httpx
 import requests
-import uuid
 
+from uuid import uuid1
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
@@ -108,9 +109,15 @@ class AsyncReturn(BaseModel):
 
 # async entry point
 @APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
-async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
+async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyncQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+    """
+        Performs an asynchronous query operation which compiles data from numerous ARAGORN ranking agent services.
+        The services are called in the following order, each passing their output to the next service as an input:
+
+        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
+    """
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid.uuid1())
+    guid = str(uuid1())
 
     try:
         # convert the incoming message into a dict
@@ -121,10 +128,13 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
 
         callback_url = message['callback']
 
+        # remove this as it will be used again when calling sub-processes (like strider)
+        del message['callback']
+
         if len(callback_url) == 0:
             raise ValueError('callback URL empty')
 
-        logger.info(f'{guid}: async message call. callback URL is: {callback_url}')
+        logger.info(f'{guid}: async message call. ARAGORN callback URL is: {callback_url}')
 
     except KeyError as e:
         logger.error(f'{guid}: async message call Error {e}. callback URL was not specified')
@@ -138,8 +148,63 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
 
-def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
+# synchronous entry point
+@APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
+async def sync_query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+    """ Performs a synchronous query operation which compiles data from numerous ARAGORN ranking agent services.
+        The services are called in the following order, each passing their output to the next service as an input:
+
+        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
+
+    # create a guid that will be used for tagging the log entries
+    guid = str(uuid1())
+
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
+
+    return JSONResponse(content=final_msg, status_code=status_code)
+
+
+@APP.post("/callback/{pid}", tags=["ARAGORN"])
+async def ranker_service_callback(response: PDResponse,  pid: str) -> int:
+    """
+    Receives asynchronous message requests made by ARAGORN.
+    """
+    # pid indicates the query that we sent, put the response somewhere that the caller can find it
+    if pid not in queues:
+        logger.error(f'{pid} not found in queues')
+        logger.debug(f'{len(queues)} valid pids are:')
+
+        for x in queues:
+            logger.debug(x)
+
+        return 404
+
+    await queues[pid].put(response)
+
+    return 200
+
+
+@APP.post("/aragorn_callback", tags=["ARAGORN"])
+async def receive_aragorn_async_response(response: PDResponse) -> int:
+    """
+    A sink for receiving the aragorn callback results.
+    """
+    logger.info('ARAGORN callback received.')
+
+    # get the response in a dict
+    result = response.json()
+
+    # save it to the log
+    logger.debug(result)
+
+    # return the response
+    return 200
+
+
+async def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
+    """
+    Executes an asynchronous ARAGORN rewuset
 
     :param request:
     :param answer_coalesce_type:
@@ -147,46 +212,35 @@ def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
     :param guid:
     :return:
     """
-    # Go off and run the query, and when done, post it back to the callback
-    del request['callback']
+    # capture if this is a test request
+    if 'test' in request:
+        test_mode = True
+    else:
+        test_mode = False
 
-    final_msg, status_code = asyncexecute(request, answer_coalesce_type, guid)
-
-    callback(callback_url, final_msg, guid)
-
-
-def callback(callback_url, final_msg, guid):
-    """
-    This is pulled out to make it easy to mock without interfering with other posts.
-
-    :param callback_url:
-    :param final_msg:
-    :param guid:
-    :return:
-    """
+    # make the asynchronous request
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
     logger.info(f'{guid}: handling callback({callback_url})')
 
-    requests.post(callback_url, json=final_msg)
-
-
-# synchronous entry point
-@APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
-async def query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
-    """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
-        The services are called in the following order, each passing their output to the next service as an input:
-
-        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
-
-    # create a guid that will be used for tagging the log entries
-    guid = str(uuid.uuid4()).split('-')[-1]
-
-    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
-
-    return JSONResponse(content=final_msg, status_code=status_code)
+    # for some reason the "mock" test endpoint doesnt like the async client post
+    if test_mode:
+        callback(callback_url, final_msg, guid)
+    else:
+        # send back the result to the specified aragorn callback end point
+        async with httpx.AsyncClient() as client:
+            await client.post(callback_url, json=final_msg)
 
 
 async def asyncexecute(request, answer_coalesce_type, guid):
+    """
+    Launches an asynchronous ARAGORN run
+
+    :param request:
+    :param answer_coalesce_type:
+    :param guid:
+    :return:
+    """
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -226,27 +280,24 @@ async def asyncexecute(request, answer_coalesce_type, guid):
 
         final_msg = query_result
 
+    final_msg['pid'] = guid
+
     return final_msg, status_code
 
 
-@APP.post("/callback/{pid}")
-async def receive_async_response(response: PDResponse, pid: str) -> int:
+def callback(callback_url, final_msg, guid):
     """
-    For receiving callbacks for async calls made from ARAGORN
+    This is pulled out for the tester.
+
+    :param callback_url:
+    :param final_msg:
+    :param guid:
+    :return:
     """
-    # pid indicates the query that we sent, put the response somewhere that the caller can find it
-    if pid not in queues:
-        logger.error(f'{pid} not found in queues')
-        logger.debug(f'{len(queues)} valid pids are:')
 
-        for x in queues:
-            logger.debug(x)
+    logger.info(f'{guid}: handling callback({callback_url})')
 
-        return 404
-
-    await queues[pid].put(response)
-
-    return 200
+    requests.post(callback_url, json=final_msg)
 
 
 def log_exception(method):
@@ -269,6 +320,11 @@ def log_exception(method):
 
 
 def construct_open_api_schema():
+    """
+    This creates the Open api schema object
+
+    :return:
+    """
 
     if APP.openapi_schema:
         return APP.openapi_schema
