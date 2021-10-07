@@ -87,7 +87,7 @@ async def post_async(host_url, query, guid, params=None):
 
     # set the debug level
     # TODO: make sure other aragorn friends do this too
-    query['log_level'] = 'DEBUG'
+    # query['log_level'] = 'DEBUG'
 
     # make sure there is a place for the trapi log messages
     if 'logs' not in query:
