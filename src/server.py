@@ -173,10 +173,10 @@ async def subservice_callback(response: PDResponse,  pid: str) -> int:
     # pid indicates the query that we sent, put the response somewhere that the caller can find it
     if pid not in queues:
         logger.error(f'{pid} not found in queues')
-        logger.debug(f'{len(queues)} valid pids are:')
+        logger.info(f'{len(queues)} valid pids are:')
 
         for x in queues:
-            logger.debug(x)
+            logger.info(x)
 
         return 404
 
