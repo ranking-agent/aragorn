@@ -80,10 +80,10 @@ async def post_async(host_url, query, guid, params=None):
     queues[guid] = asyncio.Queue()
 
     # get the server root path
-    callback_host = os.environ.get('SERVER_ROOT', '/') + '/1.2'
+    callback_host = os.environ.get('SERVER_ROOT', '/')
 
     # set the callback host in the query
-    query['callback'] = f'{callback_host}/callback/{guid}'
+    query['callback'] = f'{callback_host}/1.2/callback/{guid}'
 
     # set the debug level
     # TODO: make sure other aragorn friends do this too
