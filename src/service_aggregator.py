@@ -80,7 +80,7 @@ async def post_async(host_url, query, guid, params=None):
     queues[guid] = asyncio.Queue()
 
     # get the server root path
-    callback_host = os.environ.get('SERVER_ROOT', '/')
+    callback_host = os.environ.get('SERVER_ROOT', '/') + '/1.2'
 
     # set the callback host in the query
     query['callback'] = f'{callback_host}/callback/{guid}'
