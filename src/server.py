@@ -26,7 +26,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.12'
+APP_VERSION = '2.0.13'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
