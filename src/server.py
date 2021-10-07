@@ -3,16 +3,16 @@ import os
 import logging.config
 import pkg_resources
 import yaml
+import httpx
 import requests
-import uuid
 
-from src.util import create_log_entry
+from uuid import uuid4
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
-from src.service_aggregator import entry
 from pydantic import BaseModel
-
+from src.service_aggregator import queues, entry
+from src.util import create_log_entry
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -47,6 +47,7 @@ APP = FastAPI(
     version=APP_VERSION
 )
 
+
 # declare app access details
 APP.add_middleware(
     CORSMiddleware,
@@ -69,23 +70,28 @@ class MethodName(str, Enum):
 default_input: dict = {
     "message": {
         "query_graph": {
+            "edges": {
+                "e01": {
+                    "object": "n0",
+                    "subject": "n1",
+                    "predicates": [
+                        "biolink:entity_negatively_regulates_entity"
+                    ]
+                }
+            },
             "nodes": {
                 "n0": {
+                    "ids": [
+                        "NCBIGene:23221"
+                    ],
                     "categories": [
-                        "biolink: PhenotypicFeature"
+                        "biolink:Gene"
                     ]
                 },
                 "n1": {
-                    "ids": [
-                        "HGNC:6284"
-                    ],
-                "categories": ["biolink:Gene"]
-                }
-            },
-            "edges": {
-                "e0": {
-                    "subject": "n0",
-                    "object": "n1"
+                    "categories": [
+                        "biolink:Gene"
+                    ]
                 }
             }
         }
@@ -95,15 +101,23 @@ default_input: dict = {
 # define the default request body
 default_request: Body = Body(default=default_input)
 
+
 # Why isn't there a pydantic model for this?
 class AsyncReturn(BaseModel):
     description: str
 
-#async entry point
+
+# async entry point
 @APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
-async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTasks, answer_coalesce_type: MethodName = MethodName.all):
+async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyncQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+    """
+        Performs an asynchronous query operation which compiles data from numerous ARAGORN ranking agent services.
+        The services are called in the following order, each passing their output to the next service as an input:
+
+        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
+    """
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid.uuid4()).split('-')[-1]
+    guid = str(uuid4()).split('-')[-1]
 
     try:
         # convert the incoming message into a dict
@@ -114,55 +128,120 @@ async def asquery_handler(request: PDAsyncQuery,  background_tasks: BackgroundTa
 
         callback_url = message['callback']
 
+        # remove this as it will be used again when calling sub-processes (like strider)
+        del message['callback']
+
         if len(callback_url) == 0:
             raise ValueError('callback URL empty')
 
-        logger.info(f'{guid}: async message call. callback URL is: {callback_url}')
+        logger.info(f'{guid}: async message call. ARAGORN callback URL is: {callback_url}')
 
     except KeyError as e:
-        logger.error(f'{guid}: async message call. callback URL was not specified')
+        logger.error(f'{guid}: async message call Error {e}. callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
     except ValueError as e:
-        logger.error(f'{guid}: async message call. callback URL was empty')
+        logger.error(f'{guid}: async message call. Error {e} callback URL was empty')
         return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
 
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid)
 
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
-def execute_with_callback(request, answer_coalesece_type, callback_url, guid):
-    #Go off and run the query, and when done, post it back to the callback
-    del request['callback']
-
-    final_msg, status_code = execute(request, answer_coalesece_type, guid)
-
-    callback(callback_url, final_msg, guid)
-
-#This is pulled out to make it easy to mock without interfering with other posts.
-def callback(callback_url, final_msg, guid):
-
-    logger.info(f'{guid}: handling callback({callback_url})')
-
-    requests.post(callback_url,json=final_msg)
 
 # synchronous entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
-async def query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
-    """ Performs a query operation which compiles data from numerous ARAGORN ranking agent services.
+async def sync_query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+    """ Performs a synchronous query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
-        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score"""
+        Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
+    """
 
     # create a guid that will be used for tagging the log entries
-    guid = str(uuid.uuid4()).split('-')[-1]
+    guid = str(uuid4()).split('-')[-1]
 
-    final_msg, status_code = await asyncexecute(request,answer_coalesce_type, guid)
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
+
     return JSONResponse(content=final_msg, status_code=status_code)
 
-async def asyncexecute(request,answer_coalesce_type, guid):
-    return execute(request,answer_coalesce_type, guid)
 
-def execute(request, answer_coalesce_type, guid):
+@APP.post("/callback/{pid}", tags=["ARAGORN"])
+async def subservice_callback(response: PDResponse,  pid: str) -> int:
+    """
+    Receives asynchronous message requests made by ARAGORN.
+    """
+    # pid indicates the query that we sent, put the response somewhere that the caller can find it
+    if pid not in queues:
+        logger.error(f'{pid} not found in queues')
+        logger.debug(f'{len(queues)} valid pids are:')
+
+        for x in queues:
+            logger.debug(x)
+
+        return 404
+
+    await queues[pid].put(response)
+
+    return 200
+
+
+@APP.post("/aragorn_callback", tags=["ARAGORN"], include_in_schema=False)
+async def receive_aragorn_async_response(response: PDResponse) -> int:
+    """
+    An endpoint for receiving the aragorn callback results normally used in
+    debug mode to verify the round trip insuring that the data is viable to a real client.
+    """
+    logger.info('ARAGORN callback received.')
+
+    # get the response in a dict
+    result = response.json()
+
+    # save it to the log
+    logger.debug(result)
+
+    # return the response
+    return 200
+
+
+async def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
+    """
+    Executes an asynchronous ARAGORN rewuset
+
+    :param request:
+    :param answer_coalesce_type:
+    :param callback_url:
+    :param guid:
+    :return:
+    """
+    # capture if this is a test request
+    if 'test' in request:
+        test_mode = True
+    else:
+        test_mode = False
+
+    # make the asynchronous request
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
+
+    logger.info(f'{guid}: handling callback({callback_url})')
+
+    # for some reason the "mock" test endpoint doesnt like the async client post
+    if test_mode:
+        callback(callback_url, final_msg, guid)
+    else:
+        # send back the result to the specified aragorn callback end point
+        async with httpx.AsyncClient() as client:
+            await client.post(callback_url, json=final_msg)
+
+
+async def asyncexecute(request, answer_coalesce_type, guid):
+    """
+    Launches an asynchronous ARAGORN run
+
+    :param request:
+    :param answer_coalesce_type:
+    :param guid:
+    :return:
+    """
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
@@ -172,23 +251,26 @@ def execute(request, answer_coalesce_type, guid):
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
 
+    # add in a log entry for the pid
+    message['logs'].append(create_log_entry(f'PID: {guid}', "INFO"))
+
     query_result = message
 
     try:
         # call to process the input
-        query_result, status_code = entry(message, guid, answer_coalesce_type)
+        query_result, status_code = await entry(message, guid, answer_coalesce_type)
 
         if status_code != 200:
-            return query_result,status_code
+            return query_result, status_code
 
         query_result['status'] = 'Success'
 
-        #Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
-        for edge_id,edge_data in query_result['message']['knowledge_graph']['edges'].items():
+        # Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
+        for edge_id, edge_data in query_result['message']['knowledge_graph']['edges'].items():
             if 'relation' in edge_data:
                 del edge_data['relation']
 
-        #This is also bogus, not sure why it's not validating
+        # This is also bogus, not sure why it's not validating
         del query_result['workflow']
 
         # validate the result
@@ -197,10 +279,29 @@ def execute(request, answer_coalesce_type, guid):
         # put the error in the response
         status_code = 500
         logger.exception(f'{guid}: Exception {e} in execute()')
+
         query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
+
         final_msg = query_result
 
+    final_msg['pid'] = guid
+
     return final_msg, status_code
+
+
+def callback(callback_url, final_msg, guid):
+    """
+    This is pulled out for the tester.
+
+    :param callback_url:
+    :param final_msg:
+    :param guid:
+    :return:
+    """
+
+    logger.info(f'{guid}: handling callback({callback_url})')
+
+    requests.post(callback_url, json=final_msg)
 
 
 def log_exception(method):
@@ -214,6 +315,7 @@ def log_exception(method):
         """Log exception encountered in method, then pass."""
         try:
             return await method(*args, **kwargs)
+
         except Exception as err:
             logger.exception(err)
             raise Exception(err)
@@ -222,6 +324,11 @@ def log_exception(method):
 
 
 def construct_open_api_schema():
+    """
+    This creates the Open api schema object
+
+    :return:
+    """
 
     if APP.openapi_schema:
         return APP.openapi_schema
