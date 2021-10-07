@@ -166,7 +166,7 @@ async def sync_query_handler(request: PDQuery = default_request, answer_coalesce
 
 
 @APP.post("/callback/{pid}", tags=["ARAGORN"])
-async def ranker_service_callback(response: PDResponse,  pid: str) -> int:
+async def subservice_callback(response: PDResponse,  pid: str) -> int:
     """
     Receives asynchronous message requests made by ARAGORN.
     """
