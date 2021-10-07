@@ -185,10 +185,11 @@ async def subservice_callback(response: PDResponse,  pid: str) -> int:
     return 200
 
 
-@APP.post("/aragorn_callback", tags=["ARAGORN"])
+@APP.post("/aragorn_callback", tags=["ARAGORN"], include_in_schema=False)
 async def receive_aragorn_async_response(response: PDResponse) -> int:
     """
-    A sink for receiving the aragorn callback results.
+    An endpoint for receiving the aragorn callback results normally used in
+    debug mode to verify the round trip insuring that the data is viable to a real client.
     """
     logger.info('ARAGORN callback received.')
 
