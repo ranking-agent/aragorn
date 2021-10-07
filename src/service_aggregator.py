@@ -118,7 +118,7 @@ async def post_async(host_url, query, guid, params=None):
     response.status_code = 200
 
     # remove the item from the queue
-    # del queues[guid]
+    del queues[guid]
 
     # return with the message
     return response
