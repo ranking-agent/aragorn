@@ -244,8 +244,8 @@ async def strider(message, params, guid) -> (dict, int):
         url += 'query'
         asyncquery = False
     else:
-        url += 'asyncquery'
-        asyncquery = True
+        url += 'query'
+        asyncquery = False
 
     response = await post('strider', url, message, guid, asyncquery=asyncquery)
 
