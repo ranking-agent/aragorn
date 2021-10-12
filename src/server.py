@@ -131,8 +131,8 @@ default_input_async: dict = {
 }
 
 # define the default request bodies
-default_request_sync: Body = Body(default=default_input_sync)
-default_request_async: Body = Body(default=default_input_async)
+default_request_sync: Body = Body(default=default_input_sync, example=default_input_sync, )
+default_request_async: Body = Body(default=default_input_async, example=default_input_async)
 
 
 # Create a async class
@@ -414,9 +414,6 @@ def construct_open_api_schema():
 
     # make sure not to add double slash at the end.
     server_root = server_root.rstrip('/') + '/'
-
-    open_api_schema['paths']['/query']['post']['requestBody']['content']['application/json']['example'] = default_input_sync
-    open_api_schema['paths']['/asyncquery']['post']['requestBody']['content']['application/json']['example'] = default_input_async
 
     if servers_conf:
         for s in servers_conf:
