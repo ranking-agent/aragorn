@@ -131,8 +131,8 @@ default_input_async: dict = {
 }
 
 # define the default request bodies
-default_request_sync: Body = Body(default=default_input_sync)
-default_request_async: Body = Body(default=default_input_async)
+default_request_sync: Body = Body(default=default_input_sync, example=default_input_sync)
+default_request_async: Body = Body(default=default_input_async, example=default_input_async)
 
 
 # Create a async class
