@@ -67,7 +67,7 @@ class MethodName(str, Enum):
     property = "property"
 
 
-default_input: dict = {
+default_input_sync: dict = {
     "message": {
         "query_graph": {
             "edges": {
@@ -98,18 +98,51 @@ default_input: dict = {
     }
 }
 
-# define the default request body
-default_request: Body = Body(default=default_input)
+default_input_async: dict = {
+    "message": {
+        "callback": "https://aragorn.renci.org/1.2/aragorn_callback",
+        "query_graph": {
+            "edges": {
+                "e01": {
+                    "object": "n0",
+                    "subject": "n1",
+                    "predicates": [
+                        "biolink:entity_negatively_regulates_entity"
+                    ]
+                }
+            },
+            "nodes": {
+                "n0": {
+                    "ids": [
+                        "NCBIGene:23221"
+                    ],
+                    "categories": [
+                        "biolink:Gene"
+                    ]
+                },
+                "n1": {
+                    "categories": [
+                        "biolink:Gene"
+                    ]
+                }
+            }
+        }
+    }
+}
+
+# define the default request bodies
+default_request_sync: Body = Body(default=default_input_sync)
+default_request_async: Body = Body(default=default_input_async)
 
 
-# Why isn't there a pydantic model for this?
+# Create a async class
 class AsyncReturn(BaseModel):
     description: str
 
 
 # async entry point
 @APP.post('/asyncquery', tags=["ARAGORN"], response_model=AsyncReturn)
-async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyncQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyncQuery = default_request_async, answer_coalesce_type: MethodName = MethodName.all):
     """
         Performs an asynchronous query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
@@ -150,7 +183,7 @@ async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyn
 
 # synchronous entry point
 @APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
-async def sync_query_handler(request: PDQuery = default_request, answer_coalesce_type: MethodName = MethodName.all):
+async def sync_query_handler(request: PDQuery = default_request_sync, answer_coalesce_type: MethodName = MethodName.all):
     """ Performs a synchronous query operation which compiles data from numerous ARAGORN ranking agent services.
         The services are called in the following order, each passing their output to the next service as an input:
 
@@ -165,7 +198,7 @@ async def sync_query_handler(request: PDQuery = default_request, answer_coalesce
     return JSONResponse(content=final_msg, status_code=status_code)
 
 
-@APP.post("/callback/{pid}", tags=["ARAGORN"])
+@APP.post("/callback/{pid}", tags=["ARAGORN"], include_in_schema=False)
 async def subservice_callback(response: PDResponse,  pid: str) -> int:
     """
     Receives asynchronous message requests made by ARAGORN.
@@ -199,13 +232,13 @@ async def receive_aragorn_async_response(response: PDResponse) -> int:
     # save it to the log
     logger.debug(result)
 
-    # return the response
+    # return the response code
     return 200
 
 
 async def execute_with_callback(request, answer_coalesce_type, callback_url, guid):
     """
-    Executes an asynchronous ARAGORN rewuset
+    Executes an asynchronous ARAGORN request
 
     :param request:
     :param answer_coalesce_type:
@@ -222,7 +255,7 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
-    logger.info(f'{guid}: handling callback({callback_url})')
+    logger.info(f'{guid}: handling callback ({callback_url})')
 
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:
@@ -299,7 +332,7 @@ def callback(callback_url, final_msg, guid):
     :return:
     """
 
-    logger.info(f'{guid}: handling callback({callback_url})')
+    logger.info(f'{guid}: handling callback ({callback_url})')
 
     requests.post(callback_url, json=final_msg)
 
