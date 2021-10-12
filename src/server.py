@@ -99,8 +99,8 @@ default_input_sync: dict = {
 }
 
 default_input_async: dict = {
+    "callback": "https://aragorn.renci.org/1.2/aragorn_callback",
     "message": {
-        "callback": "https://aragorn.renci.org/1.2/aragorn_callback",
         "query_graph": {
             "edges": {
                 "e01": {
