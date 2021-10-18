@@ -2,18 +2,22 @@
 import logging
 import requests
 import os
-import asyncio
-from requests.exceptions import ConnectionError
+import aio_pika
+import json
+
 from functools import partial
 from src.util import create_log_entry
 from datetime import datetime
 from fastapi import HTTPException
+from requests.models import Response
+from requests.exceptions import ConnectionError
 
 logger = logging.getLogger(__name__)
 
-# A place to transmit results from async queries
-# it's a dict from ids to async result queues
-queues = {}
+# get the rabbitmq connection params
+q_username = os.environ.get('QUEUE_USER', 'guest')
+q_password = os.environ.get('QUEUE_PW', 'guest')
+q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
 
 
 async def entry(message, guid, coalesce_type='all') -> (dict, int):
@@ -77,13 +81,12 @@ async def post_async(host_url, query, guid, params=None):
     :param params:
     :return:
     """
-    queues[guid] = asyncio.Queue()
-
     # get the server root path
     callback_host = os.environ.get('SERVER_ROOT', '/')
 
     # set the callback host in the query
-    query['callback'] = f'{callback_host}/1.2/callback/{guid}'
+    # TODO this should have the trapi endpoint in production
+    query['callback'] = f'{callback_host}/callback/{guid}'
 
     # set the debug level
     # TODO: make sure other aragorn friends do this too
@@ -99,26 +102,45 @@ async def post_async(host_url, query, guid, params=None):
     else:
         post_response = requests.post(host_url, json=query, params=params)
 
-    # we could get an error posting the query. if there is
-    # this will return a <requests.models.Response> type
+    # check the response status.
     if post_response.status_code != 200:
+        # if there is an error this will return a <requests.models.Response> type
         return post_response
 
     try:
-        # wait for the callback. if this was successful it will
-        # return a 'reasoner-pydantic' response type
-        response = await queues[guid].get()
+        # get a connection to the rabbit mq server
+        connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
+
+        # use the connection to create a queue using the guid
+        async with connection:
+            # create a channel to the rabbit mq
+            channel = await connection.channel()
+
+            # declare the queue using the guid as the key
+            queue = await channel.declare_queue(guid, auto_delete=True)
+
+            # wait for the response
+            async with queue.iterator() as queue_iter:
+                # wait the for thq
+                async for message in queue_iter:
+                    async with message.process():
+                        # data = json.loads(message.body.decode())
+
+                        response = requests.models.Response()
+                        response.status_code = 200
+                        response._content = message.body
+
+                        break
+
+        await connection.close()
 
     except Exception as e:
         error_string = f'Queue error exception {e} for callback {query["callback"]}'
-        logger.exception(error_string)
+        logger.exception(error_string, e)
         raise HTTPException(500, error_string)
 
     # if we got this far make it a good callback
     response.status_code = 200
-
-    # remove the item from the queue
-    del queues[guid]
 
     # return with the message
     return response
@@ -157,35 +179,23 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
     try:
         # launch the post depending on the query type and get the response
         if asyncquery:
-            # note there are two possible "Response" types that post_async() can return.
-            # if it is of type "request.models.Response" it is most likely an HTML error.
-            # else, it is a "reasoner-pydantic.message.Response" that contains a trapi message.
+            # handle the response
             response = await post_async(url, message, guid, params)
-
-            # save the response code
-            status_code = response.status_code
-
-            # if this is a trapi message get the dict of it. it doesnt have a .json() method
-            if str(response.__class__).find("reasoner") > -1:
-                response = response.dict()
         else:
             if params is None:
                 response = requests.post(url, json=message)
             else:
                 response = requests.post(url, json=message, params=params)
 
-            # save the response code
-            status_code = response.status_code
+        # save the response code
+        status_code = response.status_code
 
         logger.debug(f'{guid}: {name} returned with {status_code}')
 
         if status_code == 200:
             try:
-                # this could be a dict if it was an async call
-                if isinstance(response, dict) and len(response) > 0:
-                    ret_val = response
                 # if there is a response return it as a dict
-                elif len(response.json()):
+                if len(response.json()):
                     ret_val = response.json()
 
             except Exception as e:
@@ -244,8 +254,8 @@ async def strider(message, params, guid) -> (dict, int):
         url += 'query'
         asyncquery = False
     else:
-        url += 'query'
-        asyncquery = False
+        url += 'asyncquery'
+        asyncquery = True
 
     response = await post('strider', url, message, guid, asyncquery=asyncquery)
 
@@ -304,7 +314,7 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    logger.debug(f'{guid}: {message}')
+    logger.debug(f'{guid}: incoming message: {message}')
 
     status_code = None
 
