@@ -86,7 +86,7 @@ async def post_async(host_url, query, guid, params=None):
 
     # set the callback host in the query
     # TODO this should have the trapi endpoint in production
-    query['callback'] = f'{callback_host}/callback/{guid}'
+    query['callback'] = f'{callback_host}/1.2/callback/{guid}'
 
     # set the debug level
     # TODO: make sure other aragorn friends do this too
