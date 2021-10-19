@@ -5,18 +5,19 @@ import pkg_resources
 import yaml
 import httpx
 import requests
+import aio_pika
 
 from uuid import uuid4
 from enum import Enum
 from functools import wraps
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from pydantic import BaseModel
-from src.service_aggregator import queues, entry
 from src.util import create_log_entry
 from fastapi import Body, FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
+from src.service_aggregator import entry
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
@@ -26,7 +27,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.13'
+APP_VERSION = '2.0.14'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -134,6 +135,11 @@ default_input_async: dict = {
 default_request_sync: Body = Body(default=default_input_sync, example=default_input_sync, )
 default_request_async: Body = Body(default=default_input_async, example=default_input_async)
 
+# get the queue connection params
+q_username = os.environ.get('QUEUE_USER', 'guest')
+q_password = os.environ.get('QUEUE_PW', 'guest')
+q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+
 
 # Create a async class
 class AsyncReturn(BaseModel):
@@ -167,17 +173,19 @@ async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyn
         if len(callback_url) == 0:
             raise ValueError('callback URL empty')
 
-        logger.info(f'{guid}: async message call. ARAGORN callback URL is: {callback_url}')
+        logger.info(f'{guid}: Async query requested. ARAGORN callback URL is: {callback_url}')
 
     except KeyError as e:
-        logger.error(f'{guid}: async message call Error {e}. callback URL was not specified')
+        logger.error(f'{guid}: Async message call key error {e}, callback URL was not specified')
         return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
     except ValueError as e:
-        logger.error(f'{guid}: async message call. Error {e} callback URL was empty')
+        logger.error(f'{guid}: Async message call value error {e}, callback URL was empty')
         return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
 
+    # launch the process
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid)
 
+    # package up the response and return it
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
 
 
@@ -193,29 +201,53 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
     # create a guid that will be used for tagging the log entries
     guid = str(uuid4()).split('-')[-1]
 
+    logger.info(f'{guid}: Sync query requested.')
+
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
     return JSONResponse(content=final_msg, status_code=status_code)
 
 
-@APP.post("/callback/{pid}", tags=["ARAGORN"], include_in_schema=False)
-async def subservice_callback(response: PDResponse,  pid: str) -> int:
+@APP.post("/callback/{guid}", tags=["ARAGORN"], include_in_schema=False)
+async def subservice_callback(response: PDResponse,  guid: str) -> int:
     """
-    Receives asynchronous message requests made by ARAGORN.
+    Receives asynchronous message requests from an ARAGORN subservice callback
+
+    :param response:
+    :param guid:
+    :return:
     """
-    # pid indicates the query that we sent, put the response somewhere that the caller can find it
-    if pid not in queues:
-        logger.error(f'{pid} not found in queues')
-        logger.info(f'{len(queues)} valid pids are:')
+    # init the return html status code
+    ret_val: int = 200
 
-        for x in queues:
-            logger.info(x)
+    logger.info(f'{guid}: Receiving sub-service callback')
+    # logger.debug(f'{guid}: The sub-service response: {response.json()}')
 
-        return 404
+    # init the connection
+    connection = None
 
-    await queues[pid].put(response)
+    try:
+        # create a connection to the queue
+        connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
 
-    return 200
+        # with the connection post to the queue
+        async with connection:
+            # get a channel to the queue
+            channel = await connection.channel()
+
+            # publish what was received for the sub-service
+            await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
+    except Exception as e:
+        logger.exception(f'Exception detected while handling sub-service callback using guid {guid}', e)
+
+        # set the html status code
+        ret_val = 500
+    finally:
+        # close the connection to the queue if it exists
+        if connection:
+            await connection.close()
+
+    return ret_val
 
 
 @APP.post("/aragorn_callback", tags=["ARAGORN"], include_in_schema=False)
@@ -224,13 +256,17 @@ async def receive_aragorn_async_response(response: PDResponse) -> int:
     An endpoint for receiving the aragorn callback results normally used in
     debug mode to verify the round trip insuring that the data is viable to a real client.
     """
-    logger.info('ARAGORN callback received.')
-
-    # get the response in a dict
-    result = response.json()
+    if hasattr(response, 'pid'):
+        pid = response.pid
+    else:
+        pid = 'no PID'
 
     # save it to the log
-    logger.debug(result)
+    logger.debug(f'{pid}: ARAGORN async callback received.')
+
+    # get the response in a dict
+    # result = response.json()
+    # logger.debug(f'{pid}: ARAGORN callback received. message {result}')
 
     # return the response code
     return 200
@@ -255,7 +291,7 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
-    logger.info(f'{guid}: handling callback ({callback_url})')
+    logger.info(f'{guid}: Executing async with callback URL: {callback_url}')
 
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:
@@ -265,9 +301,10 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
             # send back the result to the specified aragorn callback end point
             async with httpx.AsyncClient() as client:
                 response = await client.post(callback_url, json=final_msg)
-                logger.info(f'{guid}: POST to callback {callback_url}, response: {response.status_code}')
+                logger.info(f'{guid}: Executing POST to callback URL {callback_url}, response: {response.status_code}')
         except Exception as e:
             logger.exception(f'{guid}: Exception detected: POST to callback {callback_url}', e)
+
 
 async def asyncexecute(request, answer_coalesce_type, guid):
     """
@@ -288,7 +325,7 @@ async def asyncexecute(request, answer_coalesce_type, guid):
         message['logs'] = []
 
     # add in a log entry for the pid
-    message['logs'].append(create_log_entry(f'PID: {guid}', "INFO"))
+    message['logs'].append(create_log_entry(f'pid: {guid}', "INFO"))
 
     query_result = message
 
@@ -296,6 +333,7 @@ async def asyncexecute(request, answer_coalesce_type, guid):
         # call to process the input
         query_result, status_code = await entry(message, guid, answer_coalesce_type)
 
+        # return the bad result if necessary
         if status_code != 200:
             return query_result, status_code
 
@@ -318,8 +356,10 @@ async def asyncexecute(request, answer_coalesce_type, guid):
 
         query_result['logs'].append(create_log_entry(f'Exception {str(e)}', "ERROR"))
 
+        # set the response
         final_msg = query_result
 
+    # save the guid
     final_msg['pid'] = guid
 
     return final_msg, status_code
@@ -335,7 +375,7 @@ def callback(callback_url, final_msg, guid):
     :return:
     """
 
-    logger.info(f'{guid}: handling callback ({callback_url})')
+    logger.info(f'{guid}: Handling async with callback with URL: {callback_url}')
 
     requests.post(callback_url, json=final_msg)
 
