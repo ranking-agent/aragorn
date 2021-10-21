@@ -110,6 +110,8 @@ async def post_async(host_url, query, guid, params=None):
         # if there is an error this will return a <requests.models.Response> type
         return post_response
 
+    logger.info('post successful.')
+
     try:
         # get the rabbitmq connection params
         q_username = os.environ.get('QUEUE_USER', 'guest')
@@ -121,18 +123,25 @@ async def post_async(host_url, query, guid, params=None):
         # get a connection to the rabbit mq server
         connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
 
+        logger.info('Got a queue connection.')
+
         # use the connection to create a queue using the guid
         async with connection:
             # create a channel to the rabbit mq
             channel = await connection.channel()
 
+            logger.info('Got a channel.')
+
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid, auto_delete=True)
+
+            logger.info('Queue declared.')
 
             # wait for the response
             async with queue.iterator() as queue_iter:
                 # wait the for thq
                 async for message in queue_iter:
+                    logger.info('Got a message.')
                     async with message.process():
                         response = Response()
                         response.status_code = 200
@@ -140,10 +149,12 @@ async def post_async(host_url, query, guid, params=None):
 
                         break
 
+        logger.info('Closing queue connection')
+
         await connection.close()
 
     except Exception as e:
-        error_string = f'Queue error exception {e} for callback {query["callback"]}'
+        error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
         logger.exception(error_string, e)
         raise HTTPException(500, error_string)
 
