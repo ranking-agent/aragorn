@@ -14,12 +14,6 @@ from requests.exceptions import ConnectionError
 
 logger = logging.getLogger(__name__)
 
-# get the rabbitmq connection params
-q_username = os.environ.get('QUEUE_USER', 'guest')
-q_password = os.environ.get('QUEUE_PW', 'guest')
-q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
-
-logger.info(f'queue_user: {q_username}')
 
 async def entry(message, guid, coalesce_type='all') -> (dict, int):
     """
@@ -117,6 +111,13 @@ async def post_async(host_url, query, guid, params=None):
         return post_response
 
     try:
+        # get the rabbitmq connection params
+        q_username = os.environ.get('QUEUE_USER', 'guest')
+        q_password = os.environ.get('QUEUE_PW', 'guest')
+        q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+
+        logger.info(f'queue_user: {q_username}')
+
         # get a connection to the rabbit mq server
         connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
 
@@ -133,7 +134,7 @@ async def post_async(host_url, query, guid, params=None):
                 # wait the for thq
                 async for message in queue_iter:
                     async with message.process():
-                        response = requests.models.Response()
+                        response = Response()
                         response.status_code = 200
                         response._content = message.body
 
