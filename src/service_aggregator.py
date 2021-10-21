@@ -3,7 +3,6 @@ import logging
 import requests
 import os
 import aio_pika
-import json
 
 from functools import partial
 from src.util import create_log_entry
@@ -20,6 +19,7 @@ q_username = os.environ.get('QUEUE_USER', 'guest')
 q_password = os.environ.get('QUEUE_PW', 'guest')
 q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
 
+logger.info(f'queue_user: {q_username}')
 
 async def entry(message, guid, coalesce_type='all') -> (dict, int):
     """
@@ -52,10 +52,10 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
         del message['workflow']
     else:
         workflow_def = [{'id': 'lookup'},
-                        {'id': 'enrich_results','params':{'max_input_size',20000}},
+                        {'id': 'enrich_results', 'params': {'max_input_size', 20000}},
                         {'id': 'overlay_connect_knodes'},
                         {'id': 'score'},
-                        {'id': 'filter_message_top_n','params':{'max_results':20000}}]
+                        {'id': 'filter_message_top_n', 'params': {'max_results': 20000}}]
 
     # convert the workflow def into function calls.
     # Raise a 422 if we find one we don't actually know how to do.
@@ -133,8 +133,6 @@ async def post_async(host_url, query, guid, params=None):
                 # wait the for thq
                 async for message in queue_iter:
                     async with message.process():
-                        # data = json.loads(message.body.decode())
-
                         response = requests.models.Response()
                         response.status_code = 200
                         response._content = message.body
@@ -282,13 +280,14 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     """
     url = f'https://answercoalesce.renci.org/1.2/coalesce/{coalesce_type}'
 
-    #With the current answercoalesce, we make the result list longer, and frequently much longer.  If
+    # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
     if 'max_input_size' in params:
         if len(message['message']['results']) > params['max_input_size']:
-            #This is already too big, don't do anything else
+            # This is already too big, don't do anything else
             return message, 200
     return await post('answer_coalesce', url, message, guid)
+
 
 async def omnicorp(message, params, guid) -> (dict, int):
     """
