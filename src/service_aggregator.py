@@ -7,6 +7,7 @@ import json
 
 from functools import partial
 from src.util import create_log_entry
+from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
 from datetime import datetime
 from fastapi import HTTPException
 from requests.models import Response
@@ -37,7 +38,11 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
     known_operations = {'lookup': strider,
                         'enrich_results': partial(answercoalesce, coalesce_type=coalesce_type),
                         'overlay_connect_knodes': omnicorp,
-                        'score': score}
+                        'score': score,
+                        'sort_results_score': sort_results_score,
+                        'filter_results_top_n': filter_results_top_n,
+                        'filter_kgraph_orphans': filter_kgraph_orphans,
+                        'filter_message_top_n': filter_message_top_n}
 
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
     if 'workflow' in message and not (message['workflow'] is None):
@@ -46,7 +51,11 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
         # The underlying tools (strider) don't want the workflow element and will 400
         del message['workflow']
     else:
-        workflow_def = [{'id': 'lookup'}, {'id': 'enrich_results'}, {'id': 'overlay_connect_knodes'}, {'id': 'score'}]
+        workflow_def = [{'id': 'lookup'},
+                        {'id': 'enrich_results','params':{'max_input_size',20000}},
+                        {'id': 'overlay_connect_knodes'},
+                        {'id': 'score'},
+                        {'id': 'filter_message_top_n','params':{'max_results':20000}}]
 
     # convert the workflow def into function calls.
     # Raise a 422 if we find one we don't actually know how to do.
@@ -273,8 +282,13 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     """
     url = f'https://answercoalesce.renci.org/1.2/coalesce/{coalesce_type}'
 
+    #With the current answercoalesce, we make the result list longer, and frequently much longer.  If
+    # we've already got 10s of thousands of results, let's skip this step...
+    if 'max_input_size' in params:
+        if len(message['message']['results']) > params['max_input_size']:
+            #This is already too big, don't do anything else
+            return message, 200
     return await post('answer_coalesce', url, message, guid)
-
 
 async def omnicorp(message, params, guid) -> (dict, int):
     """

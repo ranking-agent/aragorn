@@ -1,0 +1,4030 @@
+{
+  "message": {
+    "query_graph": {
+      "nodes": {
+        "a": {
+          "category": "biolink:Disease",
+          "id": "MONDO:0005090"
+        },
+        "b": {
+          "category": "biolink:ChemicalSubstance",
+          "id": null
+        }
+      },
+      "edges": {
+        "ab": {
+          "subject": "b",
+          "object": "a",
+          "predicate": "biolink:treats"
+        }
+      }
+    },
+    "knowledge_graph": {
+      "nodes": {
+        "MONDO:0005090": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:Disease",
+            "biolink:DiseaseOrPhenotypicFeature"
+          ],
+          "name": "schizophrenia (disease)",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "SNOMEDCT:268748000",
+                "SNOMEDCT:192322009",
+                "SNOMEDCT:83746006",
+                "SNOMEDCT:191549007",
+                "MESH:D012562",
+                "SNOMEDCT:191526005",
+                "NCIT:C3362",
+                "MESH:D012561",
+                "UMLS:C0154346",
+                "UMLS:C0154451",
+                "UMLS:C0154362",
+                "NCIT:C35270",
+                "UMLS:C0154454",
+                "UMLS:C1562670",
+                "UMLS:C0154388",
+                "UMLS:C0375158",
+                "UMLS:C0154342",
+                "SNOMEDCT:191528006",
+                "UMLS:C0338796",
+                "UMLS:C0270395",
+                "UMLS:C0154361",
+                "UMLS:C1542843",
+                "UMLS:C0154347",
+                "SNOMEDCT:51133006",
+                "UMLS:C0154345",
+                "UMLS:C4524147",
+                "UMLS:C0154340",
+                "NCIT:C35004",
+                "MEDDRA:10061040",
+                "SNOMEDCT:111483008",
+                "SNOMEDCT:191540006",
+                "NCIT:C35184",
+                "UMLS:C0154452",
+                "UMLS:C0863109",
+                "UMLS:C0154450",
+                "NCIT:C35183",
+                "UMLS:C0154349",
+                "SNOMEDCT:29599000",
+                "UMLS:C0270406",
+                "UMLS:C1656427",
+                "SNOMEDCT:416340002",
+                "SNOMEDCT:58214004",
+                "NCIT:C35007",
+                "SNOMEDCT:154870000",
+                "UMLS:C0853931",
+                "UMLS:C0154357",
+                "UMLS:C0029838",
+                "MONDO:0005090",
+                "DOID:5419",
+                "SNOMEDCT:268626003",
+                "UMLS:C0857501",
+                "SNOMEDCT:191535003",
+                "MESH:D012559",
+                "UMLS:C0154382",
+                "UMLS:C0154364",
+                "UMLS:C0221520",
+                "UMLS:C0270390",
+                "UMLS:C0154381",
+                "UMLS:C0036346",
+                "SNOMEDCT:16990005",
+                "UMLS:C0036347",
+                "UMLS:C0154373",
+                "SNOMEDCT:31373002",
+                "UMLS:C0270408",
+                "SNOMEDCT:154869001",
+                "UMLS:C0036341",
+                "SNOMEDCT:191534004",
+                "UMLS:C0338793",
+                "UMLS:C0375157",
+                "SNOMEDCT:192324005",
+                "UMLS:C4049474",
+                "SNOMEDCT:35252006",
+                "UMLS:C0154344",
+                "UMLS:C0221765",
+                "UMLS:C0154339",
+                "SNOMEDCT:4926007",
+                "SNOMEDCT:154867004",
+                "SNOMEDCT:192327003",
+                "UMLS:C0154363",
+                "UMLS:C0154374",
+                "UMLS:C0154380",
+                "OMIM:181500",
+                "SNOMEDCT:154866008",
+                "UMLS:C0154387",
+                "UMLS:C0154352",
+                "UMLS:C0154358",
+                "SNOMEDCT:192320001",
+                "SNOMEDCT:111484002",
+                "UMLS:C0154360",
+                "SNOMEDCT:71103003",
+                "UMLS:C0154384",
+                "SNOMEDCT:191529003",
+                "UMLS:C0154453",
+                "UMLS:C4049473",
+                "SNOMEDCT:231484006",
+                "NCIT:C35269",
+                "UMLS:C0030484",
+                "UMLS:C0270403",
+                "NCIT:C35185",
+                "SNOMEDCT:76566000",
+                "UMLS:C3544321",
+                "UMLS:C0154356",
+                "UMLS:C0036351",
+                "HP:0100753",
+                "UMLS:C0270381",
+                "SNOMEDCT:191533005",
+                "UMLS:C0154341",
+                "UMLS:C1535118",
+                "SNOMEDCT:191699003",
+                "SNOMEDCT:191687005",
+                "SNOMEDCT:26025008",
+                "UMLS:C0154343",
+                "MEDDRA:10039626",
+                "NCIT:C35721",
+                "NCIT:C35005",
+                "UMLS:C0154351",
+                "SNOMEDCT:192325006",
+                "UMLS:C1536217",
+                "SNOMEDCT:191579000",
+                "NCIT:C94370",
+                "UMLS:C0154372",
+                "UMLS:C0154383",
+                "UMLS:C0154354",
+                "SNOMEDCT:191541005",
+                "UMLS:C0392322",
+                "UMLS:C0154350",
+                "SNOMEDCT:191527001",
+                "SNOMEDCT:26472000",
+                "UMLS:C0270384"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "schizophrenia",
+                "schizophrenia-1",
+                "schizoaffective disorder",
+                "schizophrenia with or without an affective disorder",
+                "schizophrenia; SCZD",
+                "SCZD"
+              ]
+            }
+          ]
+        },
+        "CHEBI:31236": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "aripiprazole",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "DRUGBANK:DB01238",
+                "CHEMBL.COMPOUND:CHEMBL1112",
+                "GTOPDB:34",
+                "INCHIKEY:HBRQZJDFQWHINU-SELJRJPRSA-N",
+                "CHEBI:31236",
+                "MESH:D000068180",
+                "UNII:82VFR53I78",
+                "KEGG.COMPOUND:C12564",
+                "PUBCHEM:60795",
+                "MESH:C094645",
+                "HMDB:HMDB0005042"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "7-{4-[4-(2,3-dichlorophenyl)piperazin-1-yl]butoxy}-3,4-dihydroquinolin-2(1H)-one",
+                "aripiprazole",
+                "Aripiprazole",
+                "Abilify",
+                "Abilitat",
+                "aripiprazol",
+                "aripiprazolum"
+              ]
+            }
+          ]
+        },
+        "CHEBI:3766": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "clozapine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "KEGG.COMPOUND:C06924",
+                "CHEBI:3766",
+                "CHEMBL.COMPOUND:CHEMBL42",
+                "MESH:D003024",
+                "GTOPDB:38",
+                "UNII:J60AR2IKIC",
+                "PUBCHEM:135398737",
+                "HMDB:HMDB0014507",
+                "INCHIKEY:APSCTLSVGWMNTN-IAGOWNOFSA-N",
+                "DRUGBANK:DB00363"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "8-chloro-11-(4-methylpiperazin-1-yl)-5H-dibenzo[b,e][1,4]diazepine",
+                "Clozapine",
+                "Clozapin",
+                "clozapina",
+                "clozapine",
+                "clozapinum"
+              ]
+            }
+          ]
+        },
+        "CHEBI:8871": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "risperidone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "CHEMBL.COMPOUND:CHEMBL85",
+                "PUBCHEM:5073",
+                "UNII:L6UH7ZF8HC",
+                "GTOPDB:96",
+                "INCHIKEY:ICKPMTNGWVNOGC-UHFFFAOYSA-N",
+                "HMDB:HMDB0005020",
+                "DRUGBANK:DB00734",
+                "CHEBI:8871",
+                "MESH:D018967"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "3-{2-[4-(6-fluoro-1,2-benzisoxazol-3-yl)piperidin-1-yl]ethyl}-2-methyl-6,7,8,9-tetrahydro-4H-pyrido[1,2-a]pyrimidin-4-one",
+                "risperidone",
+                "Risperdal",
+                "risperidona",
+                "risperidonum",
+                "Risperin",
+                "Rispolept",
+                "Rispolin",
+                "Sequinan"
+              ]
+            }
+          ]
+        },
+        "CHEBI:65173": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "iloperidone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "CHEBI:65173",
+                "UNII:VPO7KJ050N",
+                "CHEMBL.COMPOUND:CHEMBL14376",
+                "GTOPDB:87",
+                "DRUGBANK:DB04946",
+                "INCHIKEY:SIVSOFOFVRLIPH-UHFFFAOYSA-N",
+                "MESH:C081732",
+                "PUBCHEM:71360"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "1-(4-{3-[4-(6-fluoro-1,2-benzoxazol-3-yl)piperidin-1-yl]propoxy}-3-methoxyphenyl)ethanone",
+                "1-[4-[3-[4-(6-fluoro-1,2-benzisoxazol-3-yl)-1- piperidinyl]propoxy]-3-methoxyphenyl]ethanone",
+                "4'-(3-(4-(6-fluoro-1,2-benzisoxazol-3-yl)piperidino)propoxy)-3'-methoxyacetophenone",
+                "Fanapt",
+                "Fanapta",
+                "iloperidona",
+                "iloperidone",
+                "iloperidonum",
+                "Zomaril"
+              ]
+            }
+          ]
+        },
+        "CHEBI:10119": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "ziprasidone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "CHEBI:10119",
+                "KEGG.COMPOUND:C07568",
+                "CHEMBL.COMPOUND:CHEMBL708",
+                "GTOPDB:59",
+                "INCHIKEY:QRGLOHALUOQSDT-UHFFFAOYSA-N",
+                "DRUGBANK:DB00246",
+                "PUBCHEM:60854",
+                "MESH:C092292",
+                "UNII:6UKA5VEJ6X",
+                "HMDB:HMDB0014391"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "5-{2-[4-(1,2-benzothiazol-3-yl)piperazin-1-yl]ethyl}-6-chloro-1,3-dihydro-2H-indol-2-one",
+                "Ziprasidone",
+                "ziprasidona",
+                "ziprasidone",
+                "ziprasidonum"
+              ]
+            }
+          ]
+        },
+        "CHEBI:8707": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "quetiapine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:BGL0JSY5SI",
+                "MESH:C069541",
+                "CHEMBL.COMPOUND:CHEMBL716",
+                "CHEBI:8707",
+                "GTOPDB:50",
+                "DRUGBANK:DB01224",
+                "PUBCHEM:5002",
+                "INCHIKEY:ZKLZSAACDZEQLJ-HXUWFJFHSA-N",
+                "HMDB:HMDB0005021",
+                "KEGG.COMPOUND:C07397"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "2-[2-(4-dibenzo[b,f][1,4]thiazepin-11-ylpiperazin-1-yl)ethoxy]ethanol",
+                "Quetiapine",
+                "2-[2-(4-Dibenzo[b,f][1,4]thiazepin-11-yl-1-piperazinyl)ethoxy]ethanol",
+                "quetiapina",
+                "quetiapine",
+                "quetiapinum"
+              ]
+            }
+          ]
+        },
+        "CHEBI:7735": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "olanzapine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PUBCHEM:135398745",
+                "INCHIKEY:JQQNLWJEKGFILV-UHFFFAOYSA-N",
+                "KEGG.COMPOUND:C07322",
+                "MESH:D000077152",
+                "CHEMBL.COMPOUND:CHEMBL715",
+                "UNII:N7U69T4SZR",
+                "CHEBI:7735",
+                "MESH:C076029",
+                "DRUGBANK:DB00334",
+                "HMDB:HMDB0005012"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "2-methyl-4-(4-methylpiperazin-1-yl)-10H-thieno[2,3-b][1,5]benzodiazepine",
+                "Olanzapine",
+                "olanzapina",
+                "olanzapine",
+                "olanzapinum",
+                "Zyprexa"
+              ]
+            }
+          ]
+        },
+        "CHEBI:70735": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "lurasidone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "GTOPDB:7461",
+                "UNII:22IC88528T",
+                "MESH:C525644",
+                "INCHIKEY:NZESJOKORMSILA-ZARYIDLBSA-N",
+                "PUBCHEM:213046",
+                "CHEMBL.COMPOUND:CHEMBL1237021",
+                "DRUGBANK:DB08815",
+                "CHEBI:70735"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "(3aR,4S,7R,7aS)-2-{[(1R,2R)-2-{[4-(1,2-benzothiazol-3-yl)piperazin-1-yl]methyl}cyclohexyl]methyl}hexahydro-1H-4,7-methanoisoindole-1,3(2H)-dione",
+                "lurasidona",
+                "lurasidone",
+                "lurasidonum"
+              ]
+            }
+          ]
+        },
+        "CHEBI:5613": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:ChemicalSubstance"
+          ],
+          "name": "haloperidol",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "KEGG.COMPOUND:C01814",
+                "CHEMBL.COMPOUND:CHEMBL54",
+                "UNII:J6292F8L3D",
+                "PUBCHEM:3559",
+                "MESH:D006220",
+                "DRUGBANK:DB00502",
+                "HMDB:HMDB0014645",
+                "INCHIKEY:RTWGXFRLCDXCRX-OJSVXGLKSA-N",
+                "CHEBI:5613",
+                "GTOPDB:86"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "4-[4-(4-chlorophenyl)-4-hydroxypiperidin-1-yl]-1-(4-fluorophenyl)butan-1-one",
+                "1-(3-p-fluorobenzoylpropyl)-4-p-chlorophenyl-4-hydroxypiperidine",
+                "4-(4-(para-chlorophenyl)-4-hydroxypiperidino)-4'-fluorobutyrophenone",
+                "4-[4-(4-chlorophenyl)-4-hydroxy-1-piperidyl]-1-(4-fluorophenyl)-butan-1-one",
+                "4'-fluoro-4-(4-(p-chlorophenyl)-4-hydroxypiperidinyl)butyrophenone",
+                "4'-fluoro-4-(4-hydroxy-4-(4'-chlorophenyl)piperidino)butyrophenone",
+                "gamma-(4-(p-chlorophenyl)-4-hydroxpiperidino)-p-fluorbutyrophenone",
+                "Haldol",
+                "haloperidol",
+                "haloperidolum"
+              ]
+            }
+          ]
+        },
+        "MESH:D001712": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Biperiden",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:0FRP6G56LD",
+                "MESH:D001712"
+              ]
+            }
+          ]
+        },
+        "MESH:D012906": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Smoke",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D012906"
+              ]
+            }
+          ]
+        },
+        "MESH:C515050": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "zopiclone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:03A5ORL08Q",
+                "MESH:C515050"
+              ]
+            }
+          ]
+        },
+        "MESH:C100234": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "benzquinamide",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:0475EA27Q3",
+                "MESH:C100234"
+              ]
+            }
+          ]
+        },
+        "CHEMBL.COMPOUND:CHEMBL2105481": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "ZETIDOLINE",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "INCHIKEY:QSFREBZMBNRGOK-UHFFFAOYSA-N",
+                "CHEMBL.COMPOUND:CHEMBL2105481",
+                "UNII:3B5J9TG94X",
+                "MESH:C027277",
+                "PUBCHEM:72155"
+              ]
+            }
+          ]
+        },
+        "CHEBI:135778": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "clocapramine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:6EEL1GB72K",
+                "CHEBI:135778",
+                "DRUGBANK:DB09003",
+                "INCHIKEY:KRCTXIMBJOXIRC-AWEZNQCLSA-N",
+                "MESH:C000449",
+                "CHEMBL.COMPOUND:CHEMBL2104103",
+                "PUBCHEM:2793"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "clocapramine HCl",
+                "clocapramine hydrochloride",
+                "clocarpramine"
+              ]
+            }
+          ]
+        },
+        "MESH:D011398": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Promethazine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D011398",
+                "UNII:FF28EJQ494"
+              ]
+            }
+          ]
+        },
+        "MESH:D000077408": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Modafinil",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:R3UK8X3U3D",
+                "MESH:C048833",
+                "MESH:D000077408"
+              ]
+            }
+          ]
+        },
+        "MESH:D000068882": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Paliperidone Palmitate",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D000068882",
+                "MESH:C548956",
+                "UNII:R8P8USM8FR"
+              ]
+            }
+          ]
+        },
+        "MESH:C030265": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "nemonapride",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:Q88T5P3444",
+                "MESH:C030265"
+              ]
+            }
+          ]
+        },
+        "MESH:C007761": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "flupenthixol decanoate",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:C007761",
+                "UNII:3B2FE28C1W"
+              ]
+            }
+          ]
+        },
+        "MESH:D013469": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Sulpiride",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D013469",
+                "UNII:7MNE9M8287"
+              ]
+            }
+          ]
+        },
+        "MESH:D008653": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Mesoridazine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D008653",
+                "UNII:5XE4NWM740"
+              ]
+            }
+          ]
+        },
+        "MESH:D008140": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Lorazepam",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D008140",
+                "UNII:O26FZP769L"
+              ]
+            }
+          ]
+        },
+        "MESH:D005473": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Fluoxetine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:01K63SUP8D",
+                "MESH:D005473"
+              ]
+            }
+          ]
+        },
+        "MESH:D014282": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Trihexyphenidyl",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D014282",
+                "UNII:6RC5V8B7PO"
+              ]
+            }
+          ]
+        },
+        "CHEBI:64050": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "N-desmethylclozapine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:1I9001LWY8",
+                "HMDB:HMDB0060536",
+                "PUBCHEM:135409468",
+                "CHEBI:64050",
+                "CHEMBL.COMPOUND:CHEMBL845",
+                "MESH:C058272",
+                "INCHIKEY:GCOHVGCNKUNLJF-JRFVFWCSSA-N"
+              ]
+            }
+          ]
+        },
+        "MESH:C522667": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Asenapine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:JKZ19V908O",
+                "MESH:C522667"
+              ]
+            }
+          ]
+        },
+        "CHEMBL.COMPOUND:CHEMBL218166": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "BIFEPRUNOX",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PUBCHEM:208951",
+                "CHEMBL.COMPOUND:CHEMBL218166",
+                "MESH:C509981",
+                "INCHIKEY:ZZEABFFKPGYSDC-CEXWTWQISA-N",
+                "UNII:AP69E83Z79",
+                "DRUGBANK:DB04888"
+              ]
+            }
+          ]
+        },
+        "MESH:C060342": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "clopenthixol acetate ester",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:0A4EBG0F53",
+                "MESH:C060342"
+              ]
+            }
+          ]
+        },
+        "MESH:D000069470": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Venlafaxine Hydrochloride",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D000069470",
+                "UNII:7D7RX5A8MO"
+              ]
+            }
+          ]
+        },
+        "CHEMBL.COMPOUND:CHEMBL2106135": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "BROMPERIDOL",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:C077144",
+                "CHEMBL.COMPOUND:CHEMBL2106135",
+                "UNII:73LG72M4LV",
+                "PUBCHEM:156321",
+                "INCHIKEY:LPXJVJPXCNRZNB-OAQYLSRUSA-N"
+              ]
+            }
+          ]
+        },
+        "CHEBI:92293": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "1-[10-[3-[4-(2-hydroxyethyl)-1-piperidinyl]propyl]-2-phenothiazinyl]ethanone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:KL6248WNW4",
+                "CHEBI:92293",
+                "INCHIKEY:RBIFNGAZHMWSFC-UHFFFAOYSA-N",
+                "CHEMBL.COMPOUND:CHEMBL1584",
+                "MESH:C067601",
+                "PUBCHEM:19675"
+              ]
+            }
+          ]
+        },
+        "MESH:D000077582": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Amisulpride",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D000077582",
+                "UNII:8110R61I4U"
+              ]
+            }
+          ]
+        },
+        "CHEBI:34605": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "CX-516",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "KEGG.COMPOUND:C13675",
+                "GTOPDB:4165",
+                "INCHIKEY:WRPPYCQXFUXOQL-IYNIXLDNSA-N",
+                "UNII:Z5QU38B4V9",
+                "DRUGBANK:DB06247",
+                "CHEMBL.COMPOUND:CHEMBL136800",
+                "PUBCHEM:148184",
+                "CHEBI:34605",
+                "MESH:C097396"
+              ]
+            },
+            {
+              "original_attribute_name": "synonyms",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "CX-516"
+              ]
+            }
+          ]
+        },
+        "MESH:D012436": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "S-Adenosylmethionine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:7LP2MPO46S",
+                "MESH:D012436"
+              ]
+            }
+          ]
+        },
+        "MESH:D003990": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Dibenzoxepins",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D003990"
+              ]
+            }
+          ]
+        },
+        "MESH:D011433": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Propranolol",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D011433",
+                "UNII:9Y8NXQ24VQ"
+              ]
+            }
+          ]
+        },
+        "CHEBI:31981": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "periciazine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "CHEMBL.COMPOUND:CHEMBL251940",
+                "INCHIKEY:YOKUDVNJYHCXIK-UHFFFAOYSA-N",
+                "MESH:C084584",
+                "HMDB:HMDB0015546",
+                "UNII:3405M6FD73",
+                "DRUGBANK:DB01608",
+                "PUBCHEM:4747",
+                "GTOPDB:9216",
+                "CHEBI:31981"
+              ]
+            }
+          ]
+        },
+        "MESH:D011352": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Procyclidine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D011352",
+                "UNII:C6QE1Q1TKR"
+              ]
+            }
+          ]
+        },
+        "MESH:D008972": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Molindone",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "MESH:D008972",
+                "UNII:RT3Y3QMF8N"
+              ]
+            }
+          ]
+        },
+        "MESH:D013881": {
+          "category": [
+            "biolink:NamedThing",
+            "biolink:BiologicalEntity",
+            "biolink:ChemicalSubstance",
+            "biolink:MolecularEntity"
+          ],
+          "name": "Thioridazine",
+          "attributes": [
+            {
+              "original_attribute_name": "equivalent_identifiers",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "UNII:N3D6TG58NI",
+                "MESH:D013881"
+              ]
+            }
+          ]
+        }
+      },
+      "edges": {
+        "45bb9997c8ac47225836c8e74cf91b5a": {
+          "subject": "CHEBI:31236",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584316094.4313107
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "f07c7b7ecfe8842148bd274046d16b91": {
+          "subject": "CHEBI:3766",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584319893.3806875
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "f35fb52da54f92f60696a99e84bfa51a": {
+          "subject": "CHEBI:8871",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584318198.6242623
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "1f6d1af9c9790d9e764acbcefa529560": {
+          "subject": "CHEBI:65173",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584319702.9056776
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "43821d8754c5fd847b24ae5bff93cf0b": {
+          "subject": "CHEBI:10119",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584315972.6803536
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "14403bd92938ce4daec86a4771bf62e5": {
+          "subject": "CHEBI:8707",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584317841.9821916
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "b10e8f04da87590a3f4594b55cb5f622": {
+          "subject": "CHEBI:7735",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584326904.0242105
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "25ca4674bccf3d3623ec99ddd401fef8": {
+          "subject": "CHEBI:70735",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584319958.1717777
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "5f9d7ec7475fcd03c7d0349c3d43ffd7": {
+          "subject": "CHEBI:5613",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "RO:0002606",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1584317923.8584208
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "treats"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "mychem.get_adverse_events"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": []
+            }
+          ]
+        },
+        "7e2638ffd0752352debdae9307986f8d": {
+          "subject": "MESH:D001712",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4394462
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1322069"
+              ]
+            }
+          ]
+        },
+        "ecd1e07e353f9416c93c3e9b5e098d77": {
+          "subject": "MESH:D012906",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.443968
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:8958597"
+              ]
+            }
+          ]
+        },
+        "477e260e9fd1ccd91159dbe57337c22e": {
+          "subject": "MESH:C515050",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.444756
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:12095078"
+              ]
+            }
+          ]
+        },
+        "27e2d9c80f455b07035189d2d2185cc7": {
+          "subject": "MESH:C100234",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4393065
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:5336562"
+              ]
+            }
+          ]
+        },
+        "4dcb2c732371e398b09ec26055f6359b": {
+          "subject": "CHEMBL.COMPOUND:CHEMBL2105481",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4446611
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:6148118"
+              ]
+            }
+          ]
+        },
+        "d30fdf6603478e158753fa54579c3bc8": {
+          "subject": "CHEBI:135778",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4386916
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:4076529"
+              ]
+            }
+          ]
+        },
+        "444737174a86b6215191c9ac6115486b": {
+          "subject": "MESH:D011398",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4434807
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1485575"
+              ]
+            }
+          ]
+        },
+        "e68666fd412ddb3addad4edb94d9e788": {
+          "subject": "MESH:D000077408",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4420311
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:21064019"
+              ]
+            }
+          ]
+        },
+        "3c624dc8707e7087d30b693d3c064e5a": {
+          "subject": "MESH:D000068882",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.442537
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:17460786",
+                "PMID:19713555",
+                "PMID:19825908",
+                "PMID:19855366"
+              ]
+            }
+          ]
+        },
+        "926bbe3b8fa81d53f421602d766bccde": {
+          "subject": "MESH:C030265",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.442209
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:11505224"
+              ]
+            }
+          ]
+        },
+        "faf12afc64a27e030125dd3011fcff06": {
+          "subject": "MESH:C007761",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4408097
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:18464063",
+                "PMID:990663"
+              ]
+            }
+          ]
+        },
+        "4c31cfcb4fcca8119bacadf5ff9c7c3f": {
+          "subject": "MESH:D013469",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352728.5877695
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:6367362"
+              ]
+            }
+          ]
+        },
+        "8efc24e375e9f21c0dcabd50d9df36e2": {
+          "subject": "MESH:D008653",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4416714
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:15285957"
+              ]
+            }
+          ]
+        },
+        "4a11a33f29fdbe47355079b7f43d97d0": {
+          "subject": "MESH:D008140",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4415724
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:12095078",
+                "PMID:9754850"
+              ]
+            }
+          ]
+        },
+        "d614c7ce9753c9c96776b0b8c0496b90": {
+          "subject": "MESH:D005473",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4407206
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:11910263"
+              ]
+            }
+          ]
+        },
+        "ead0c39f0b111e2554d42e09c6639da7": {
+          "subject": "MESH:D014282",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4443378
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:391328",
+                "PMID:709472"
+              ]
+            }
+          ]
+        },
+        "3f2dce542d551845ef737b2104a0a382": {
+          "subject": "CHEBI:64050",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.44228
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:11151749"
+              ]
+            }
+          ]
+        },
+        "29805b4c97964fbcbc034e51592e1025": {
+          "subject": "MESH:C522667",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4391065
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:20520283"
+              ]
+            }
+          ]
+        },
+        "48bfeb51ce3308d17910fcf7e55fe738": {
+          "subject": "CHEMBL.COMPOUND:CHEMBL218166",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4393945
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:21591752"
+              ]
+            }
+          ]
+        },
+        "a6dd784998583735c9cdcae7246c05f3": {
+          "subject": "MESH:C060342",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4401083
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:18464063"
+              ]
+            }
+          ]
+        },
+        "0f708fa3e227b1fc99acf54b86ab0067": {
+          "subject": "MESH:D000069470",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.444431
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:12380707"
+              ]
+            }
+          ]
+        },
+        "4e71ece190e47455f7ae8b31d80dd3a9": {
+          "subject": "CHEMBL.COMPOUND:CHEMBL2106135",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4396412
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1487623"
+              ]
+            }
+          ]
+        },
+        "ec69907b8aa355c68a3028d491774cb8": {
+          "subject": "CHEBI:92293",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4431884
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1119614"
+              ]
+            }
+          ]
+        },
+        "9b613f3b2cf64f7a0b7ca99f716d67d6": {
+          "subject": "MESH:D000077582",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4388447
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:10221135",
+                "PMID:11829208",
+                "PMID:12893676",
+                "PMID:14966260",
+                "PMID:16225977",
+                "PMID:16942633",
+                "PMID:16963229",
+                "PMID:18308817",
+                "PMID:18504810",
+                "PMID:18774435",
+                "PMID:19673087",
+                "PMID:20050717",
+                "PMID:25085534",
+                "PMID:6147865",
+                "PMID:8996184"
+              ]
+            }
+          ]
+        },
+        "62769563de9abea21d061f71c8e1f092": {
+          "subject": "CHEBI:34605",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4384906
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:16782180"
+              ]
+            }
+          ]
+        },
+        "46d04f20397875b7376435c704c3bd02": {
+          "subject": "MESH:D012436",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4438016
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:18824331"
+              ]
+            }
+          ]
+        },
+        "b350a7cdeb917e5427a848255024e654": {
+          "subject": "MESH:D003990",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4404716
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:5237376"
+              ]
+            }
+          ]
+        },
+        "b59a6c9652482f7a0b9f83afc9ae4146": {
+          "subject": "MESH:D011433",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4435315
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:4441828"
+              ]
+            }
+          ]
+        },
+        "498c4c27bfd963f51fa822ad7f5a43cc": {
+          "subject": "CHEBI:31981",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.442637
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1322069"
+              ]
+            }
+          ]
+        },
+        "5c92c1173e1b6b916355bc842d5c39e4": {
+          "subject": "MESH:D011352",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.44343
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:12095078",
+                "PMID:709472"
+              ]
+            }
+          ]
+        },
+        "b81fdf71694595916d701accb5b538ac": {
+          "subject": "MESH:D008972",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4420745
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:1971192",
+                "PMID:2081681",
+                "PMID:7446763"
+              ]
+            }
+          ]
+        },
+        "d14eb3961c1f7388e1d825087793b09c": {
+          "subject": "MESH:D013881",
+          "object": "MONDO:0005090",
+          "predicate": "biolink:treats",
+          "relation": "CTD:therapeutic",
+          "attributes": [
+            {
+              "original_attribute_name": "weight",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1
+            },
+            {
+              "original_attribute_name": "source_database",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd"
+            },
+            {
+              "original_attribute_name": "ctime",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": 1583352731.4441214
+            },
+            {
+              "original_attribute_name": "predicate_id",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "RO:0002606"
+            },
+            {
+              "original_attribute_name": "relation_label",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "therapeutic"
+            },
+            {
+              "original_attribute_name": "edge_source",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": "ctd.disease_to_chemical"
+            },
+            {
+              "original_attribute_name": "publications",
+              "attribute_type_id": "EDAM:data_0006",
+              "value": [
+                "PMID:15285957",
+                "PMID:18634530",
+                "PMID:2773973",
+                "PMID:4065553",
+                "PMID:5237376",
+                "PMID:6123407",
+                "PMID:707646",
+                "PMID:709472",
+                "PMID:7435691",
+                "PMID:7446763"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "results": [
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D000077582"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "9b613f3b2cf64f7a0b7ca99f716d67d6",
+              "weight": 0.9996952148735141
+            }
+          ]
+        },
+        "score": 0.9996952148735146,
+        "timestamp": 2.5601913928985596
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D013881"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "d14eb3961c1f7388e1d825087793b09c",
+              "weight": 0.9952594092303608
+            }
+          ]
+        },
+        "score": 0.9952594092303607,
+        "timestamp": 2.616051197052002
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D000068882"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "3c624dc8707e7087d30b693d3c064e5a",
+              "weight": 0.8794342374535546
+            }
+          ]
+        },
+        "score": 0.8794342374535549,
+        "timestamp": 2.440986156463623
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D008972"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "b81fdf71694595916d701accb5b538ac",
+              "weight": 0.7999999999999998
+            }
+          ]
+        },
+        "score": 0.8000000000000002,
+        "timestamp": 2.6012494564056396
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C007761"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "faf12afc64a27e030125dd3011fcff06",
+              "weight": 0.6772190444071822
+            }
+          ]
+        },
+        "score": 0.6772190444071825,
+        "timestamp": 2.4828665256500244
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D008140"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "4a11a33f29fdbe47355079b7f43d97d0",
+              "weight": 0.6772190444071822
+            }
+          ]
+        },
+        "score": 0.6772190444071825,
+        "timestamp": 2.501446008682251
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D014282"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "ead0c39f0b111e2554d42e09c6639da7",
+              "weight": 0.6772190444071822
+            }
+          ]
+        },
+        "score": 0.6772190444071825,
+        "timestamp": 2.5125420093536377
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D011352"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "5c92c1173e1b6b916355bc842d5c39e4",
+              "weight": 0.6772190444071822
+            }
+          ]
+        },
+        "score": 0.6772190444071825,
+        "timestamp": 2.5955498218536377
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D001712"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "7e2638ffd0752352debdae9307986f8d",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.3718738555908203
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D012906"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "ecd1e07e353f9416c93c3e9b5e098d77",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.3779680728912354
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C515050"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "477e260e9fd1ccd91159dbe57337c22e",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.3835628032684326
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C100234"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "27e2d9c80f455b07035189d2d2185cc7",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.4106743335723877
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEMBL.COMPOUND:CHEMBL2105481"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "4dcb2c732371e398b09ec26055f6359b",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.416445016860962
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:135778"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "d30fdf6603478e158753fa54579c3bc8",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.422278642654419
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D011398"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "444737174a86b6215191c9ac6115486b",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.429638147354126
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D000077408"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "e68666fd412ddb3addad4edb94d9e788",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.4352517127990723
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C030265"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "926bbe3b8fa81d53f421602d766bccde",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.474818229675293
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D013469"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "4c31cfcb4fcca8119bacadf5ff9c7c3f",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.488288640975952
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D008653"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "8efc24e375e9f21c0dcabd50d9df36e2",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.4939708709716797
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D005473"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "d614c7ce9753c9c96776b0b8c0496b90",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.506945848464966
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:64050"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "3f2dce542d551845ef737b2104a0a382",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.518270254135132
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C522667"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "29805b4c97964fbcbc034e51592e1025",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5242271423339844
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEMBL.COMPOUND:CHEMBL218166"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "48bfeb51ce3308d17910fcf7e55fe738",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.530094623565674
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:C060342"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "a6dd784998583735c9cdcae7246c05f3",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.535700559616089
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D000069470"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "0f708fa3e227b1fc99acf54b86ab0067",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5412850379943848
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEMBL.COMPOUND:CHEMBL2106135"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "4e71ece190e47455f7ae8b31d80dd3a9",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5491769313812256
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:92293"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "ec69907b8aa355c68a3028d491774cb8",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.554459571838379
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:34605"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "62769563de9abea21d061f71c8e1f092",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5653138160705566
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D012436"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "46d04f20397875b7376435c704c3bd02",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5708577632904053
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D003990"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "b350a7cdeb917e5427a848255024e654",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.5763943195343018
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "MESH:D011433"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "b59a6c9652482f7a0b9f83afc9ae4146",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.582228183746338
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:31981"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "498c4c27bfd963f51fa822ad7f5a43cc",
+              "weight": 0.4999999999999998
+            }
+          ]
+        },
+        "score": 0.5,
+        "timestamp": 2.589669942855835
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:31236"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "45bb9997c8ac47225836c8e74cf91b5a",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.215421438217163
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:3766"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "f07c7b7ecfe8842148bd274046d16b91",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.2645998001098633
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:8871"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "f35fb52da54f92f60696a99e84bfa51a",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.2895164489746094
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:65173"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "1f6d1af9c9790d9e764acbcefa529560",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.3089463710784912
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:10119"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "43821d8754c5fd847b24ae5bff93cf0b",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.3316640853881836
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:8707"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "14403bd92938ce4daec86a4771bf62e5",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.3476243019104004
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:7735"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "b10e8f04da87590a3f4594b55cb5f622",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.3645250797271729
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:70735"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "25ca4674bccf3d3623ec99ddd401fef8",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.3706841468811035
+      },
+      {
+        "node_bindings": {
+          "a": [
+            {
+              "id": "MONDO:0005090"
+            }
+          ],
+          "b": [
+            {
+              "id": "CHEBI:5613"
+            }
+          ]
+        },
+        "edge_bindings": {
+          "ab": [
+            {
+              "id": "5f9d7ec7475fcd03c7d0349c3d43ffd7",
+              "weight": 0.2679491924311228
+            }
+          ]
+        },
+        "score": 0.2679491924311228,
+        "timestamp": 1.393301248550415
+      }
+    ]
+  }
+}
