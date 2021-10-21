@@ -28,3 +28,6 @@ x-trapi:
   - enrich_results
   - overlay_connect_knodes
   - score
+  - sort_results_score
+  - filter_results_top_n
+  - filter_kgraph_orphans
