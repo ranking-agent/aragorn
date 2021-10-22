@@ -131,7 +131,6 @@ async def post_async(host_url, query, guid, params=None):
             async with queue.iterator() as queue_iter:
                 # wait the for thq
                 async for message in queue_iter:
-                    logger.info('Got a message.')
                     async with message.process():
                         response = Response()
                         response.status_code = 200
