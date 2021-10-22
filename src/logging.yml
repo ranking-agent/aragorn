@@ -23,7 +23,7 @@ loggers:
         - console
         - file
   src.service_aggregator:
-      level: DEBUG
+      level: INFO
       handlers:
         - console
         - file

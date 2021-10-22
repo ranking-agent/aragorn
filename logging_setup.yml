@@ -5,7 +5,7 @@ formatters:
 handlers:
   consoleUvicorn:
     class: logging.StreamHandler
-    level: DEBUG
+    level: INFO
     formatter: default
   fileUvicorn:
     class: logging.handlers.RotatingFileHandler
@@ -18,7 +18,7 @@ handlers:
     backupCount: 9
 loggers:
   uvicorn:
-      level: DEBUG
+      level: INFO
       handlers:
         - consoleUvicorn
         - fileUvicorn
