@@ -121,7 +121,7 @@ async def post_async(host_url, query, guid, params=None):
         logger.info(f'queue_user: {q_username}, queue_host:{q_host}')
 
         # get a connection to the rabbit mq server
-        connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
+        connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password) #
 
         logger.info('Got a queue connection.')
 
