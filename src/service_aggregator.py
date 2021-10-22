@@ -110,32 +110,22 @@ async def post_async(host_url, query, guid, params=None):
         # if there is an error this will return a <requests.models.Response> type
         return post_response
 
-    logger.info('post successful.')
-
     try:
         # get the rabbitmq connection params
         q_username = os.environ.get('QUEUE_USER', 'guest')
         q_password = os.environ.get('QUEUE_PW', 'guest')
         q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
 
-        logger.info(f'queue_user: {q_username}, queue_host:{q_host}')
-
         # get a connection to the rabbit mq server
         connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password) #
-
-        logger.info('Got a queue connection.')
 
         # use the connection to create a queue using the guid
         async with connection:
             # create a channel to the rabbit mq
             channel = await connection.channel()
 
-            logger.info('Got a channel.')
-
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid, auto_delete=True)
-
-            logger.info('Queue declared.')
 
             # wait for the response
             async with queue.iterator() as queue_iter:
@@ -148,8 +138,6 @@ async def post_async(host_url, query, guid, params=None):
                         response._content = message.body
 
                         break
-
-        logger.info('Closing queue connection')
 
         await connection.close()
 
