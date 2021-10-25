@@ -129,7 +129,7 @@ async def post_async(host_url, query, guid, params=None):
 
             # wait for the response
             async with queue.iterator() as queue_iter:
-                # wait the for thq
+                # wait the for the message
                 async for message in queue_iter:
                     async with message.process():
                         response = Response()
