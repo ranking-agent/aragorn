@@ -253,7 +253,7 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
 @APP.post("/aragorn_callback", tags=["ARAGORN"], include_in_schema=False)
 async def receive_aragorn_async_response(response: PDResponse) -> int:
     """
-    An endpoint for receiving the aragorn callback results normally used in
+    An endpoint for receiving the aragorn callback results. normally used in
     debug mode to verify the round trip insuring that the data is viable to a real client.
     """
     if hasattr(response, 'pid'):
@@ -288,10 +288,10 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     else:
         test_mode = False
 
+    logger.info(f'{guid}: Awaiting async execute with callback URL: {callback_url}')
+
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
-
-    logger.info(f'{guid}: Executing async with callback URL: {callback_url}')
 
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:
@@ -299,11 +299,11 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     else:
         try:
             # send back the result to the specified aragorn callback end point
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120.0)) as client:
                 response = await client.post(callback_url, json=final_msg)
-                logger.info(f'{guid}: Executing POST to callback URL {callback_url}, response: {response.status_code}')
+                logger.info(f'{guid}: Executed POST to callback URL {callback_url}, response: {response.status_code}')
         except Exception as e:
-            logger.exception(f'{guid}: Exception detected: POST to callback {callback_url}', e)
+            logger.exception(f'{guid}: Exception detected: POSTing to callback {callback_url}', e)
 
 
 async def asyncexecute(request, answer_coalesce_type, guid):
