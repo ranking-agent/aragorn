@@ -27,7 +27,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.15'
+APP_VERSION = '2.0.16'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -462,6 +462,9 @@ def construct_open_api_schema():
         for s in servers_conf:
             if s['description'].startswith('Default'):
                 s['url'] = server_root + '1.2' if server_root != '/' else s['url']
+                s['x-maturity'] = os.environ.get("MATURITY_VALUE", "maturity")
+                s['x-location'] = os.environ.get("LOCATION_VALUE", "location")
+
         open_api_schema["servers"] = servers_conf
 
     return open_api_schema
