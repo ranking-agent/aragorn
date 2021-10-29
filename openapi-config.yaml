@@ -21,7 +21,7 @@ x-translator:
   component: ARA
   team:
   - Ranking Agent
-  infores: "infores:aragorn"
+  infores: infores:aragorn
 x-trapi:
   version: 1.2.0
   operations:
