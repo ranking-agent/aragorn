@@ -299,7 +299,7 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     else:
         try:
             # send back the result to the specified aragorn callback end point
-            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120.0)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=600.0)) as client:
                 response = await client.post(callback_url, json=final_msg)
                 logger.info(f'{guid}: Executed POST to callback URL {callback_url}, response: {response.status_code}')
         except Exception as e:
