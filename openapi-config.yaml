@@ -1,9 +1,10 @@
 contact:
-  email: patrick@covar.com
-  name: Patrick Wang
-  x-id: https://github.com/patrickkwang
+  title: ARAGORN
+  email: bizon@renci.org
+  name: Chris Bizon
+  x-id: https://github.com/cbizon
   x-role: responsible developer
-description: 'ARAGORN: Performs a query operation which compiles data from numerous ARAGORN ranking agent services.'
+  description: 'ARAGORN: Performs a query operation which compiles data from numerous ARAGORN ranking agent services.'
 servers:
 - description: Default server
   url: https://aragorn.renci.org
