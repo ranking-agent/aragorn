@@ -117,7 +117,7 @@ async def post_async(host_url, query, guid, params=None):
         q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
 
         # get a connection to the rabbit mq server
-        connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password) #
+        connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
 
         # use the connection to create a queue using the guid
         async with connection:
@@ -296,7 +296,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = f'{os.environ.get("RANKER_URL", "")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")}omnicorp_overlay'
 
     return await post('omnicorp', url, message, guid)
 
