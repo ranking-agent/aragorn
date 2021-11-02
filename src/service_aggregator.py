@@ -253,7 +253,7 @@ async def strider(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = 'https://strider.renci.org/1.2/'
+    url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
@@ -277,7 +277,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'https://answercoalesce.renci.org/1.2/coalesce/{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.2/coalesce/")}{coalesce_type}'
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
@@ -296,7 +296,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = 'https://aragorn-ranker.renci.org/1.2/omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "")}omnicorp_overlay'
 
     return await post('omnicorp', url, message, guid)
 
@@ -309,9 +309,11 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    weight_url = 'https://aragorn-ranker.renci.org/1.2/weight_correctness'
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")
 
-    score_url = 'https://aragorn-ranker.renci.org/1.2/score'
+    weight_url = f'{ranker_url}weight_correctness'
+
+    score_url = f'{ranker_url}score'
 
     message, status_code = await post('weight', weight_url, message, guid)
 
