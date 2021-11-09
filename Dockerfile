@@ -30,5 +30,9 @@ RUN pip install -r requirements.txt
 # expose the default port
 EXPOSE 4868
 
+# create a new user and use it.
+RUN useradd -M -u 1001 nonrootuser
+USER nonrootuser
+
 # start the service entry point
 ENTRYPOINT ["bash", "main.sh"]
