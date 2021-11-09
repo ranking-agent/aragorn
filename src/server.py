@@ -7,6 +7,7 @@ import httpx
 import requests
 import aio_pika
 
+from pamqp import specification as spec
 from uuid import uuid4
 from enum import Enum
 from functools import wraps
@@ -27,7 +28,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.18'
+APP_VERSION = '2.0.19'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -236,7 +237,16 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             channel = await connection.channel()
 
             # publish what was received for the sub-service
-            await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
+            publish_val = await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
+
+            if isinstance(publish_val, spec.Basic.Ack):
+                logger.info(f'{guid}: Callback message published to queue.')
+            else:
+                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
+
+                # set the html error code
+                ret_val = 422
+
     except Exception as e:
         logger.exception(f'Exception detected while handling sub-service callback using guid {guid}', e)
 

@@ -20,6 +20,9 @@ do
 # rabbitmqctl add_vhost <vhostname>
 rabbitmqctl add_vhost $vhost ; \
 
+# set the max message size
+rabbitmqctl set_policy -p $vhost --apply-to queues max-msg-size "^queue.name.pattern$" '{"max-length-bytes":512000000}'
+
 # Set vhost permissions
 # rabbitmqctl set_permissions -p <vhostname> <username> ".*" ".*" ".*"
 rabbitmqctl set_permissions -p $vhost admin ".*" ".*" ".*" ; \
