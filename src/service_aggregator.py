@@ -46,10 +46,10 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
         del message['workflow']
     else:
         workflow_def = [{'id': 'lookup'},
-                        {'id': 'enrich_results', 'params': {'max_input_size', 5000}},
+                        {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
                         {'id': 'overlay_connect_knodes'},
                         {'id': 'score'},
-                        {'id': 'filter_message_top_n', 'params': {'max_results': 5000}}]
+                        {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
 
     # convert the workflow def into function calls.
     # Raise a 422 if we find one we don't actually know how to do.
