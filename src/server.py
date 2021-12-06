@@ -28,7 +28,7 @@ with pkg_resources.resource_stream('src', 'logging.yml') as f:
 log_dir = './logs'
 
 # set the app version
-APP_VERSION = '2.0.20'
+APP_VERSION = '2.0.21'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -205,6 +205,8 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
     logger.info(f'{guid}: Sync query requested.')
 
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
+
+    logger.info(f'{guid}: Sync query returning.')
 
     return JSONResponse(content=final_msg, status_code=status_code)
 
