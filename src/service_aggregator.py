@@ -182,7 +182,6 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
 
     logger.debug(f"{guid}: Calling {url}")
 
-    print(message)
     try:
         # launch the post depending on the query type and get the response
         if asyncquery:
@@ -193,10 +192,6 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
                 response = requests.post(url, json=message)
             else:
                 response = requests.post(url, json=message, params=params)
-
-        print(response)
-        print(response.status_code)
-        print(response.json())
 
         # save the response code
         status_code = response.status_code
@@ -268,8 +263,6 @@ async def strider(message, params, guid) -> (dict, int):
         url += 'asyncquery'
         asyncquery = True
 
-    import json
-    print(json.dumps(message,indent=2))
     response = await post('strider', url, message, guid, asyncquery=asyncquery)
 
     return response
