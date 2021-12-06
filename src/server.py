@@ -206,6 +206,8 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
 
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid)
 
+    logger.info(f'{guid}: Sync query returning.')
+
     return JSONResponse(content=final_msg, status_code=status_code)
 
 
