@@ -85,7 +85,7 @@ async def post_async(host_url, query, guid, params=None):
     :return:
     """
     # get the server root path
-    default_host = os.environ.get('HOSTNAME')
+    default_host = os.environ.get('HOST_IP', 'localhost')
     default_port = os.environ.get('PORT', '4868')
 
     callback_host = os.environ.get('CALLBACK_HOST', f'http://{default_host}:{default_port}')
