@@ -11,6 +11,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
+from asyncio.exceptions import TimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -130,8 +131,8 @@ async def post_async(host_url, query, guid, params=None):
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid, auto_delete=True)
 
-            # wait for the response
-            async with queue.iterator() as queue_iter:
+            # wait for the response.  Timeout after 4 hours
+            async with queue.iterator(timeout=60*60*4) as queue_iter:
                 # wait the for the message
                 async for message in queue_iter:
                     async with message.process():
@@ -143,6 +144,11 @@ async def post_async(host_url, query, guid, params=None):
 
         await connection.close()
 
+    except TimeoutError as e:
+        error_string = f'{guid}: Async query to {host_url} timed out'
+        response = Response()
+        response.status_code = 598
+        return response
     except Exception as e:
         error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
         logger.exception(error_string, e)
@@ -153,7 +159,6 @@ async def post_async(host_url, query, guid, params=None):
 
     # return with the message
     return response
-
 
 async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
