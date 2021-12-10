@@ -49,6 +49,6 @@ class FileMessageQueue:
     def clean_up_files(self, guid):
         if self.delete_files:
             if os.path.exists(os.path.join(self.response_dir, f'{guid}.json')):
-                os.remove(f'responses/{guid}.json')
+                os.remove(os.path.join(self.response_dir, f'{guid}.json'))
             if os.path.exists(os.path.join(self.signals_dir, guid)):
-                os.remove(f'signals/{guid}')
+                os.remove(os.path.join(self.signals_dir, guid))
