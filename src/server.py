@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from src.service_aggregator import entry
+from src.file_message_queue import FileMessageQueue
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
@@ -227,37 +228,40 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
     # logger.debug(f'{guid}: The sub-service response: {response.json()}')
 
     # init the connection
-    connection = None
+    # connection = None
 
     try:
+        # write response to file with guid
+        file_queue = FileMessageQueue()
+        await file_queue.publish(guid=guid, data=response.json())
         # create a connection to the queue
-        connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
-
-        # with the connection post to the queue
-        async with connection:
-            # get a channel to the queue
-            channel = await connection.channel()
-
-            # publish what was received for the sub-service
-            publish_val = await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
-
-            if isinstance(publish_val, spec.Basic.Ack):
-                logger.info(f'{guid}: Callback message published to queue.')
-            else:
-                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
-
-                # set the html error code
-                ret_val = 422
+        # connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
+        #
+        # # with the connection post to the queue
+        # async with connection:
+            # # get a channel to the queue
+            # channel = await connection.channel()
+            #
+            # # publish what was received for the sub-service
+            # publish_val = await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
+            #
+            # if isinstance(publish_val, spec.Basic.Ack):
+            #     logger.info(f'{guid}: Callback message published to queue.')
+            # else:
+            #     logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
+            #
+            #     # set the html error code
+            #     ret_val = 422
 
     except Exception as e:
         logger.exception(f'Exception detected while handling sub-service callback using guid {guid}', e)
 
         # set the html status code
         ret_val = 500
-    finally:
-        # close the connection to the queue if it exists
-        if connection:
-            await connection.close()
+    # finally:
+    #     # close the connection to the queue if it exists
+    #     if connection:
+    #         await connection.close()
 
     return ret_val
 

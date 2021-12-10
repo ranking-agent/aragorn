@@ -1,4 +1,5 @@
 """Literature co-occurrence support."""
+import asyncio
 import logging
 import requests
 import os
@@ -12,7 +13,9 @@ from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
-
+from src.file_message_queue import FileMessageQueue
+import time
+import json
 logger = logging.getLogger(__name__)
 
 
@@ -111,46 +114,62 @@ async def post_async(host_url, query, guid, params=None):
         # if there is an error this will return a <requests.models.Response> type
         return post_response
 
+    file_queue = FileMessageQueue()
     try:
-        # get the rabbitmq connection params
-        q_username = os.environ.get('QUEUE_USER', 'guest')
-        q_password = os.environ.get('QUEUE_PW', 'guest')
-        q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+        time_out = 60*60*4
+        try:
+            data = await file_queue.subscribe(guid=guid, time_out=time_out)
+        except asyncio.exceptions.TimeoutError as error:
+            error_string = f'{guid}: Async query to {host_url} timed out'
+            logging.error(error_string)
+            response = Response()
+            response.status_code = 598
+            return response
 
-        # get a connection to the rabbit mq server
-        connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
-
-        # use the connection to create a queue using the guid
-        async with connection:
-            # create a channel to the rabbit mq
-            channel = await connection.channel()
-
-            # declare the queue using the guid as the key
-            queue = await channel.declare_queue(guid, auto_delete=True)
-
-            # wait for the response.  Timeout after 4 hours
-            async with queue.iterator(timeout=60*60*4) as queue_iter:
-                # wait the for the message
-                async for message in queue_iter:
-                    async with message.process():
-                        response = Response()
-                        response.status_code = 200
-                        response._content = message.body
-
-                        break
-
-        await connection.close()
-
-    except TimeoutError as e:
-        error_string = f'{guid}: Async query to {host_url} timed out'
+        data = data.encode()
         response = Response()
-        response.status_code = 598
-        return response
+        response.status_code = 200
+        response._content = data
+    #     # get the rabbitmq connection params
+    #     q_username = os.environ.get('QUEUE_USER', 'guest')
+    #     q_password = os.environ.get('QUEUE_PW', 'guest')
+    #     q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+    #
+    #     # get a connection to the rabbit mq server
+    #     connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
+    #
+    #     # use the connection to create a queue using the guid
+    #     async with connection:
+    #         # create a channel to the rabbit mq
+    #         channel = await connection.channel()
+    #
+    #         # declare the queue using the guid as the key
+    #         queue = await channel.declare_queue(guid, auto_delete=True)
+    #
+    #         # wait for the response.  Timeout after 4 hours
+    #         async with queue.iterator(timeout=60*60*4) as queue_iter:
+    #             # wait the for the message
+    #             async for message in queue_iter:
+    #                 async with message.process():
+    #                     response = Response()
+    #                     response.status_code = 200
+    #                     response._content = message.body
+    #
+    #                     break
+    #
+    #     await connection.close()
+    #
+    # except TimeoutError as e:
+    #     error_string = f'{guid}: Async query to {host_url} timed out'
+    #     response = Response()
+    #     response.status_code = 598
+    #     return response
     except Exception as e:
         error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
         logger.exception(error_string, e)
         raise HTTPException(500, error_string)
-
+    finally:
+        file_queue.clean_up_files(guid)
     # if we got this far make it a good callback
     response.status_code = 200
 
