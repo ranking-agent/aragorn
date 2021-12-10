@@ -89,8 +89,11 @@ async def post_async(host_url, query, guid, params=None):
     :return:
     """
     # get the server root path
-    callback_host = os.environ.get('CALLBACK_HOST', '/')
+    default_host = os.environ.get('HOST_IP', 'localhost')
+    default_port = os.environ.get('PORT', '4868')
 
+    callback_host = os.environ.get('CALLBACK_HOST', f'http://{default_host}:{default_port}')
+    logger.info(f"Posting to {host_url} with callback {callback_host}")
     # set the callback host in the query
     # TODO this should have the trapi endpoint in production
     query['callback'] = f'{callback_host}/callback/{guid}'
