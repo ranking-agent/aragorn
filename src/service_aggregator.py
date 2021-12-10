@@ -115,21 +115,23 @@ async def post_async(host_url, query, guid, params=None):
         return post_response
 
     file_queue = FileMessageQueue()
-    try:
-        time_out = 60*60*4
-        try:
-            data = await file_queue.subscribe(guid=guid, time_out=time_out)
-        except asyncio.exceptions.TimeoutError as error:
-            error_string = f'{guid}: Async query to {host_url} timed out'
-            logging.error(error_string)
-            response = Response()
-            response.status_code = 598
-            return response
 
-        data = data.encode()
+    time_out = 60*60*4
+    try:
+        data = await file_queue.subscribe(guid=guid, time_out=time_out)
+    except asyncio.exceptions.TimeoutError as error:
+        error_string = f'{guid}: Async query to {host_url} timed out'
+        logging.error(error_string)
         response = Response()
-        response.status_code = 200
-        response._content = data
+        response.status_code = 598
+        return response
+    finally:
+        file_queue.clean_up_files(guid)
+    data = data.encode()
+    response = Response()
+    response.status_code = 200
+    response._content = data
+    return response
     #     # get the rabbitmq connection params
     #     q_username = os.environ.get('QUEUE_USER', 'guest')
     #     q_password = os.environ.get('QUEUE_PW', 'guest')
@@ -164,17 +166,13 @@ async def post_async(host_url, query, guid, params=None):
     #     response = Response()
     #     response.status_code = 598
     #     return response
-    except Exception as e:
-        error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
-        logger.exception(error_string, e)
-        raise HTTPException(500, error_string)
-    finally:
-        file_queue.clean_up_files(guid)
+
+
     # if we got this far make it a good callback
-    response.status_code = 200
+    # response.status_code = 200
 
     # return with the message
-    return response
+    # return response
 
 async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
