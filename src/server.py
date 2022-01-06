@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.service_aggregator import entry
 
 # set the app version
-APP_VERSION = '2.0.22'
+APP_VERSION = '2.0.23'
 
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
