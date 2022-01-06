@@ -150,25 +150,30 @@ async def post_async(host_url, query, guid, params=None):
                         if os.path.exists(file_name):
                             # open and save the file saved from the callback
                             with open(file_name, 'r') as f:
-                                # save the data in the file to a Response object
-                                response._content = bytes(f.read(), 'utf-8')
+                                # load the contents of the data in the file
+                                content = bytes(f.read(), 'utf-8')
 
                                 # check to insure we got data from the file
-                                if len(response._content):
+                                if len(content):
                                     # set the status to indicate success
                                     response.status_code = 200
+
+                                    # save the data to the Response object
+                                    response._content = content
                                 else:
                                     # empty file
-                                    response.status_code = 422
+                                    raise HTTPException(500, f'{guid}: Async response data file empty.')
 
                             # the file is no longer needed so remove it
                             os.remove(file_name)
                         else:
                             # file not found
-                            response.status_code = 404
+                            raise HTTPException(500, f'{guid}: Async response data file not found.')
 
+                        # no need to continue
                         break
 
+        # close the connection to the queue
         await connection.close()
 
     except TimeoutError as e:
