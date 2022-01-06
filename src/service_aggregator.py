@@ -1,4 +1,5 @@
 """Literature co-occurrence support."""
+import json
 import logging
 import requests
 import os
@@ -14,6 +15,9 @@ from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
 
 logger = logging.getLogger(__name__)
+
+# declare the directory where the async data files will exist
+queue_file_dir = './queue-files'
 
 
 async def entry(message, guid, coalesce_type='all') -> (dict, int):
@@ -111,6 +115,12 @@ async def post_async(host_url, query, guid, params=None):
         # if there is an error this will return a <requests.models.Response> type
         return post_response
 
+    # create the response object
+    response = Response()
+
+    # init the status
+    response.status_code = 200
+
     try:
         # get the rabbitmq connection params
         q_username = os.environ.get('QUEUE_USER', 'guest')
@@ -133,9 +143,29 @@ async def post_async(host_url, query, guid, params=None):
                 # wait the for the message
                 async for message in queue_iter:
                     async with message.process():
-                        response = Response()
-                        response.status_code = 200
-                        response._content = message.body
+                        # build the path/file name
+                        file_name = f'{queue_file_dir}/{guid}-async-data.json'
+
+                        # check to insure file exists
+                        if os.path.exists(file_name):
+                            # open and save the file saved from the callback
+                            with open(file_name, 'r') as f:
+                                # save the data in the file to a Response object
+                                response._content = bytes(f.read(), 'utf-8')
+
+                                # check to insure we got data from the file
+                                if len(response._content):
+                                    # set the status to indicate success
+                                    response.status_code = 200
+                                else:
+                                    # empty file
+                                    response.status_code = 422
+
+                            # the file is no longer needed so remove it
+                            os.remove(file_name)
+                        else:
+                            # file not found
+                            response.status_code = 404
 
                         break
 
@@ -143,6 +173,7 @@ async def post_async(host_url, query, guid, params=None):
 
     except TimeoutError as e:
         error_string = f'{guid}: Async query to {host_url} timed out'
+        logger.exception(error_string, e)
         response = Response()
         response.status_code = 598
         return response
@@ -150,9 +181,6 @@ async def post_async(host_url, query, guid, params=None):
         error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
         logger.exception(error_string, e)
         raise HTTPException(500, error_string)
-
-    # if we got this far make it a good callback
-    response.status_code = 200
 
     # return with the message
     return response

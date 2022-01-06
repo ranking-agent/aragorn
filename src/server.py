@@ -20,15 +20,15 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from src.service_aggregator import entry
 
+# set the app version
+APP_VERSION = '2.0.22'
+
 # Set up default logger.
 with pkg_resources.resource_stream('src', 'logging.yml') as f:
     config = yaml.safe_load(f.read())
 
 # declare the log directory
 log_dir = './logs'
-
-# set the app version
-APP_VERSION = '2.0.22'
 
 # make the directory if it does not exist
 if not os.path.exists(log_dir):
@@ -42,6 +42,13 @@ logging.config.dictConfig(config)
 
 # create a logger
 logger = logging.getLogger(__name__)
+
+# declare the directory where the async data files will exist
+queue_file_dir = './queue-files'
+
+# make the directory if it does not exist
+if not os.path.exists(queue_file_dir):
+    os.makedirs(queue_file_dir)
 
 # declare the FastAPI details
 APP = FastAPI(
@@ -238,16 +245,23 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             # get a channel to the queue
             channel = await connection.channel()
 
-            # publish what was received for the sub-service
-            publish_val = await channel.default_exchange.publish(aio_pika.Message(body=response.json().encode()), routing_key=guid)
+            # create a file path/name
+            file_name = f'{queue_file_dir}/{guid}-async-data.json'
+
+            # save the response data to a file
+            with open(file_name, 'w') as data_file:
+                data_file.write(response.json())
+
+            # publish what was received for the sub-service. post the file name for the queue handler
+            publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
 
             if isinstance(publish_val, spec.Basic.Ack):
                 logger.info(f'{guid}: Callback message published to queue.')
             else:
-                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
-
                 # set the html error code
                 ret_val = 422
+
+                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
 
     except Exception as e:
         logger.exception(f'Exception detected while handling sub-service callback using guid {guid}', e)
@@ -259,6 +273,7 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
         if connection:
             await connection.close()
 
+    # return the response code
     return ret_val
 
 
