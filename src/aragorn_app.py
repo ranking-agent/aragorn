@@ -277,4 +277,4 @@ async def receive_aragorn_async_response(response: PDResponse) -> int:
     # return the response code
     return 200
 
-ARAGORN_APP.openapi_schema = construct_open_api_schema(ARAGORN_APP, description="ARAGORN: A fully-federated Translator ARA.")
+ARAGORN_APP.openapi_schema = construct_open_api_schema(ARAGORN_APP, prefix="aragorn", description="ARAGORN: A fully-federated Translator ARA.")

@@ -201,4 +201,4 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
     return JSONResponse(content=final_msg, status_code=status_code)
 
 
-ROBOKOP_APP.openapi_schema = construct_open_api_schema(ROBOKOP_APP, description="ROBOKOP: A non-federated ARA",infores="infores:robokop")
+ROBOKOP_APP.openapi_schema = construct_open_api_schema(ROBOKOP_APP, prefix="robokop",description="ROBOKOP: A non-federated ARA",infores="infores:robokop")
