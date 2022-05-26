@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 queue_file_dir = './queue-files'
 
 
-async def entry(message, guid, coalesce_type='all') -> (dict, int):
+async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
 
@@ -34,7 +34,7 @@ async def entry(message, guid, coalesce_type='all') -> (dict, int):
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
-    known_operations = {'lookup': strider,
+    known_operations = {'lookup': partial(lookup, caller=caller),
                         'enrich_results': partial(answercoalesce, coalesce_type=coalesce_type),
                         'overlay_connect_knodes': omnicorp,
                         'score': score,
@@ -190,7 +190,7 @@ async def post_async(host_url, query, guid, params=None):
     # return with the message
     return response
 
-async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
+async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
     launches a post request, returns the response.
 
@@ -282,29 +282,84 @@ async def post(name, url, message, guid, asyncquery=False, params=None) -> (dict
     return ret_val, status_code
 
 
-async def strider(message, params, guid) -> (dict, int):
+async def lookup(message, params, guid, caller='ARAGORN') -> (dict, int):
     """
-    Calls strider
+    Performs lookup, parameterized by ARAGORN/ROBOKOP and whether the query is an infer type query
 
     :param message:
     :param params:
     :param guid:
+    :param caller:
     :return:
     """
-    url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.2/")
+
+    # Currently, we support:
+    # queries that are any shape with all lookup edges
+    # OR
+    # A 1-hop infer query.
+    qedges = message.get('message',{}).get('query_graph',{}).get('edges',{})
+    n_infer_edges = 0
+    for edge_id, edge_properties in qedges.items():
+        if edge_properties.get('knowledge_type','lookup') == 'inferred':
+            n_infer_edges += 1
+    if (n_infer_edges > 1):
+        return "Only a single infer edge is supported",400
+    if (n_infer_edges > 0) and (n_infer_edges < len(qedges)):
+        return "Mixed infer and lookup queries not supported", 400
+    infer = (n_infer_edges == 1)
+
+    if caller == 'ARAGORN':
+        return aragorn_lookup(message,params,guid,infer)
+    elif caller == 'ROBOKOP':
+        return robokop_lookup(message,params,guid,infer)
+    return f'Illegal caller {caller}', 400
+
+async def aragorn_lookup(input_message,params,guid,infer):
+    if not infer:
+        return strider(input_message,params,guid)
+    #Now it's an infer query.
+    messages = expand_query(input_message,params,guid)
+    result_messages = multi_strider(messages,params,guid)
+    return merge_results_by_node(result_messages)
+
+async def strider(message,params,guid) -> (dict, int):
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
-    if 'test' in message:
-        url += 'query'
-        asyncquery = False
-    else:
-        url += 'asyncquery'
-        asyncquery = True
+    #if 'test' in message:
+    #    strider_url += 'query'
+    #    asyncquery = False
+    #else:
+    strider_url += 'asyncquery'
+    asyncquery = True
 
-    response = await post('strider', url, message, guid, asyncquery=asyncquery)
+    response = await subservice_post('strider', strider_url, message, guid, asyncquery=asyncquery)
 
     return response
 
+async def robokop_lookup(message,params,guid,infer) -> (dict, int):
+    if not infer:
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
+        return await subservice_post('robokopkg', kg_url, message, guid)
+    #It's an infer, just look it up
+    return lookup_precomputed(message,params,guid)
+
+#TODO
+async def expand_query(input_message,params,guid):
+    import copy
+    return [copy.deepcopy(input_message)]
+
+#TODO
+async def multi_strider(messages,params,guid):
+    return [strider(messages[0])]
+
+#TODO
+async def merge_results_by_node(result_messages):
+    return result_messages[0]
+
+#TODO
+async def lookup_precomputed(message,params,guid):
+    return message
 
 async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, int):
     """
@@ -323,7 +378,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
         if len(message['message']['results']) > params['max_input_size']:
             # This is already too big, don't do anything else
             return message, 200
-    return await post('answer_coalesce', url, message, guid)
+    return await subservice_post('answer_coalesce', url, message, guid)
 
 
 async def omnicorp(message, params, guid) -> (dict, int):
@@ -336,7 +391,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     """
     url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")}omnicorp_overlay'
 
-    return await post('omnicorp', url, message, guid)
+    return await subservice_post('omnicorp', url, message, guid)
 
 
 async def score(message, params, guid) -> (dict, int):
@@ -353,9 +408,9 @@ async def score(message, params, guid) -> (dict, int):
 
     score_url = f'{ranker_url}score'
 
-    message, status_code = await post('weight', weight_url, message, guid)
+    message, status_code = await subservice_post('weight', weight_url, message, guid)
 
-    return await post('score', score_url, message, guid)
+    return await subservice_post('score', score_url, message, guid)
 
 
 async def run_workflow(message, workflow, guid) -> (dict, int):
