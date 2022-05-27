@@ -43,6 +43,9 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
                         'filter_kgraph_orphans': filter_kgraph_orphans,
                         'filter_message_top_n': filter_message_top_n}
 
+    #TODO: Move the inference thing up here, move it into params?
+    #  If inference, don't add enrich to the workflow.  We're already grouping in a particular way
+    #  We could maybe enrich by the specific output node independent of the rest of the graph, could be interesting.
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
     if 'workflow' in message and not (message['workflow'] is None):
         workflow_def = message['workflow']
@@ -326,12 +329,12 @@ async def strider(message,params,guid) -> (dict, int):
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
-    #if 'test' in message:
-    #    strider_url += 'query'
-    #    asyncquery = False
-    #else:
-    strider_url += 'asyncquery'
-    asyncquery = True
+    if 'test' in message:
+        strider_url += 'query'
+        asyncquery = False
+    else:
+        strider_url += 'asyncquery'
+        asyncquery = True
 
     response = await subservice_post('strider', strider_url, message, guid, asyncquery=asyncquery)
 
@@ -405,13 +408,10 @@ async def score(message, params, guid) -> (dict, int):
     ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")
 
     weight_url = f'{ranker_url}weight_correctness'
-
-    score_url = f'{ranker_url}score'
-
     message, status_code = await subservice_post('weight', weight_url, message, guid)
 
+    score_url = f'{ranker_url}score'
     return await subservice_post('score', score_url, message, guid)
-
 
 async def run_workflow(message, workflow, guid) -> (dict, int):
     """
