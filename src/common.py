@@ -79,7 +79,7 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     logger.info(f'{guid}: Awaiting async execute with callback URL: {callback_url}')
 
     # make the asynchronous request
-    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid, caller)
+    final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid, logger, caller)
 
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:

@@ -75,7 +75,7 @@ async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyn
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
 
-    return async_query(background_tasks, request, answer_coalesce_type, logger, 'ROBOKOP')
+    return await async_query(background_tasks, request, answer_coalesce_type, logger, 'ROBOKOP')
 
 # synchronous entry point
 @ROBOKOP_APP.post('/query', tags=["ROBOKOP"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
@@ -86,6 +86,6 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
 
-    return sync_query(request, answer_coalesce_type, logger, 'ROBOKOP')
+    return await sync_query(request, answer_coalesce_type, logger, 'ROBOKOP')
 
 ROBOKOP_APP.openapi_schema = construct_open_api_schema(ROBOKOP_APP, prefix="robokop",description="ROBOKOP: A non-federated ARA",infores="infores:robokop")

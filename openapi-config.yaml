@@ -32,3 +32,4 @@ x-trapi:
   - sort_results_score
   - filter_results_top_n
   - filter_kgraph_orphans
+  - merge_results_by_qnode

@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from src.server import ROBOKOP_APP as APP
+from src.server import APP as APP
 from src import operations
 import os
 import json
@@ -35,7 +35,7 @@ def test_lookup_only():
     query['test'] = ''
 
     # make a good request
-    response = client.post('/query', json=query)
+    response = client.post('/aragorn/query', json=query)
 
     # was the request successful
     assert (response.status_code == 200)

@@ -4,6 +4,8 @@ import logging.config
 import pkg_resources
 import yaml
 import aio_pika
+import random
+import string
 
 from pamqp import specification as spec
 from enum import Enum
@@ -76,7 +78,7 @@ async def async_query_handler(background_tasks: BackgroundTasks, request: PDAsyn
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
-    return async_query(background_tasks, request, answer_coalesce_type, logger, 'ARAGORN')
+    return await async_query(background_tasks, request, answer_coalesce_type, logger, 'ARAGORN')
 
 # synchronous entry point
 @ARAGORN_APP.post('/query', tags=["ARAGORN"], response_model=PDResponse, response_model_exclude_none=True, status_code=200)
@@ -86,7 +88,7 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
 
         Strider -> (optional) Answer Coalesce -> ARAGORN-Ranker:omnicorp overlay -> ARAGORN-Ranker:weight correctness -> ARAGORN-Ranker:score
     """
-    return sync_query(request, answer_coalesce_type, logger, "ARAGORN")
+    return await sync_query(request, answer_coalesce_type, logger, "ARAGORN")
 
 @ARAGORN_APP.post("/callback/{guid}", tags=["ARAGORN"], include_in_schema=False)
 async def subservice_callback(response: PDResponse,  guid: str) -> int:
@@ -116,7 +118,8 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             channel = await connection.channel()
 
             # create a file path/name
-            file_name = f'{queue_file_dir}/{guid}-async-data.json'
+            fname = ''.join(random.choices(string.ascii_lowercase, k=12))
+            file_name = f'{queue_file_dir}/{guid}-{fname}-async-data.json'
 
             # save the response data to a file
             with open(file_name, 'w') as data_file:
