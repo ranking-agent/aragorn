@@ -1,0 +1,25 @@
+familial spinal neurofibromatosis MONDO:0008078
+acanthosis nigricans MONDO:0007035
+alpha thalassemia MONDO:0011399
+Huntington disease MONDO:0007739
+Lesch-Nyhan syndrome MONDO:0010298
+Zellweger syndrome MONDO:0019609
+Fabry disease MONDO:0010526
+Alzheimer disease MONDO:0004975
+Abnormal blood glucose concentration HP:0011015
+cirrhosis of liver MONDO:0005155
+Diarrhea HP:0002014
+Headache HP:0002315
+hepatitis MONDO:0002251
+Hypercholesterolemia HP:0003124
+Hypertension HP:0000822
+influenza MONDO:0005812
+Ketoacidosis HP:0001993
+Nephrotic syndrome MONDO:0005377
+ovarian cancer MONDO:0008170
+type 1 diabetes mellitus MONDO:0005147
+type 2 diabetes mellitus MONDO:0005148
+autism MONDO:0005260
+Noonan syndrome MONDO:0018997
+chronic obstructive pulmonary disease MONDO:0005002
+Colon cancer HP:0003003
