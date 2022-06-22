@@ -46,12 +46,13 @@ def go():
         outf.write('from string import Template\n')
         outf.write('rules = [\n')
         add_rules('2hops_new.txt',outf)
-        add_rules('3hops_old.txt',outf)
+        add_rules('3hops_old.txt',outf,maxrules=50)
         outf.write(']\n')
 
-def add_rules(rulename,outf):
+def add_rules(rulename,outf,maxrules=9999999):
     with open(rulename, 'r') as inf:
         #h = inf.readline()
+        nwritten = 0
         for line in inf:
             if line.startswith('#'):
                 continue
@@ -59,6 +60,9 @@ def add_rules(rulename,outf):
             trapi = rule_to_trapi(x)
             tstring = json.dumps(trapi)
             outf.write(f"Template('{tstring}'),\n")
+            nwritten +=1
+            if nwritten >= maxrules:
+                break
 
 if __name__ == '__main__':
     go()

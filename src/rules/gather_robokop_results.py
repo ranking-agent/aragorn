@@ -16,7 +16,7 @@ def get_redis(db=1):
 
 async def get_input_ids():
     cdids = []
-    with open('cases.txt') as inf:
+    with open('src/rules/cases.txt') as inf:
         for line in inf:
             x = line.strip().split()[-1]
             cdids.append(x)
@@ -32,7 +32,7 @@ async def get_input_ids():
 async def collect_results(did,r):
     print(did)
     result_messages = []
-    for rule in rules:
+    for nr,rule in enumerate(rules):
         #We're using the $ here so that we can update as needed to match the input query
         query = rule.substitute(disease="$disease$", chemical="$chemical$", disease_id=did)
         qg = json.loads(query)
@@ -41,6 +41,7 @@ async def collect_results(did,r):
         results = requests.post(automat_url,json=message)
         if results.status_code == 200:
             message = results.json()
+            print(nr, len(message['message']['results']) )
             if len(message['message']['results']) > 0:
                 result_messages.append(message)
     if len(result_messages) > 0:
