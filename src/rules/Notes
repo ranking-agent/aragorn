@@ -1,0 +1,10 @@
+to turn the original files from Kara into the rules going into robokop/aragorn we do the following:
+1. remove any rule with precision (first numerical column) < 0.05.
+2. remove any rule with "subclass, causes, contributes, causes_adverse_events" predicates
+
+There's still something that has to be done by hand which is culling symmetric rules.  For something like related_to, there will be two rules, one pointing each direction.  One needs to be removed
+
+Also in the 3hops, there are some funky has_part(a,b), has_part(b,a) that appear to be driven by robokop problems.  Removing them.
+And keeping maybe the top 50 rules from 3-hops.
+
+Also add the self rule treats->treats to the 2-hop rules by hand

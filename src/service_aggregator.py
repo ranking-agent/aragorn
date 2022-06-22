@@ -7,6 +7,9 @@ import aio_pika
 from collections import defaultdict
 from copy import deepcopy
 
+#temporary
+from neo4j import GraphDatabase
+
 from functools import partial
 from src.util import create_log_entry
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
@@ -41,12 +44,20 @@ def examine_query(message):
         raise Exception("Mixed infer and lookup queries not supported", 400)
     infer = (n_infer_edges == 1)
     if not infer:
-        return infer, None
+        return infer, None, None
     qnodes = message.get('message',{}).get('query_graph',{}).get('nodes',{})
+    question_node = None
+    answer_node = None
     for qnode_id, qnode in qnodes.items():
         if not 'ids' in qnode:
-            return infer,qnode_id
-    raise Exception("Both nodes of creative edge pinned", 400)
+            answer_node = qnode_id
+        else:
+            question_node = qnode_id
+    if answer_node is None:
+        raise Exception("Both nodes of creative edge pinned", 400)
+    if question_node is None:
+        raise Exception("No nodes of creative edge pinned", 400)
+    return infer,question_node,answer_node
 
 
 async def entry(message, guid, coalesce_type, caller) -> (dict, int):
@@ -60,7 +71,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     """
 
     try:
-        infer, answer_qnode = examine_query(message)
+        infer, question_qnode, answer_qnode = examine_query(message)
     except Exception as e:
         return e
 
@@ -68,7 +79,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
-    known_operations = {'lookup': partial(lookup, caller=caller, infer=infer, answer_qnode = answer_qnode),
+    known_operations = {'lookup': partial(lookup, caller=caller, infer=infer, answer_qnode = answer_qnode, question_qnode = question_qnode),
                         'enrich_results': partial(answercoalesce, coalesce_type=coalesce_type),
                         'overlay_connect_knodes': omnicorp,
                         'score': score,
@@ -225,6 +236,7 @@ async def post_async(host_url, query, guid, params=None):
                             jr = json.loads(content)
                             query = Query.parse_obj(jr)
                             pydantic_kgraph.update(query.message.knowledge_graph)
+                            print(jr['message']['query_graph'])
                             print(len(jr['message']['results']))
                             accumulated_results += jr['message']['results']
 
@@ -289,7 +301,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
     logger.debug(f"{guid}: Calling {url}")
     print(url)
-    print(message)
+    #print(message)
 
     try:
         # launch the post depending on the query type and get the response
@@ -353,7 +365,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
     return ret_val, status_code
 
 
-async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qnode=None) -> (dict, int):
+async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qnode=None, question_qnode=None) -> (dict, int):
     """
     Performs lookup, parameterized by ARAGORN/ROBOKOP and whether the query is an infer type query
 
@@ -367,7 +379,7 @@ async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qn
     if caller == 'ARAGORN':
         return await aragorn_lookup(message,params,guid,infer,answer_qnode)
     elif caller == 'ROBOKOP':
-        return await robokop_lookup(message,params,guid,infer)
+        return await robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode)
     return f'Illegal caller {caller}', 400
 
 async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
@@ -375,10 +387,21 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
         return await strider(input_message,params,guid)
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
-    result_messages, sc = await multi_strider(messages,params,guid)
+    result_messages = []
+    for message in messages:
+        result_message, sc = await multi_strider(message,params,guid)
+        result_messages.append(result_message)
+    #We have to stitch stuff together again
+    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes":{}, "edges":{}})
+    for rm in result_messages:
+        pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm['message']['knowledge_graph']))
+    result = result_messages[0]
+    result['message']['knowledge_graph'] = pydantic_kgraph.dict()
     #Now the merged message has the wrong query, let's fix it:
-    result_messages['message']['query_graph'] = deepcopy(input_message['message']['query_graph'])
-    mergedresults = await merge_results_by_node(result_messages,answer_qnode)
+    result['message']['query_graph'] = deepcopy(input_message['message']['query_graph'])
+    for rm in result_messages[1:]:
+        result['message']['results'].extend( rm['message']['results'])
+    mergedresults = await merge_results_by_node(result,answer_qnode)
     return mergedresults, sc
 
 async def merge_results_by_node_op(message,params,guid) -> (dict,int):
@@ -401,7 +424,7 @@ async def strider(message,params,guid) -> (dict, int):
 
     return response
 
-async def robokop_lookup(message,params,guid,infer) -> (dict, int):
+async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) -> (dict, int):
     #For robokop, gotta normalize
     #TODO: this version of normalization is borked right now
     #print(message)
@@ -409,25 +432,35 @@ async def robokop_lookup(message,params,guid,infer) -> (dict, int):
     if not infer:
         kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
         return await subservice_post('robokopkg', f'{kg_url}query', message, guid)
-    #It's an infer, just look it up
-    return lookup_precomputed(message,params,guid)
+    #It's an infeo, just look it up
+    rokres =  await lookup_precomputed(message,guid,question_qnode,answer_qnode)
+    return rokres
+    #return await normalize(rokres,params,guid)
 
 #TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 async def expand_query(input_message,params,guid):
-    nrules = 25
-    #nrules = len(AMIE_EXPANSIONS)
-    message = {}
-    #We need to identify the input and output nodes of the treats edge then update the rules
-    for edge_id, edge in input_message['message']['query_graph']['edges'].items():
-        input_q_chemical_node = edge['subject']
-        input_q_disease_node = edge['object']
-    input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
-    to_run = AMIE_EXPANSIONS[:nrules]
-    for num,rule in enumerate(to_run):
-        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id = input_disease_id)
-        qg = json.loads(query)
-        message[f'query_{num}'] = {'message': qg }
-    return message
+    #nrules = 1
+    nrules = len(AMIE_EXPANSIONS)
+    messages = []
+    #for rnums in [(0, 1), (1, 2), (2, 3)]:
+    #for rnums in [(0, 10), (10, 20), (20, 29)]:
+    #for rnums in [(0, 5), (5,10),(10, 15), (15,20), (20, 25), (25,29)]:
+    for rnums in [(0,nrules)]:
+        message = {}
+        #We need to identify the input and output nodes of the treats edge then update the rules
+        for edge_id, edge in input_message['message']['query_graph']['edges'].items():
+            input_q_chemical_node = edge['subject']
+            input_q_disease_node = edge['object']
+        input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
+        to_run = AMIE_EXPANSIONS[rnums[0]:rnums[1]]
+        for num,rule in enumerate(to_run):
+            query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id = input_disease_id)
+            qg = json.loads(query)
+            message[f'query_{num}'] = {'message': qg }
+            #with open('multistrider.json','w') as outf:
+            #    json.dump(message,outf,indent=4)
+        messages.append(message)
+    return messages
 
 #TODO
 async def multi_strider(messages,params,guid):
@@ -444,10 +477,11 @@ async def merge_answer(results,qnode_ids):
     #The original qnode bindings are the same in all results by construction
     mergedresult = {'node_bindings': { q: results[0]['node_bindings'][q] for q in qnode_ids},
                     'edge_bindings': {}}
-    for result in results:
-        # the gross part here is dealing with the lists in the values of the bindings.
-        for bindingtype in ['node','edge']:
-            bound_things = set()
+
+    for bindingtype in ['node', 'edge']:
+        bound_things = set()
+        for result in results:
+            # the gross part here is dealing with the lists in the values of the bindings.
             for key,binding in result[f'{bindingtype}_bindings'].items():
                 if key in qnode_ids:
                     continue
@@ -482,9 +516,91 @@ async def merge_results_by_node(result_message, merge_qnode):
     result_message['message']['results'] = new_results
     return result_message
 
-#TODO
-async def lookup_precomputed(message,params,guid):
-    return message
+#### The functions down to lookup_precomputed are a quickndirty way of pulling precomputed results from a graph we have
+# but it's not really how we want this to work.  I think we should pre-turn them into trapi and then just stuff em
+# in a redis.
+
+def get_precomputed_from_neo4j(tx,did):
+    neoresults = tx.run(f"match (input:`biolink:DiseaseOrPhenotypicFeature` {{id:'{did}'}})-[x]-(output) return input, output, collect(x) as xs")
+    lresults=list(neoresults)
+    return lresults
+
+async def add_node(kg, neo4j_node):
+    nodeid = neo4j_node['id']
+    nodename = neo4j_node.get('name',nodeid)
+    if nodeid in kg['nodes'] and (kg['nodes'].get('name','') == nodename) :
+        return nodeid
+    if isinstance(nodename,list):
+        nodename = nodename[0]
+    trapi_node = {"categories": neo4j_node.get('category',['biolink:NamedThing']),  "name": nodename }
+    trapi_node['attributes'] = [ { "attribute_type_id": "biolink:same_as",
+                                   "value": neo4j_node.get('equivalent_identifiers',[]),
+                                   "value_type_id": "metatype:uriorcurie"} ]
+    kg['nodes'][nodeid] = trapi_node
+    return nodeid
+
+async def format_neo(neo_results,question_qnode,answer_qnode):
+    knowledge_graph = {"nodes":{}, "edges": {}}
+    results = []
+    for neo_result in neo_results:
+        #print(neo_result)
+        #try:
+        #    print(knowledge_graph['nodes']['PUBCHEM.COMPOUND:2355'])
+        #except:
+        #    print('not yet')
+        input_id = await add_node(knowledge_graph,neo_result['input'])
+        output_id = await add_node(knowledge_graph,neo_result['output'])
+        result = {'node_bindings': {question_qnode:[{'id': input_id }], answer_qnode:[{'id': output_id}]}, 'edge_bindings': {}}
+        added_nodes = {input_id: question_qnode, output_id: answer_qnode}
+        for edge in neo_result['xs']:
+            rule = edge["rule"]
+            #make sure rule looks like we expect
+            if not rule.startswith("biolink:treats(e0,e1):-"):
+                print('dangit')
+                print(rule)
+                raise 500
+            #break it up into trapi edges
+            new_edges = rule[:-1].split(':- ')[1].split(', ')
+            paths = edge['provenance_paths']
+            #get the nodes and add them to the kg and node bindings
+            #It's not clear there are more than one path.  I think it's a mistake.  if they ever differ, then
+            # we're wrong
+            path = paths[0]
+            nodemap = {k.strip():v for k,v in [x.split(':=') for x in path.split(',')]}
+            for k,v in nodemap.items():
+                if k not in ('e0','e1'):
+                    if v not in added_nodes:
+                        added_nodes[v] = f'_dummy_node_{len(added_nodes)}'
+                        result['node_bindings'][added_nodes[v]] = [{'id':v}]
+                if v not in knowledge_graph['nodes']:
+                    knowledge_graph['nodes'][v] = {'categories':['biolink:NamedThing'],'name':v}
+            # generate kg edges and edge bindings
+            for edge in new_edges:
+                x = edge.index('(')
+                predicate = edge[:x]
+                amie_nodes = edge[x:][1:-1].split(',')
+                #This is to get rid of (a)-subclassof->(a) trash
+                if nodemap[amie_nodes[0]] == nodemap[amie_nodes[1]]:
+                    continue
+                kg_edge = {'subject': nodemap[amie_nodes[0]], 'object': nodemap[amie_nodes[1]], 'predicate': predicate}
+                kedge_id = f'edge_{len(knowledge_graph["edges"])}'
+                knowledge_graph['edges'][kedge_id] = kg_edge
+                result['edge_bindings'][f'_dummy_edge{len(result["edge_bindings"])}'] = [ {'id': kedge_id}]
+        results.append(result)
+    return knowledge_graph, results
+
+async def lookup_precomputed(message,guid,question_qnode,answer_qnode):
+    disease_id = message['message']['query_graph']['nodes'][question_qnode]['ids'][0]
+    NEO4J_URL = "neo4j://inference-neo4j.apps.renci.org:7687"
+    neopass = os.environ.get("NEO4JPASS", "nopeynope")
+    driver = GraphDatabase.driver(NEO4J_URL,auth=("neo4j",neopass))
+    with driver.session() as session:
+        neoresults = session.read_transaction(get_precomputed_from_neo4j,disease_id)
+    driver.close()
+    kg, results = await format_neo(neoresults,question_qnode,answer_qnode)
+    message['message']['knowledge_graph'] = kg
+    message['message']['results'] = results
+    return message, 200
 
 async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, int):
     """

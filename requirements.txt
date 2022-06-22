@@ -13,3 +13,5 @@ pyyaml==5.3.1
 pytest-asyncio==0.15.1
 httpx==0.19.0
 aio-pika
+#This is temporary until we replace the neo4j with a redis store
+neo4j
