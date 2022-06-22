@@ -26,8 +26,10 @@ def rule_to_trapi(rule):
     e0: drug node
     e1: disease node
     e2: new node"""
+    #Note that we're putting a category on the disease node.  This is to make the cypher index happy.  It should not be
+    # required in future versions of the transpiler
     t = {'query_graph': {'nodes': {'$chemical':{'categories':['biolink:ChemicalEntity']},
-                                   '$disease':{'ids':['$disease_id']}}, 'edges': {}}}
+                                   '$disease':{'ids':['$disease_id'], 'categories':['biolink:DiseaseOrPhenotypicFeature']}}, 'edges': {}}}
     x = rule.split(':- ')[1]
     a_edges = x.split(', ')
     for ecount,amie_edge in enumerate(a_edges):
