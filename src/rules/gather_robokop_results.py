@@ -20,7 +20,7 @@ async def get_input_ids():
     results = requests.post(automat_url,json=query).json()
     #print(results)
     dids = [ result['row'][0] for result in results['results'][0]['data'] ]
-    skeys = {'MONDO':0, 'HP': 1, 'DOID': 2, 'MESH':3, 'UMLS':4, 'NCIT': 5, 'EFO':6 }
+    skeys = {'MONDO':0, 'HP': 1, 'DOID': 2, 'ORPHANET':3, 'MESH':4, 'UMLS':5, 'NCIT': 6, 'EFO':7 }
     predids = [ (skeys[ x.split(':')[0] ], x) for x in dids]
     predids.sort()
     dids = [ x[1] for x in predids ]
