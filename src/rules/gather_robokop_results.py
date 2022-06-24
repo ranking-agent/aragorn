@@ -16,11 +16,11 @@ def get_redis(db=1):
 
 async def get_input_ids():
     automat_url ='https://automat.renci.org/robokopkg/cypher'
-    query = {"query": "MATCH (n:`biolink:DiseaseOrPhenotypicFeature`) RETURN n.id LIMIT 1"}
+    query = {"query": "MATCH (n:`biolink:DiseaseOrPhenotypicFeature`) RETURN n.id"}
     results = requests.post(automat_url,json=query).json()
     #print(results)
     dids = [ result['row'][0] for result in results['results'][0]['data'] ]
-    skeys = {'MONDO':0, 'HP': 1, 'UMLS':2, 'NCIT': 3, 'EFO':4 }
+    skeys = {'MONDO':0, 'HP': 1, 'MESH':2, 'UMLS':3, 'NCIT': 4, 'EFO':5 }
     predids = [ (skeys[ x.split(':')[0] ], x) for x in dids]
     predids.sort()
     dids = [ x[1] for x in predids ]
