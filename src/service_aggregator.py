@@ -375,13 +375,25 @@ async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qn
         return await robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode)
     return f'Illegal caller {caller}', 400
 
+def chunk(input, n):
+    for i in range(0, len(input), n):
+        yield input[i:i+n]
+
+
 async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
     if not infer:
         return await strider(input_message,params,guid)
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
+    nrules_per_batch = os.environ.get("MULTISTRIDER_BATCH_SIZE", 3)
+    nrules = os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages))
     result_messages = []
-    for message in messages:
+    num = 0
+    for to_run in chunk(messages[:nrules],nrules_per_batch):
+        message={}
+        for q in to_run:
+            num += 1
+            message[f'query_{num}'] = q
         result_message, sc = await multi_strider(message,params,guid)
         result_messages.append(result_message)
     #We have to stitch stuff together again
@@ -441,33 +453,25 @@ async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) 
     if not infer:
         kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
         return await subservice_post('robokopkg', f'{kg_url}query', message, guid)
+
     #It's an infer, just look it up
-    rokres =  await lookup_precomputed(message,guid,question_qnode,answer_qnode)
+    rokres =  await robokop_infer(message, guid, question_qnode, answer_qnode)
     return rokres
     #return await normalize(rokres,params,guid)
 
-def chunk(input, n):
-    for i in range(0, len(input), n):
-        yield input[i:i+n]
 
 #TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 async def expand_query(input_message,params,guid):
-    #We really want to put all the expanded message into a single multistrider query.  But as of June 23 2022
-    # that kills strider.  To get things to run, I have to use a quite small batch (here 3)
+    #What are the relevant qnodes and ids from the input message?
+    for edge_id, edge in input_message['message']['query_graph']['edges'].items():
+        input_q_chemical_node = edge['subject']
+        input_q_disease_node = edge['object']
+    input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
     messages = []
-    nrules_per=3
-    #75 hits just the 2 hops.  I don't really want to stop here, but...
-    for to_run in chunk(AMIE_EXPANSIONS[:75],nrules_per):
-        message = {}
-        #We need to identify the input and output nodes of the treats edge then update the rules
-        for edge_id, edge in input_message['message']['query_graph']['edges'].items():
-            input_q_chemical_node = edge['subject']
-            input_q_disease_node = edge['object']
-        input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
-        for num,rule in enumerate(to_run):
-            query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id = input_disease_id)
-            qg = json.loads(query)
-            message[f'query_{num}'] = {'message': qg }
+    for rule in AMIE_EXPANSIONS:
+        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node,
+                                disease_id=input_disease_id)
+        message = {'message':json.loads(query)}
         messages.append(message)
     return messages
 
@@ -525,30 +529,32 @@ async def merge_results_by_node(result_message, merge_qnode):
     return result_message
 
 
-async def lookup_precomputed(message,guid,question_qnode,answer_qnode):
-    disease_id = message['message']['query_graph']['nodes'][question_qnode]['ids'][0]
-    #Need to set this via the helm charts
-    REDIS_HOST = os.environ.get("REDIS_HOST","localhost")
-    REDIS_PORT = os.environ.get("REDIS_PORT","6379")
-    REDIS_PASS = os.environ.get("REDIS_PASSWORD","")
-    #The 1 here is for "treats" edges.
-    REDIS_DB=1
-    if len(REDIS_PASS) > 0:
-        r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASS)
+async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
+    automat_url = 'https://automat.renci.org/robokopkg/1.2/query'
+    messages = await expand_query(input_message,{},guid)
+    result_messages = []
+    for message in messages:
+        results = requests.post(automat_url,json=message)
+        if results.status_code == 200:
+            message = results.json()
+            if len(message['message']['results']) > 0:
+                result_messages.append(message)
+    if len(result_messages) > 0:
+        # We have to stitch stuff together again
+        # Should this somehow be merged with the similar stuff merging from multistrider?  Probably
+        pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
+        for rm in result_messages:
+            pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm['message']['knowledge_graph']))
+        result = result_messages[0]
+        result['message']['knowledge_graph'] = pydantic_kgraph.dict()
+        for rm in result_messages[1:]:
+            result['message']['results'].extend(rm['message']['results'])
+        mergedresults = await merge_results_by_node(result, answer_qnode)
     else:
-        r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB )
-    canned_result = r.get(disease_id).decode('utf-8')
-    if (canned_result is not None) and (not canned_result == "{}"):
-        #replace the qnode bindings ($disease$ and $chemical$ in the canned query) with the input values
-        canned_result = canned_result.replace('$disease$',question_qnode)
-        canned_result = canned_result.replace('$chemical$',answer_qnode)
-        # string->json
-        crj = json.loads(canned_result)
-        #Replace the canned qgraph with the input qgraph
-        crj['message']['query_graph'] = message['message']['query_graph']
-        message = crj
-    #if canned_result is none, don't need to add a kgraph or results, just return the empty query
-    return message, 200
+        mergedresults = {'message':{'knowledge_graph':{'nodes':{},'edges':{}}, 'results':[]}}
+    #The merged results will have some expanded query, we want the original query.
+    mergedresults['message']['query_graph'] = input_message['message']['query_graph']
+    return mergedresults, 200
 
 async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, int):
     """
