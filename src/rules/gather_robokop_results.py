@@ -15,19 +15,18 @@ def get_redis(db=1):
     return r
 
 async def get_input_ids():
-    cdids = []
-    with open('src/rules/cases.txt') as inf:
-        for line in inf:
-            x = line.strip().split()[-1]
-            cdids.append(x)
     automat_url ='https://automat.renci.org/robokopkg/cypher'
     query = {"query": "MATCH (n:`biolink:DiseaseOrPhenotypicFeature`) RETURN n.id LIMIT 1"}
     results = requests.post(automat_url,json=query).json()
     #print(results)
     dids = [ result['row'][0] for result in results['results'][0]['data'] ]
+    skeys = {'MONDO':0, 'HP': 1, 'UMLS':2, 'NCIT': 3, 'EFO':4 }
+    predids = [ (skeys[ x.split(':')[0] ], x) for x in dids]
+    predids.sort()
+    dids = [ x[1] for x in predids ]
     print(len(dids))
     #This will double count some, but the redis check will skip them the second time so who cares.
-    return cdids+dids
+    return dids
 
 async def collect_results(did,r):
     print(did)
