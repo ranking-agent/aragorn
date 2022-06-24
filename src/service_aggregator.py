@@ -7,8 +7,7 @@ import aio_pika
 from collections import defaultdict
 from copy import deepcopy
 
-#temporary
-from neo4j import GraphDatabase
+import redis
 
 from functools import partial
 from src.util import create_log_entry
@@ -148,7 +147,6 @@ async def post_async(host_url, query, guid, params=None):
     callback_host = os.environ.get('CALLBACK_HOST', '/')
 
     callback_url = f'{callback_host}/callback/{guid}'
-    print(callback_url)
 
     #query can be a single trapi message, or it can be a dict where each value is a trapi message
     # (e.g. for multiquery strider)
@@ -220,7 +218,6 @@ async def post_async(host_url, query, guid, params=None):
                 async for message in queue_iter:
                     async with message.process():
                         #Got 1
-                        print(f'new result {num_responses} of {num_queries}')
                         num_responses += 1
                         # build the path/file name
                         file_name = message.body.decode()
@@ -236,8 +233,6 @@ async def post_async(host_url, query, guid, params=None):
                             jr = json.loads(content)
                             query = Query.parse_obj(jr)
                             pydantic_kgraph.update(query.message.knowledge_graph)
-                            print(jr['message']['query_graph'])
-                            print(len(jr['message']['results']))
                             accumulated_results += jr['message']['results']
 
                             if num_responses == num_queries:
@@ -300,8 +295,6 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         del message['workflow']
 
     logger.debug(f"{guid}: Calling {url}")
-    print(url)
-    #print(message)
 
     try:
         # launch the post depending on the query type and get the response
@@ -424,45 +417,60 @@ async def strider(message,params,guid) -> (dict, int):
 
     return response
 
+
+async def normalize_qgraph_ids(m):
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.2/")}get_normalized_node'
+    qnodes = m['message']['query_graph']['nodes']
+    qnode_ids = set()
+    for qid, qnode in qnodes.items():
+        if 'ids' in qnode:
+            qnode_ids.update(qnode['ids'])
+    nnp = { "curies": list(qnode_ids), "conflate": True }
+    nnresult = requests.post(url,json=nnp)
+    if nnresult.status_code == 200:
+        for qid, qnode in qnodes.items():
+            if 'ids' in qnode:
+                new_ids = [ nnresult[i]['id']['identifier'] for i in qnode['ids']]
+                qnode['ids'] = new_ids
+    return m
+
+
 async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) -> (dict, int):
     #For robokop, gotta normalize
-    #TODO: this version of normalization is borked right now
-    #print(message)
-    #message = await normalize(message,params,guid)
+    message = await normalize_qgraph_ids(message)
     if not infer:
         kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
         return await subservice_post('robokopkg', f'{kg_url}query', message, guid)
-    #It's an infeo, just look it up
+    #It's an infer, just look it up
     rokres =  await lookup_precomputed(message,guid,question_qnode,answer_qnode)
     return rokres
     #return await normalize(rokres,params,guid)
 
+def chunk(input, n):
+    for i in range(0, len(input), n):
+        yield input[i:i+n]
+
 #TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 async def expand_query(input_message,params,guid):
-    #nrules = 1
-    nrules = len(AMIE_EXPANSIONS)
+    #We really want to put all the expanded message into a single multistrider query.  But as of June 23 2022
+    # that kills strider.  To get things to run, I have to use a quite small batch (here 3)
     messages = []
-    #for rnums in [(0, 1), (1, 2), (2, 3)]:
-    #for rnums in [(0, 10), (10, 20), (20, 29)]:
-    #for rnums in [(0, 5), (5,10),(10, 15), (15,20), (20, 25), (25,29)]:
-    for rnums in [(0,nrules)]:
+    nrules_per=3
+    #75 hits just the 2 hops.  I don't really want to stop here, but...
+    for to_run in chunk(AMIE_EXPANSIONS[:75],nrules_per):
         message = {}
         #We need to identify the input and output nodes of the treats edge then update the rules
         for edge_id, edge in input_message['message']['query_graph']['edges'].items():
             input_q_chemical_node = edge['subject']
             input_q_disease_node = edge['object']
         input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
-        to_run = AMIE_EXPANSIONS[rnums[0]:rnums[1]]
         for num,rule in enumerate(to_run):
             query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id = input_disease_id)
             qg = json.loads(query)
             message[f'query_{num}'] = {'message': qg }
-            #with open('multistrider.json','w') as outf:
-            #    json.dump(message,outf,indent=4)
         messages.append(message)
     return messages
 
-#TODO
 async def multi_strider(messages,params,guid):
     strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
 
@@ -516,90 +524,30 @@ async def merge_results_by_node(result_message, merge_qnode):
     result_message['message']['results'] = new_results
     return result_message
 
-#### The functions down to lookup_precomputed are a quickndirty way of pulling precomputed results from a graph we have
-# but it's not really how we want this to work.  I think we should pre-turn them into trapi and then just stuff em
-# in a redis.
-
-def get_precomputed_from_neo4j(tx,did):
-    neoresults = tx.run(f"match (input:`biolink:DiseaseOrPhenotypicFeature` {{id:'{did}'}})-[x]-(output) return input, output, collect(x) as xs")
-    lresults=list(neoresults)
-    return lresults
-
-async def add_node(kg, neo4j_node):
-    nodeid = neo4j_node['id']
-    nodename = neo4j_node.get('name',nodeid)
-    if nodeid in kg['nodes'] and (kg['nodes'].get('name','') == nodename) :
-        return nodeid
-    if isinstance(nodename,list):
-        nodename = nodename[0]
-    trapi_node = {"categories": neo4j_node.get('category',['biolink:NamedThing']),  "name": nodename }
-    trapi_node['attributes'] = [ { "attribute_type_id": "biolink:same_as",
-                                   "value": neo4j_node.get('equivalent_identifiers',[]),
-                                   "value_type_id": "metatype:uriorcurie"} ]
-    kg['nodes'][nodeid] = trapi_node
-    return nodeid
-
-async def format_neo(neo_results,question_qnode,answer_qnode):
-    knowledge_graph = {"nodes":{}, "edges": {}}
-    results = []
-    for neo_result in neo_results:
-        #print(neo_result)
-        #try:
-        #    print(knowledge_graph['nodes']['PUBCHEM.COMPOUND:2355'])
-        #except:
-        #    print('not yet')
-        input_id = await add_node(knowledge_graph,neo_result['input'])
-        output_id = await add_node(knowledge_graph,neo_result['output'])
-        result = {'node_bindings': {question_qnode:[{'id': input_id }], answer_qnode:[{'id': output_id}]}, 'edge_bindings': {}}
-        added_nodes = {input_id: question_qnode, output_id: answer_qnode}
-        for edge in neo_result['xs']:
-            rule = edge["rule"]
-            #make sure rule looks like we expect
-            if not rule.startswith("biolink:treats(e0,e1):-"):
-                print('dangit')
-                print(rule)
-                raise 500
-            #break it up into trapi edges
-            new_edges = rule[:-1].split(':- ')[1].split(', ')
-            paths = edge['provenance_paths']
-            #get the nodes and add them to the kg and node bindings
-            #It's not clear there are more than one path.  I think it's a mistake.  if they ever differ, then
-            # we're wrong
-            path = paths[0]
-            nodemap = {k.strip():v for k,v in [x.split(':=') for x in path.split(',')]}
-            for k,v in nodemap.items():
-                if k not in ('e0','e1'):
-                    if v not in added_nodes:
-                        added_nodes[v] = f'_dummy_node_{len(added_nodes)}'
-                        result['node_bindings'][added_nodes[v]] = [{'id':v}]
-                if v not in knowledge_graph['nodes']:
-                    knowledge_graph['nodes'][v] = {'categories':['biolink:NamedThing'],'name':v}
-            # generate kg edges and edge bindings
-            for edge in new_edges:
-                x = edge.index('(')
-                predicate = edge[:x]
-                amie_nodes = edge[x:][1:-1].split(',')
-                #This is to get rid of (a)-subclassof->(a) trash
-                if nodemap[amie_nodes[0]] == nodemap[amie_nodes[1]]:
-                    continue
-                kg_edge = {'subject': nodemap[amie_nodes[0]], 'object': nodemap[amie_nodes[1]], 'predicate': predicate}
-                kedge_id = f'edge_{len(knowledge_graph["edges"])}'
-                knowledge_graph['edges'][kedge_id] = kg_edge
-                result['edge_bindings'][f'_dummy_edge{len(result["edge_bindings"])}'] = [ {'id': kedge_id}]
-        results.append(result)
-    return knowledge_graph, results
 
 async def lookup_precomputed(message,guid,question_qnode,answer_qnode):
     disease_id = message['message']['query_graph']['nodes'][question_qnode]['ids'][0]
-    NEO4J_URL = "neo4j://inference-neo4j.apps.renci.org:7687"
-    neopass = os.environ.get("NEO4JPASS", "nopeynope")
-    driver = GraphDatabase.driver(NEO4J_URL,auth=("neo4j",neopass))
-    with driver.session() as session:
-        neoresults = session.read_transaction(get_precomputed_from_neo4j,disease_id)
-    driver.close()
-    kg, results = await format_neo(neoresults,question_qnode,answer_qnode)
-    message['message']['knowledge_graph'] = kg
-    message['message']['results'] = results
+    #Need to set this via the helm charts
+    REDIS_HOST = os.environ.get("REDIS_HOST","localhost")
+    REDIS_PORT = os.environ.get("REDIS_PORT","6379")
+    REDIS_PASS = os.environ.get("REDIS_PASSWORD","")
+    #The 1 here is for "treats" edges.
+    REDIS_DB=1
+    if len(REDIS_PASS) > 0:
+        r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASS)
+    else:
+        r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB )
+    canned_result = r.get(disease_id).decode('utf-8')
+    if (canned_result is not None) and (not canned_result == "{}"):
+        #replace the qnode bindings ($disease$ and $chemical$ in the canned query) with the input values
+        canned_result = canned_result.replace('$disease$',question_qnode)
+        canned_result = canned_result.replace('$chemical$',answer_qnode)
+        # string->json
+        crj = json.loads(canned_result)
+        #Replace the canned qgraph with the input qgraph
+        crj['message']['query_graph'] = message['message']['query_graph']
+        message = crj
+    #if canned_result is none, don't need to add a kgraph or results, just return the empty query
     return message, 200
 
 async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, int):
@@ -670,7 +618,6 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
     status_code = None
 
     for operator_function, params in workflow:
-        print(operator_function)
         message, status_code = await operator_function(message, params, guid)
 
         if status_code != 200 or 'results' not in message['message']:

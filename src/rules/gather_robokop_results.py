@@ -18,7 +18,6 @@ async def get_input_ids():
     automat_url ='https://automat.renci.org/robokopkg/cypher'
     query = {"query": "MATCH (n:`biolink:DiseaseOrPhenotypicFeature`) RETURN n.id"}
     results = requests.post(automat_url,json=query).json()
-    #print(results)
     dids = [ result['row'][0] for result in results['results'][0]['data'] ]
     vals = ['MONDO','HP','DOID','ORPHANET','OMIM','MESH','UMLS','NCIT','EFO']
     skeys = {p:i for i,p in enumerate(vals)}
@@ -26,7 +25,6 @@ async def get_input_ids():
     predids.sort()
     dids = [ x[1] for x in predids ]
     print(len(dids))
-    #This will double count some, but the redis check will skip them the second time so who cares.
     return dids
 
 async def collect_results(did,r):
