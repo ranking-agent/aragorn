@@ -11,7 +11,7 @@ client = TestClient(APP)
 
 jsondir = 'InputJson_1.2'
 
-@patch('src.server.callback')
+@patch('src.common.callback')
 def test_async(mock_callback):
     # get the location of the test file
     dir_path: str = os.path.dirname(os.path.realpath(__file__))
@@ -25,7 +25,7 @@ def test_async(mock_callback):
     query['test'] = ''
 
     # make a good request
-    response = client.post('/asyncquery', json=query)
+    response = client.post('/aragorn/asyncquery', json=query)
 
     # was the request successful
     assert(response.status_code == 200)
@@ -42,7 +42,13 @@ def test_async(mock_callback):
         now = dt.now()
     assert mock_callback.called
 
-def test_workflow_A1():
+def test_aragorn_wf():
+    workflow_A1('aragorn')
+
+def test_robokop_wf():
+    workflow_A1('robokop')
+
+def workflow_A1(appname):
     # get the location of the test file
     dir_path: str = os.path.dirname(os.path.realpath(__file__))
 
@@ -54,7 +60,7 @@ def test_workflow_A1():
     query['test'] = ''
 
     # make a good request
-    response = client.post('/query', json=query)
+    response = client.post(f'/{appname}/query', json=query)
 
     # was the request successful
     assert(response.status_code == 200)
