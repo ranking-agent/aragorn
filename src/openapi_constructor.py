@@ -54,7 +54,7 @@ def construct_open_api_schema(APP, description, prefix="", infores=None):
     open_api_schema["info"]["title"] = APP.title
 
     if app_version:
-        open_api_schema["info"]["title"] = app_version
+        open_api_schema["info"]["version"] = app_version
 
     # adds support to override server root path
     server_root = os.environ.get('SERVER_ROOT', '/')
