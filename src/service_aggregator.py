@@ -385,9 +385,8 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
         return await strider(input_message,params,guid)
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
-    nrules_per_batch = os.environ.get("MULTISTRIDER_BATCH_SIZE", 3)
-    nrules = os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages))
-    logger.info(f"infering<{guid}>: nrules={nrules} per_batch: {nrules_per_batch}, total rules: {len(messages)}")
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 3))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     result_messages = []
     num = 0
     for to_run in chunk(messages[:nrules],nrules_per_batch):
