@@ -1,3 +1,5 @@
+import os
+
 import requests
 from rules import rules
 import json
@@ -15,7 +17,7 @@ def get_redis(db=1):
     return r
 
 async def get_input_ids():
-    automat_url ='https://automat.renci.org/robokopkg/cypher'
+    automat_url = os.environ.get("ROBOKOP_CYPHER_ENDPOINT", 'https://automat.renci.org/robokopkg/cypher')
     query = {"query": "MATCH (n:`biolink:DiseaseOrPhenotypicFeature`) RETURN n.id"}
     results = requests.post(automat_url,json=query).json()
     dids = [ result['row'][0] for result in results['results'][0]['data'] ]
