@@ -530,7 +530,7 @@ async def merge_results_by_node(result_message, merge_qnode):
 
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/query")
     messages = await expand_query(input_message,{},guid)
     result_messages = []
     for message in messages:
