@@ -48,7 +48,7 @@ def examine_query(message):
     question_node = None
     answer_node = None
     for qnode_id, qnode in qnodes.items():
-        if not 'ids' in qnode:
+        if qnode.get('ids',None) is None:
             answer_node = qnode_id
         else:
             question_node = qnode_id
@@ -72,7 +72,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     try:
         infer, question_qnode, answer_qnode = examine_query(message)
     except Exception as e:
-        return e
+        print(e)
+        return None,500
 
     # A map from operations advertised in our x-trapi to functions
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
@@ -219,6 +220,7 @@ async def post_async(host_url, query, guid, params=None):
                     async with message.process():
                         #Got 1
                         num_responses += 1
+                        logger.debug(f'{guid}: Strider returned {num_responses} out of {num_queries}.')
                         # build the path/file name
                         file_name = message.body.decode()
 
@@ -385,7 +387,7 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
         return await strider(input_message,params,guid)
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 3))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
     nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     result_messages = []
     num = 0
