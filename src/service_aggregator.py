@@ -48,7 +48,7 @@ def examine_query(message):
     question_node = None
     answer_node = None
     for qnode_id, qnode in qnodes.items():
-        if not 'ids' in qnode:
+        if qnode.get('ids',None) is None:
             answer_node = qnode_id
         else:
             question_node = qnode_id
@@ -72,7 +72,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     try:
         infer, question_qnode, answer_qnode = examine_query(message)
     except Exception as e:
-        return e
+        print(e)
+        return None,500
 
     # A map from operations advertised in our x-trapi to functions
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
@@ -219,6 +220,7 @@ async def post_async(host_url, query, guid, params=None):
                     async with message.process():
                         #Got 1
                         num_responses += 1
+                        logger.debug(f'{guid}: Strider returned {num_responses} out of {num_queries}.')
                         # build the path/file name
                         file_name = message.body.decode()
 
@@ -385,17 +387,21 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
         return await strider(input_message,params,guid)
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 3))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
     nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     result_messages = []
     num = 0
+    num_batches_returned = 0
     for to_run in chunk(messages[:nrules],nrules_per_batch):
         message={}
         for q in to_run:
             num += 1
             message[f'query_{num}'] = q
         result_message, sc = await multi_strider(message,params,guid)
+        num_batches_returned += 1
+        logger.info(f'{guid}: {num_batches_returned} batches returned')
         result_messages.append(result_message)
+    logger.info(f"{guid}: strider complete")
     #We have to stitch stuff together again
     pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes":{}, "edges":{}})
     for rm in result_messages:
@@ -407,6 +413,7 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
     for rm in result_messages[1:]:
         result['message']['results'].extend( rm['message']['results'])
     mergedresults = await merge_results_by_node(result,answer_qnode)
+    logger.info(f'{guid}: results merged')
     return mergedresults, sc
 
 async def merge_results_by_node_op(message,params,guid) -> (dict,int):
