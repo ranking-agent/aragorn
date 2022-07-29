@@ -255,10 +255,17 @@ async def post_async(host_url, query, guid, params=None):
         await connection.close()
 
     except TimeoutError as e:
-        error_string = f'{guid}: Async query to {host_url} timed out'
+        error_string = f'{guid}: Async query to {host_url} timed out. Carrying on.'
         logger.exception(error_string, e)
-        response = Response()
-        response.status_code = 598
+        #response.status_code = 598
+        # 598 is too harsh. Set the status to indicate (partial) success
+        response.status_code = 200
+        # save the data to the Response object
+        query.message.knowledge_graph = pydantic_kgraph
+        json_query = query.dict()
+        json_query['message']['results'] = accumulated_results
+        response._content = bytes(json.dumps(json_query),'utf-8')
+        #And return
         return response
     except Exception as e:
         error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
