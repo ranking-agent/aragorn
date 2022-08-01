@@ -585,7 +585,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.2/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
