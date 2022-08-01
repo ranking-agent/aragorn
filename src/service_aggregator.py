@@ -132,6 +132,11 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     return final_answer, status_code
 
 
+async def is_end_message(message):
+    if message.get('status_communication', {}).get('strider_multiquery_status','running') == 'complete':
+        return True
+    return False
+
 async def post_async(host_url, query, guid, params=None):
     """
     Post an asynchronous message.
@@ -234,11 +239,12 @@ async def post_async(host_url, query, guid, params=None):
 
                             jr = json.loads(content)
                             query = Query.parse_obj(jr)
+
+                            if await is_end_message(query):
+                                break
+
                             pydantic_kgraph.update(query.message.knowledge_graph)
                             accumulated_results += jr['message']['results']
-
-                            if num_responses == num_queries:
-                                break
                         else:
                             # file not found
                             raise HTTPException(500, f'{guid}: Async response data file not found.')
