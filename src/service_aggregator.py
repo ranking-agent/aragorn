@@ -132,6 +132,11 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     return final_answer, status_code
 
 
+async def is_end_message(message):
+    if message.get('status_communication', {}).get('strider_multiquery_status','running') == 'complete':
+        return True
+    return False
+
 async def post_async(host_url, query, guid, params=None):
     """
     Post an asynchronous message.
@@ -234,11 +239,12 @@ async def post_async(host_url, query, guid, params=None):
 
                             jr = json.loads(content)
                             query = Query.parse_obj(jr)
+
+                            if await is_end_message(query):
+                                break
+
                             pydantic_kgraph.update(query.message.knowledge_graph)
                             accumulated_results += jr['message']['results']
-
-                            if num_responses == num_queries:
-                                break
                         else:
                             # file not found
                             raise HTTPException(500, f'{guid}: Async response data file not found.')
@@ -255,10 +261,17 @@ async def post_async(host_url, query, guid, params=None):
         await connection.close()
 
     except TimeoutError as e:
-        error_string = f'{guid}: Async query to {host_url} timed out'
+        error_string = f'{guid}: Async query to {host_url} timed out. Carrying on.'
         logger.exception(error_string, e)
-        response = Response()
-        response.status_code = 598
+        #response.status_code = 598
+        # 598 is too harsh. Set the status to indicate (partial) success
+        response.status_code = 200
+        # save the data to the Response object
+        query.message.knowledge_graph = pydantic_kgraph
+        json_query = query.dict()
+        json_query['message']['results'] = accumulated_results
+        response._content = bytes(json.dumps(json_query),'utf-8')
+        #And return
         return response
     except Exception as e:
         error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
@@ -572,7 +585,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.2/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
