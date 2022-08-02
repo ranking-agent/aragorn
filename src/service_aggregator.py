@@ -238,11 +238,10 @@ async def post_async(host_url, query, guid, params=None):
                             os.remove(file_name)
 
                             jr = json.loads(content)
-                            query = Query.parse_obj(jr)
-
-                            if await is_end_message(query):
+                            if await is_end_message(jr):
                                 break
 
+                            query = Query.parse_obj(jr)
                             pydantic_kgraph.update(query.message.knowledge_graph)
                             accumulated_results += jr['message']['results']
                         else:
@@ -435,7 +434,7 @@ async def merge_results_by_node_op(message,params,guid) -> (dict,int):
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.2/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
