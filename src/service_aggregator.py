@@ -238,11 +238,10 @@ async def post_async(host_url, query, guid, params=None):
                             os.remove(file_name)
 
                             jr = json.loads(content)
-                            query = Query.parse_obj(jr)
-
-                            if await is_end_message(query):
+                            if await is_end_message(jr):
                                 break
 
+                            query = Query.parse_obj(jr)
                             pydantic_kgraph.update(query.message.knowledge_graph)
                             accumulated_results += jr['message']['results']
                         else:
