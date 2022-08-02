@@ -102,6 +102,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             workflow_def = [{'id': 'lookup'},
                             {'id': 'overlay_connect_knodes'},
                             {'id': 'score'},
+                            {'id': 'sort_results_score'},
                             {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
         else:
             #TODO: if this is robokop, need to normalize.
