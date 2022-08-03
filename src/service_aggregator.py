@@ -102,6 +102,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             workflow_def = [{'id': 'lookup'},
                             {'id': 'overlay_connect_knodes'},
                             {'id': 'score'},
+                            {'id': 'sort_results_score'},
                             {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
         else:
             #TODO: if this is robokop, need to normalize.
@@ -584,7 +585,8 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
+    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
