@@ -102,7 +102,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             workflow_def = [{'id': 'lookup'},
                             {'id': 'overlay_connect_knodes'},
                             {'id': 'score'},
-                            {'id': 'sort_results_score'},
+                            #{'id': 'sort_results_score'}, Note that filter_message_top_n sorts before filtering
                             {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
         else:
             #TODO: if this is robokop, need to normalize.
@@ -245,6 +245,11 @@ async def post_async(host_url, query, guid, params=None):
                             query = Query.parse_obj(jr)
                             pydantic_kgraph.update(query.message.knowledge_graph)
                             accumulated_results += jr['message']['results']
+
+                            #this is a little messy because this is trying to handle multiquery (returns an end message)
+                            # and single query (no end message; single query)
+                            if num_queries == 1:
+                                break
                         else:
                             # file not found
                             raise HTTPException(500, f'{guid}: Async response data file not found.')
