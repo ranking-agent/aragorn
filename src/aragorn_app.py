@@ -7,7 +7,7 @@ import aio_pika
 import random
 import string
 
-from pamqp import specification as spec
+#from pamqp import specification as spec
 from enum import Enum
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
 from pydantic import BaseModel
@@ -128,13 +128,13 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             # publish what was received for the sub-service. post the file name for the queue handler
             publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
 
-            if isinstance(publish_val, spec.Basic.Ack):
-                logger.info(f'{guid}: Callback message published to queue.')
-            else:
-                # set the html error code
-                ret_val = 422
-
-                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
+            logger.info(f'{guid}: Callback message published to queue.')
+            #if isinstance(publish_val, spec.Basic.Ack):
+            #    logger.info(f'{guid}: Callback message published to queue.')
+            #else:
+            #    # set the html error code
+            #    ret_val = 422
+            #    logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
 
     except Exception as e:
         logger.exception(f'Exception detected while handling sub-service callback using guid {guid}', e)
