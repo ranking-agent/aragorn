@@ -21,7 +21,8 @@ WORKDIR /repo/aragorn
 
 # install requirements
 RUN pip install --upgrade pip
-RUN pip install -r aragorn/requirements.txt
+RUN cat requirements.txt
+RUN pip install -r requirements.txt
 
 # expose the default port
 EXPOSE 4868
