@@ -20,7 +20,7 @@ RUN git clone https://github.com/ranking-agent/aragorn.git
 WORKDIR /repo/aragorn
 
 # install requirements
-RUN pip install -r requirements.txt
+RUN pip install -vvv -r requirements.txt
 
 # expose the default port
 EXPOSE 4868
