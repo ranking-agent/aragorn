@@ -17,6 +17,16 @@ handlers:
     maxBytes: 100000000
     backupCount: 30
 loggers:
+  src.operations:
+    level: DEBUG
+    handlers:
+      - console
+      - file
+  src.common:
+    level: DEBUG
+    handlers:
+      - console
+      - file
   src.server:
       level: INFO
       handlers:

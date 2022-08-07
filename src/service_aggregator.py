@@ -240,6 +240,7 @@ async def post_async(host_url, query, guid, params=None):
 
                             jr = json.loads(content)
                             if await is_end_message(jr):
+                                logger.debug('Received complete message from multistrider')
                                 break
 
                             query = Query.parse_obj(jr)
@@ -249,6 +250,7 @@ async def post_async(host_url, query, guid, params=None):
                             #this is a little messy because this is trying to handle multiquery (returns an end message)
                             # and single query (no end message; single query)
                             if num_queries == 1:
+                                logger.debug('Single message returned from strider; continuing')
                                 break
                         else:
                             # file not found
