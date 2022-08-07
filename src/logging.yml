@@ -17,25 +17,10 @@ handlers:
     maxBytes: 100000000
     backupCount: 30
 loggers:
-  src.operations:
+  src:
     level: DEBUG
     handlers:
       - console
       - file
-  src.common:
-    level: DEBUG
-    handlers:
-      - console
-      - file
-  src.server:
-      level: INFO
-      handlers:
-        - console
-        - file
-  src.service_aggregator:
-      level: DEBUG
-      handlers:
-        - console
-        - file
 incremental: false
 disable_existing_loggers: false

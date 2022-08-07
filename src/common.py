@@ -70,17 +70,20 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     :param caller:
     :return:
     """
+    #This code is terrible
     # capture if this is a test request
-    if 'test' in request:
-        test_mode = True
-    else:
-        test_mode = False
+    #if 'test' in request:
+    #    test_mode = True
+    #else:
+    #    test_mode = False
+    test_mode=False
 
     logger.info(f'{guid}: Awaiting async execute with callback URL: {callback_url}')
 
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid, logger, caller)
 
+    logger.info(f'{guid}: Executing POST to callback URL {callback_url}')
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:
         callback(callback_url, final_msg, guid, caller)
