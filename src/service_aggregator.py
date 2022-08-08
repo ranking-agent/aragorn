@@ -240,6 +240,7 @@ async def post_async(host_url, query, guid, params=None):
 
                             jr = json.loads(content)
                             if await is_end_message(jr):
+                                logger.debug('Received complete message from multistrider')
                                 break
 
                             query = Query.parse_obj(jr)
@@ -249,6 +250,7 @@ async def post_async(host_url, query, guid, params=None):
                             #this is a little messy because this is trying to handle multiquery (returns an end message)
                             # and single query (no end message; single query)
                             if num_queries == 1:
+                                logger.debug('Single message returned from strider; continuing')
                                 break
                         else:
                             # file not found
@@ -476,7 +478,7 @@ async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) 
     #For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
-        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/")
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.3/")
         return await subservice_post('robokopkg', f'{kg_url}query', message, guid)
 
     #It's an infer, just look it up
@@ -616,7 +618,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")}omnicorp_overlay'
 
     return await subservice_post('omnicorp', url, message, guid)
 
@@ -629,7 +631,7 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.2/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")
 
     weight_url = f'{ranker_url}weight_correctness'
     message, status_code = await subservice_post('weight', weight_url, message, guid)
