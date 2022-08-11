@@ -128,7 +128,10 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             # publish what was received for the sub-service. post the file name for the queue handler
             publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
 
-            logger.info(f'{guid}: Callback message published to queue.')
+            if publish_val:
+                logger.info(f'{guid}: Callback message published to queue.')
+            else:
+                logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
             #if isinstance(publish_val, spec.Basic.Ack):
             #    logger.info(f'{guid}: Callback message published to queue.')
             #else:

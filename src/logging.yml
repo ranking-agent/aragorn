@@ -22,5 +22,10 @@ loggers:
     handlers:
       - console
       - file
+  aio_pika:
+    level: DEBUG
+    handlers:
+      - console
+      - file
 incremental: false
 disable_existing_loggers: false
