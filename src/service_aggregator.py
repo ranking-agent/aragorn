@@ -102,8 +102,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             workflow_def = [{'id': 'lookup'},
                             {'id': 'overlay_connect_knodes'},
                             {'id': 'score'},
-                            #{'id': 'sort_results_score'}, Note that filter_message_top_n sorts before filtering
-                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
+                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}]
         else:
             #TODO: if this is robokop, need to normalize.
             workflow_def = [{'id': 'lookup'},
@@ -219,8 +218,8 @@ async def post_async(host_url, query, guid, params=None):
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid, auto_delete=True)
 
-            # wait for the response.  Timeout after 4 hours
-            async with queue.iterator(timeout=60*60*4) as queue_iter:
+            # wait for the response.  Timeout after 1 hours
+            async with queue.iterator(timeout=60*60) as queue_iter:
                 # wait the for the message
                 async for message in queue_iter:
                     async with message.process():
@@ -557,7 +556,7 @@ async def merge_results_by_node(result_message, merge_qnode):
 
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.2/query")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.2/query")
     messages = await expand_query(input_message,{},guid)
     result_messages = []
     for message in messages:
