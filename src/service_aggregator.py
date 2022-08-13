@@ -6,8 +6,7 @@ import os
 import aio_pika
 from collections import defaultdict
 from copy import deepcopy
-
-import redis
+from datetime import datetime as dt, timedelta
 
 from functools import partial
 from src.util import create_log_entry
@@ -178,6 +177,9 @@ async def post_async(host_url, query, guid, params=None):
     # TODO: make sure other aragorn friends do this too
     # query['log_level'] = 'DEBUG'
 
+    #Create the callback queue
+    await create_queue(guid)
+
     # Send the query, using the pid for the callback
     if params is None:
         post_response = requests.post(host_url, json=query)
@@ -189,6 +191,10 @@ async def post_async(host_url, query, guid, params=None):
         # if there is an error this will return a <requests.models.Response> type
         return post_response
 
+    response = await assemble_callbacks(guid,num_queries)
+    return response
+
+async def assemble_callbacks(guid,num_queries):
     # create the response object
     response = Response()
 
@@ -196,96 +202,120 @@ async def post_async(host_url, query, guid, params=None):
     pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes":{}, "edges":{}})
     accumulated_results = []
 
-    # init the status
+
+    #Don't spend any more time than this assembling messages
+    OVERALL_TIMEOUT = timedelta(hours=1) # 1 hour
+
+    num_responses = 0
+    done = False
+
+    start = dt.now()
+
+    while not done:
+        num_new_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries)
+        num_responses += num_new_responses
+        time_spent = datetime.now() - start
+        if time_spent > OVERALL_TIMEOUT:
+            logger.info(f'{guid}: Timing out receiving callbacks')
+            done = True
+
+    await delete_queue(guid)
+
+    # set the status to indicate success
     response.status_code = 200
+    # save the data to the Response object
+    query = Query.parse_obj({"message":{}})
+    query.message.knowledge_graph = pydantic_kgraph
+    json_query = query.dict()
+    json_query['message']['results'] = accumulated_results
+    response._content = bytes(json.dumps(json_query),'utf-8')
 
-    try:
-        # get the rabbitmq connection params
-        q_username = os.environ.get('QUEUE_USER', 'guest')
-        q_password = os.environ.get('QUEUE_PW', 'guest')
-        q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+    return response
 
-        # get a connection to the rabbit mq server
-        connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
 
-        num_responses = 0
+async def get_pika_connection():
+    q_username = os.environ.get('QUEUE_USER', 'guest')
+    q_password = os.environ.get('QUEUE_PW', 'guest')
+    q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+    connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
+    return connection
 
-        # use the connection to create a queue using the guid
-        async with connection:
-            # create a channel to the rabbit mq
-            channel = await connection.channel()
+async def create_queue(guid):
+    connection = await get_pika_connection()
+    # use the connection to create a queue using the guid
+    async with connection:
+        # create a channel to the rabbit mq
+        channel = await connection.channel()
+        # declare the queue using the guid as the key
+        queue = await channel.declare_queue(guid)
 
-            # declare the queue using the guid as the key
-            queue = await channel.declare_queue(guid, auto_delete=True)
+async def delete_queue(guid):
+    connection = await get_pika_connection()
+    # use the connection to create a queue using the guid
+    async with connection:
+        # create a channel to the rabbit mq
+        channel = await connection.channel()
+        # declare the queue using the guid as the key
+        queue = await channel.queue_delete(guid)
 
-            # wait for the response.  Timeout after 1 hours
-            async with queue.iterator(timeout=60*60) as queue_iter:
-                # wait the for the message
+async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries):
+    complete = False
+    num_responses = 0
+    #We want to reset the connection to rabbit every once in a while
+    # The timeout is how long to wait for a next message after processing.  So when there are many messages
+    # coming in, the connection will stay open for longer than this time
+    CONNECTION_TIMEOUT = 1*60 #1 minutes
+
+    connection = await get_pika_connection()
+    # use the connection to create a queue using the guid
+    async with connection:
+        # create a channel to the rabbit mq
+        channel = await connection.channel()
+        queue = await channel.get_queue(guid)
+        # wait for the response.  Timeout after
+        try:
+            async with queue.iterator(timeout=CONNECTION_TIMEOUT) as queue_iter:
                 async for message in queue_iter:
                     async with message.process():
-                        #Got 1
                         num_responses += 1
                         logger.debug(f'{guid}: Strider returned {num_responses} out of {num_queries}.')
-                        # build the path/file name
-                        file_name = message.body.decode()
+                        jr = await process_message(message)
+                        if await is_end_message(jr):
+                            logger.debug('Received complete message from multistrider')
+                            complete = True
+                            break
 
-                        # check to insure file exists
-                        if os.path.exists(file_name):
-                            # open and save the file saved from the callback
-                            with open(file_name, 'r') as f:
-                                # load the contents of the data in the file
-                                content = bytes(f.read(), 'utf-8')
-                            os.remove(file_name)
+                        #it's a real message; update the kgraph and results
+                        query = Query.parse_obj(jr)
+                        pydantic_kgraph.update(query.message.knowledge_graph)
+                        accumulated_results += jr['message']['results']
 
-                            jr = json.loads(content)
-                            if await is_end_message(jr):
-                                logger.debug('Received complete message from multistrider')
-                                break
+                        # this is a little messy because this is trying to handle multiquery (returns an end message)
+                        # and single query (no end message; single query)
+                        if num_queries == 1:
+                            logger.debug('Single message returned from strider; continuing')
+                            complete = True
+                            break
 
-                            query = Query.parse_obj(jr)
-                            pydantic_kgraph.update(query.message.knowledge_graph)
-                            accumulated_results += jr['message']['results']
+        except TimeoutError as e:
+            logger.debug(f'{guid}: cycling aio_pika connection')
 
-                            #this is a little messy because this is trying to handle multiquery (returns an end message)
-                            # and single query (no end message; single query)
-                            if num_queries == 1:
-                                logger.debug('Single message returned from strider; continuing')
-                                break
-                        else:
-                            # file not found
-                            raise HTTPException(500, f'{guid}: Async response data file not found.')
+    return num_responses, complete
 
-        # set the status to indicate success
-        response.status_code = 200
-        # save the data to the Response object
-        query.message.knowledge_graph = pydantic_kgraph
-        json_query = query.dict()
-        json_query['message']['results'] = accumulated_results
-        response._content = bytes(json.dumps(json_query),'utf-8')
-
-        # close the connection to the queue
-        await connection.close()
-
-    except TimeoutError as e:
-        error_string = f'{guid}: Async query to {host_url} timed out. Carrying on.'
-        logger.exception(error_string, e)
-        #response.status_code = 598
-        # 598 is too harsh. Set the status to indicate (partial) success
-        response.status_code = 200
-        # save the data to the Response object
-        query.message.knowledge_graph = pydantic_kgraph
-        json_query = query.dict()
-        json_query['message']['results'] = accumulated_results
-        response._content = bytes(json.dumps(json_query),'utf-8')
-        #And return
-        return response
-    except Exception as e:
-        error_string = f'{guid}: Queue error exception {e} for callback {query["callback"]}'
-        logger.exception(error_string, e)
-        raise HTTPException(500, error_string)
-
-    # return with the message
+# return with the message
     return response
+
+
+async def process_message(message):
+    file_name = message.body.decode()
+    # open and save the file saved from the callback
+    with open(file_name, 'r') as f:
+        # load the contents of the data in the file
+        content = bytes(f.read(), 'utf-8')
+    os.remove(file_name)
+    jr = json.loads(content)
+    return jr
+
 
 async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
@@ -407,7 +437,8 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
     #Now it's an infer query.
     messages = await expand_query(input_message,params,guid)
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
-    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
+    #nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",75))
     result_messages = []
     num = 0
     num_batches_returned = 0
