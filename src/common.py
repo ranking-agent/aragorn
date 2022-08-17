@@ -108,11 +108,14 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     :param caller:
     :return:
     """
+
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
     else:
         message = request.dict(exclude_unset=True)
+
+
 
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
@@ -121,6 +124,7 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     message['logs'].append(create_log_entry(f'pid: {guid}', "INFO"))
 
     query_result = message
+
 
     try:
         # call to process the input
