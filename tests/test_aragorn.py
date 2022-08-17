@@ -76,8 +76,8 @@ def workflow_A1(appname):
     # make sure we got back the query_graph, knowledge_graph and results data from strider
     assert(len(ret) == 3)
 
-    # make sure we got the expected number of results
-    #assert(len(ret['results']) == 61)
+    # make sure the qgraph is still around
+    assert(ret['query_graph'] is not None)
 
     # strider should have created knowledge graph nodes and edges
     assert (len(ret['knowledge_graph']['nodes']) > 1)
