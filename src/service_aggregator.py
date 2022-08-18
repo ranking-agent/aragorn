@@ -31,10 +31,15 @@ def examine_query(message):
     # queries that are any shape with all lookup edges
     # OR
     # A 1-hop infer query.
-    qedges = message.get('message',{}).get('query_graph',{}).get('edges',{})
+    try:
+        # this can still fail if the input looks like e.g.:
+        #  "query_graph": None
+        qedges = message.get('message',{}).get('query_graph',{}).get('edges',{})
+    except:
+        qedges = {}
     n_infer_edges = 0
-    for edge_id, edge_properties in qedges.items():
-        if edge_properties.get('knowledge_type','lookup') == 'inferred':
+    for edge_id in qedges:
+        if qedges.get(edge_id,{}).get('knowledge_type','lookup') == 'inferred':
             n_infer_edges += 1
     if (n_infer_edges > 1):
         raise Exception("Only a single infer edge is supported",400)
@@ -73,6 +78,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     except Exception as e:
         print(e)
         return None,500
+
 
     # A map from operations advertised in our x-trapi to functions
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
@@ -158,9 +164,7 @@ async def post_async(host_url, query, guid, params=None):
     # If we move the callback to the outer for multiquery this gets alittle easier, but we still need to count the
     # queries, so it's not completely easy
     if 'message' in query.keys():
-
         # set the callback host in the query
-        # TODO this should have the trapi endpoint in production
         query['callback'] = callback_url
         num_queries = 1
         # make sure there is a place for the trapi log messages
@@ -358,6 +362,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
             else:
                 response = requests.post(url, json=message, params=params)
 
+
         # save the response code
         status_code = response.status_code
 
@@ -379,6 +384,11 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
     except Exception as e:
         status_code = 500
         logger.exception(f"{guid}: ARAGORN Exception {e} posting to {name}")
+
+
+    #The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
+    if ret_val['message']['query_graph'] is None:
+        ret_val['message']['query_graph'] = deepcopy(message['message']['query_graph'])
 
     # make sure there is a place for the trapi log messages
     if 'logs' not in ret_val:
@@ -472,8 +482,7 @@ async def merge_results_by_node_op(message,params,guid) -> (dict,int):
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.2/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
