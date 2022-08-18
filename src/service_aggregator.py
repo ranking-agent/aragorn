@@ -482,7 +482,8 @@ async def merge_results_by_node_op(message,params,guid) -> (dict,int):
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
-    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.2/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
