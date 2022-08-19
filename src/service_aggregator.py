@@ -387,7 +387,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
 
     #The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
-    if ret_val['message']['query_graph'] is None:
+    if (ret_val['message']['query_graph'] is None) and ('message' in message):
         ret_val['message']['query_graph'] = deepcopy(message['message']['query_graph'])
 
     # make sure there is a place for the trapi log messages
