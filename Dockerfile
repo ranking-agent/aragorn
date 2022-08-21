@@ -1,7 +1,7 @@
 # leverage the renci python base image
 FROM renciorg/renci-python-image:v0.0.1
 
-# get some credit
+#Set the branch
 ARG BRANCH_NAME=main
 
 # install basic tools

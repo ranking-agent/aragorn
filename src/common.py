@@ -70,17 +70,20 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     :param caller:
     :return:
     """
+    #This code is terrible
     # capture if this is a test request
-    if 'test' in request:
-        test_mode = True
-    else:
-        test_mode = False
+    #if 'test' in request:
+    #    test_mode = True
+    #else:
+    #    test_mode = False
+    test_mode=False
 
     logger.info(f'{guid}: Awaiting async execute with callback URL: {callback_url}')
 
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid, logger, caller)
 
+    logger.info(f'{guid}: Executing POST to callback URL {callback_url}')
     # for some reason the "mock" test endpoint doesnt like the async client post
     if test_mode:
         callback(callback_url, final_msg, guid, caller)
@@ -105,11 +108,14 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     :param caller:
     :return:
     """
+
     # convert the incoming message into a dict
     if type(request) is dict:
         message = request
     else:
         message = request.dict(exclude_unset=True)
+
+
 
     if 'logs' not in message or message['logs'] is None:
         message['logs'] = []
@@ -118,6 +124,7 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     message['logs'].append(create_log_entry(f'pid: {guid}', "INFO"))
 
     query_result = message
+
 
     try:
         # call to process the input

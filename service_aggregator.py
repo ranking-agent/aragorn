@@ -387,7 +387,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
 
     #The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
-    if (ret_val['message']['query_graph'] is None) and ('message' in message):
+    if ret_val['message']['query_graph'] is None:
         ret_val['message']['query_graph'] = deepcopy(message['message']['query_graph'])
 
     # make sure there is a place for the trapi log messages
@@ -482,8 +482,7 @@ async def merge_results_by_node_op(message,params,guid) -> (dict,int):
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.2/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
@@ -633,8 +632,8 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
-    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
+    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
@@ -659,7 +658,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")}omnicorp_overlay'
 
     return await subservice_post('omnicorp', url, message, guid)
 
@@ -672,7 +671,7 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")
 
     weight_url = f'{ranker_url}weight_correctness'
     message, status_code = await subservice_post('weight', weight_url, message, guid)
