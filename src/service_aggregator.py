@@ -482,8 +482,8 @@ async def merge_results_by_node_op(message,params,guid) -> (dict,int):
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.2/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
     if 'test' in message:
@@ -499,7 +499,7 @@ async def strider(message,params,guid) -> (dict, int):
 
 
 async def normalize_qgraph_ids(m):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.2/")}get_normalized_node'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_node'
     qnodes = m['message']['query_graph']['nodes']
     qnode_ids = set()
     for qid, qnode in qnodes.items():
@@ -544,7 +544,7 @@ async def expand_query(input_message,params,guid):
     return messages
 
 async def multi_strider(messages,params,guid):
-    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.2/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
 
     strider_url += 'multiquery'
     response, status_code = await subservice_post('strider', strider_url, messages, guid, asyncquery=True)
@@ -598,7 +598,7 @@ async def merge_results_by_node(result_message, merge_qnode):
 
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.2/query")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/query")
     messages = await expand_query(input_message,{},guid)
     result_messages = []
     for message in messages:
@@ -634,7 +634,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :return:
     """
     url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
-    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
+    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
@@ -648,7 +648,7 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     return await subservice_post('answer_coalesce', url, message, guid)
 
 async def normalize(message,params, guid) -> (dict,int):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.2/")}response'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}response'
     return await subservice_post('nodenorm', url, message, guid)
 
 async def omnicorp(message, params, guid) -> (dict, int):
