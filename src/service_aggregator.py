@@ -633,8 +633,8 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :param coalesce_type:
     :return:
     """
-    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce-dev.apps.renci.org/1.2/coalesce/")}{coalesce_type}'
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
+    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.2/coalesce/")}{coalesce_type}'
 
     with open('crap.json','w') as outf:
         json.dump(message,outf)
@@ -659,7 +659,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
 
     return await subservice_post('omnicorp', url, message, guid)
 
@@ -672,7 +672,7 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker-dev.apps.renci.org/1.2/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")
 
     weight_url = f'{ranker_url}weight_correctness'
     message, status_code = await subservice_post('weight', weight_url, message, guid)
