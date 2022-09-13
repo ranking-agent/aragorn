@@ -598,11 +598,11 @@ async def merge_results_by_node(result_message, merge_qnode):
 
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/query")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
     messages = await expand_query(input_message,{},guid)
     result_messages = []
     for message in messages:
-        results = requests.post(automat_url,json=message)
+        results = requests.post(f"{automat_url}query",json=message)
         if results.status_code == 200:
             message = results.json()
             if len(message['message']['results']) > 0:
