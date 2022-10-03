@@ -117,6 +117,10 @@ async def subservice_callback(response: PDResponse,  guid: str) -> int:
             # get a channel to the queue
             channel = await connection.channel()
 
+            # only store file if there's a queue waiting for it
+            # will throw error if queue doesn't exist
+            await channel.get_queue(guid, ensure=True)
+
             # create a file path/name
             fname = ''.join(random.choices(string.ascii_lowercase, k=12))
             file_name = f'{queue_file_dir}/{guid}-{fname}-async-data.json'
