@@ -13,7 +13,7 @@ from src.openapi_constructor import construct_open_api_schema
 
 APP = FastAPI(title="ARAGORN/ROBOKOP")
 
-# Mount aragorn app at /
+# Mount aragorn app at /aragorn
 APP.mount('/aragorn',  ARAGORN_APP, 'ARAGORN')
 # Mount robokop app at /robokop
 APP.mount('/robokop', ROBOKOP_APP, 'ROBOKOP')

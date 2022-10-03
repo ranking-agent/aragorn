@@ -104,17 +104,21 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         del message['workflow']
     else:
         if infer:
-            workflow_def = [{'id': 'lookup'},
-                            {'id': 'overlay_connect_knodes'},
-                            {'id': 'score'},
-                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}]
+            workflow_def = [
+                {'id': 'lookup'},
+                {'id': 'overlay_connect_knodes'},
+                {'id': 'score'},
+                {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}
+            ]
         else:
             #TODO: if this is robokop, need to normalize.
-            workflow_def = [{'id': 'lookup'},
-                            {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
-                            {'id': 'overlay_connect_knodes'},
-                            {'id': 'score'},
-                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
+            workflow_def = [
+                {'id': 'lookup'},
+                {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
+                {'id': 'overlay_connect_knodes'},
+                {'id': 'score'},
+                {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}
+            ]
 
     # convert the workflow def into function calls.
     # Raise a 422 if we find one we don't actually know how to do.
@@ -238,7 +242,7 @@ async def assemble_callbacks(guid,num_queries):
     while not done:
         num_new_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries)
         num_responses += num_new_responses
-        time_spent = datetime.now() - start
+        time_spent = dt.now() - start
         if time_spent > OVERALL_TIMEOUT:
             logger.info(f'{guid}: Timing out receiving callbacks')
             done = True
@@ -326,8 +330,6 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
 
     return num_responses, complete
 
-# return with the message
-    return response
 
 def process_message(message):
     file_name = message.body.decode()
