@@ -1,8 +1,7 @@
 import pytest
 from src.service_aggregator import merge_results_by_node
 
-@pytest.mark.asyncio
-async def test_simple_merge():
+def test_simple_merge():
     m = {'message':
     {"query_graph": {"nodes": { "drug":{"categories":["biolink:ChemicalEntity"]},
                                 "disease": {"ids": ["MONDO:1234"]}},
@@ -15,7 +14,7 @@ async def test_simple_merge():
           "edge_bindings": {"_1": [{"id": "e2"}]}},
      ]
      }}
-    m = await merge_results_by_node(m,'drug')
+    m = merge_results_by_node(m,'drug')
     results = m['message']['results']
     assert len(results) == 1
     assert len(results[0]['node_bindings']) == 2
