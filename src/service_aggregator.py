@@ -1,7 +1,7 @@
 """Literature co-occurrence support."""
 import json
 import logging
-import requests
+import httpx
 import os
 import aio_pika
 from collections import defaultdict
@@ -104,17 +104,21 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         del message['workflow']
     else:
         if infer:
-            workflow_def = [{'id': 'lookup'},
-                            {'id': 'overlay_connect_knodes'},
-                            {'id': 'score'},
-                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}]
+            workflow_def = [
+                {'id': 'lookup'},
+                {'id': 'overlay_connect_knodes'},
+                {'id': 'score'},
+                {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}
+            ]
         else:
             #TODO: if this is robokop, need to normalize.
-            workflow_def = [{'id': 'lookup'},
-                            {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
-                            {'id': 'overlay_connect_knodes'},
-                            {'id': 'score'},
-                            {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}]
+            workflow_def = [
+                {'id': 'lookup'},
+                {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
+                {'id': 'overlay_connect_knodes'},
+                {'id': 'score'},
+                {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}
+            ]
 
     # convert the workflow def into function calls.
     # Raise a 422 if we find one we don't actually know how to do.
@@ -137,12 +141,12 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     return final_answer, status_code
 
 
-async def is_end_message(message):
+def is_end_message(message):
     if message.get('status_communication', {}).get('strider_multiquery_status','running') == 'complete':
         return True
     return False
 
-async def post_async(host_url, query, guid, params=None):
+async def post_with_callback(host_url, query, guid, params=None):
     """
     Post an asynchronous message.
 
@@ -185,16 +189,36 @@ async def post_async(host_url, query, guid, params=None):
     await create_queue(guid)
 
     # Send the query, using the pid for the callback
-    if params is None:
-        post_response = requests.post(host_url, json=query)
-    else:
-        post_response = requests.post(host_url, json=query, params=params)
+    try:
+        # these requests should be very quick, if the external service is responsive, they should send back a quick
+        # response and then we watch the queue. We give a short 1 min timeout.
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60)) as client:
+            if params is None:
+                post_response = await client.post(
+                    host_url,
+                    json=query,
+                )
+            else:
+                post_response = await client.post(
+                    host_url,
+                    json=query,
+                    params=params,
+                )
+        # check the response status.
+        if post_response.status_code != 200:
+            # queue isn't needed for failed service call
+            logger.warn(f"Deleting unneeded queue for {guid}")
+            await delete_queue(guid)
+            # if there is an error this will return a <requests.models.Response> type
+            return post_response
+    except httpx.RequestError as e:
+        logger.error(f"Failed to contact {host_url}")
+        await delete_queue(guid)
+        # exception handled in subservice_post
+        raise
 
-    # check the response status.
-    if post_response.status_code != 200:
-        # if there is an error this will return a <requests.models.Response> type
-        return post_response
 
+    # async wait for callbacks to come on queue
     response = await assemble_callbacks(guid,num_queries)
     return response
 
@@ -218,7 +242,7 @@ async def assemble_callbacks(guid,num_queries):
     while not done:
         num_new_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries)
         num_responses += num_new_responses
-        time_spent = datetime.now() - start
+        time_spent = dt.now() - start
         if time_spent > OVERALL_TIMEOUT:
             logger.info(f'{guid}: Timing out receiving callbacks')
             done = True
@@ -283,9 +307,9 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                     async with message.process():
                         num_responses += 1
                         logger.debug(f'{guid}: Strider returned {num_responses} out of {num_queries}.')
-                        jr = await process_message(message)
-                        if await is_end_message(jr):
-                            logger.debug('Received complete message from multistrider')
+                        jr = process_message(message)
+                        if is_end_message(jr):
+                            logger.debug(f'{guid}: Received complete message from multistrider')
                             complete = True
                             break
 
@@ -297,7 +321,7 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
                         # and single query (no end message; single query)
                         if num_queries == 1:
-                            logger.debug('Single message returned from strider; continuing')
+                            logger.debug(f'{guid}: Single message returned from strider; continuing')
                             complete = True
                             break
 
@@ -306,11 +330,8 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
 
     return num_responses, complete
 
-# return with the message
-    return response
 
-
-async def process_message(message):
+def process_message(message):
     file_name = message.body.decode()
     # open and save the file saved from the callback
     with open(file_name, 'r') as f:
@@ -355,12 +376,21 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         # launch the post depending on the query type and get the response
         if asyncquery:
             # handle the response
-            response = await post_async(url, message, guid, params)
+            response = await post_with_callback(url, message, guid, params)
         else:
-            if params is None:
-                response = requests.post(url, json=message)
-            else:
-                response = requests.post(url, json=message, params=params)
+            # async call to external services with hour timeout
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60*60)) as client:
+                if params is None:
+                    response = await client.post(
+                        url,
+                        json=message,
+                    )
+                else:
+                    response = await client.post(
+                        url,
+                        json=message,
+                        params=params,
+                    )
 
 
         # save the response code
@@ -385,6 +415,10 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         status_code = 500
         logger.exception(f"{guid}: ARAGORN Exception {e} posting to {name}")
 
+    if ('message' not in ret_val):
+        # this mainly handles multistrider exceptions
+        # grab first sub-query
+        ret_val = ret_val.items()[0]
 
     #The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
     if (ret_val['message']['query_graph'] is None) and ('message' in message):
@@ -445,7 +479,7 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
     if not infer:
         return await strider(input_message,params,guid)
     #Now it's an infer query.
-    messages = await expand_query(input_message,params,guid)
+    messages = expand_query(input_message,params,guid)
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
     #nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",75))
@@ -472,13 +506,13 @@ async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
     result['message']['query_graph'] = deepcopy(input_message['message']['query_graph'])
     for rm in result_messages[1:]:
         result['message']['results'].extend( rm['message']['results'])
-    mergedresults = await merge_results_by_node(result,answer_qnode)
+    mergedresults = merge_results_by_node(result,answer_qnode)
     logger.info(f'{guid}: results merged')
     return mergedresults, sc
 
-async def merge_results_by_node_op(message,params,guid) -> (dict,int):
+def merge_results_by_node_op(message,params,guid) -> (dict,int):
     qn = params['merge_qnode']
-    merged_results = await merge_results_by_node(message, qn)
+    merged_results = merge_results_by_node(message, qn)
     return merged_results,200
 
 async def strider(message,params,guid) -> (dict, int):
@@ -506,7 +540,11 @@ async def normalize_qgraph_ids(m):
         if 'ids' in qnode:
             qnode_ids.update(qnode['ids'])
     nnp = { "curies": list(qnode_ids), "conflate": True }
-    nnresult = requests.post(url,json=nnp)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120)) as client:
+        nnresult = await client.post(
+            url,
+            json=nnp,
+        )
     if nnresult.status_code == 200:
         for qid, qnode in qnodes.items():
             if 'ids' in qnode:
@@ -529,7 +567,7 @@ async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) 
 
 
 #TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
-async def expand_query(input_message,params,guid):
+def expand_query(input_message,params,guid):
     #What are the relevant qnodes and ids from the input message?
     for edge_id, edge in input_message['message']['query_graph']['edges'].items():
         input_q_chemical_node = edge['subject']
@@ -551,7 +589,7 @@ async def multi_strider(messages,params,guid):
 
     return response, status_code
 
-async def merge_answer(results,qnode_ids):
+def merge_answer(results,qnode_ids):
     #We are going rename most of the node and edge bindings.  But, we want to preserve bindings to things in the
     # original query.  For the current creative one-hop, that is just nodes b/c we are replacing the one edge.
     #The original qnode bindings are the same in all results by construction
@@ -574,7 +612,7 @@ async def merge_answer(results,qnode_ids):
     return mergedresult
 
 #TODO move into operations? Make a translator op out of this
-async def merge_results_by_node(result_message, merge_qnode):
+def merge_results_by_node(result_message, merge_qnode):
     """This assumes a single result message, with a single merged KG.  The goal is to take all results that share a
     binding for merge_qnode and combine them into a single result.
     Assumes that the results are not scored."""
@@ -591,7 +629,7 @@ async def merge_results_by_node(result_message, merge_qnode):
     #TODO : I'm sure there's a better way to handle this with asyncio
     new_results = []
     for r in grouped_results:
-        x = await merge_answer(grouped_results[r],original_qnodes)
+        x = merge_answer(grouped_results[r],original_qnodes)
         new_results.append(x)
     result_message['message']['results'] = new_results
     return result_message
@@ -599,10 +637,15 @@ async def merge_results_by_node(result_message, merge_qnode):
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    messages = await expand_query(input_message,{},guid)
+    messages = expand_query(input_message,{},guid)
     result_messages = []
     for message in messages:
-        results = requests.post(f"{automat_url}query",json=message)
+        # async timeout in 1 hour
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60*60)) as client:
+            results = await client.post(
+                f"{automat_url}query",
+                json=message,
+            )
         if results.status_code == 200:
             message = results.json()
             if len(message['message']['results']) > 0:
@@ -617,7 +660,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         result['message']['knowledge_graph'] = pydantic_kgraph.dict()
         for rm in result_messages[1:]:
             result['message']['results'].extend(rm['message']['results'])
-        mergedresults = await merge_results_by_node(result, answer_qnode)
+        mergedresults = merge_results_by_node(result, answer_qnode)
     else:
         mergedresults = {'message':{'knowledge_graph':{'nodes':{},'edges':{}}, 'results':[]}}
     #The merged results will have some expanded query, we want the original query.
