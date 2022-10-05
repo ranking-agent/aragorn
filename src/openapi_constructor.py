@@ -3,6 +3,7 @@ import os
 import yaml
 from fastapi.openapi.utils import get_openapi
 
+
 def construct_open_api_schema(APP, description, prefix="", infores=None):
     """
     This creates the Open api schema object
@@ -10,13 +11,9 @@ def construct_open_api_schema(APP, description, prefix="", infores=None):
     :return:
     """
 
-    open_api_schema = get_openapi(
-        title=APP.title,
-        version=APP.version,
-        routes=APP.routes
-    )
+    open_api_schema = get_openapi(title=APP.title, version=APP.version, routes=APP.routes)
 
-    open_api_extended_file_path = os.path.join(os.path.dirname(__file__), '../openapi-config.yaml')
+    open_api_extended_file_path = os.path.join(os.path.dirname(__file__), "../openapi-config.yaml")
 
     with open(open_api_extended_file_path) as open_api_file:
         open_api_extended_spec = yaml.load(open_api_file, Loader=yaml.SafeLoader)
@@ -30,7 +27,7 @@ def construct_open_api_schema(APP, description, prefix="", infores=None):
     app_version = open_api_extended_spec.get("version")
 
     if tags:
-        open_api_schema['tags'] = tags
+        open_api_schema["tags"] = tags
 
     if x_translator_extension:
         # if x_translator_team is defined amends schema with x_translator extension
@@ -57,17 +54,17 @@ def construct_open_api_schema(APP, description, prefix="", infores=None):
         open_api_schema["info"]["version"] = app_version
 
     # adds support to override server root path
-    server_root = os.environ.get('SERVER_ROOT', '/')
+    server_root = os.environ.get("SERVER_ROOT", "/")
 
     # make sure not to add double slash at the end.
-    server_root = server_root.rstrip('/') + '/'
+    server_root = server_root.rstrip("/") + "/"
 
     if servers_conf:
         for s in servers_conf:
-            if s['description'].startswith('Default'):
-                s['url'] = server_root + prefix
-                s['x-maturity'] = os.environ.get("MATURITY_VALUE", "maturity")
-                s['x-location'] = os.environ.get("LOCATION_VALUE", "location")
+            if s["description"].startswith("Default"):
+                s["url"] = server_root + prefix
+                s["x-maturity"] = os.environ.get("MATURITY_VALUE", "maturity")
+                s["x-location"] = os.environ.get("LOCATION_VALUE", "location")
 
         open_api_schema["servers"] = servers_conf
 
