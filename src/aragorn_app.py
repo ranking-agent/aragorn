@@ -35,6 +35,11 @@ if not os.path.exists(log_dir):
 
 # create a configuration for the log file
 config["handlers"]["file"]["filename"] = os.path.join(log_dir, "aragorn.log")
+log_level = os.getenv("LOG_LEVEL", "DEBUG")
+config["handlers"]["console"]["level"] = log_level
+config["handlers"]["file"]["level"] = log_level
+config["loggers"]["src"]["level"] = log_level
+config["loggers"]["aio_pika"]["level"] = log_level
 
 # load the log config
 logging.config.dictConfig(config)
@@ -68,7 +73,8 @@ q_password = os.environ.get("QUEUE_PW", "guest")
 q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
 
 
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 
 async def get_connection() -> AbstractRobustConnection:
@@ -83,7 +89,7 @@ async def get_channel() -> aio_pika.Channel:
         return await connection.channel()
 
 
-channel_pool: Pool = Pool(get_channel, max_size=10, loop=loop)
+channel_pool: Pool = Pool(get_channel, max_size=8, loop=loop)
 
 
 # Create a async class
