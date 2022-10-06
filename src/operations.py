@@ -2,6 +2,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# All these functions need to be async even though they don't await
+# because all operation workflows are expected to be async
 async def sort_results_score(message,params,guid):
     logger.info(f'{guid}: sorting results.')
     results = message['message']['results']
