@@ -149,7 +149,7 @@ async def is_end_message(message):
     return False
 
 
-async def post_async(host_url, query, guid, params=None):
+async def post_with_callback(host_url, query, guid, params=None):
     """
     Post an asynchronous message.
 
@@ -512,7 +512,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     result["message"]["query_graph"] = deepcopy(input_message["message"]["query_graph"])
     for rm in result_messages[1:]:
         result["message"]["results"].extend(rm["message"]["results"])
-    mergedresults = merge_results_by_node(result,answer_qnode)
+    mergedresults = merge_results_by_node(result, answer_qnode)
     logger.info(f'{guid}: results merged')
     return mergedresults, sc
 
@@ -575,7 +575,7 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
 
 
 # TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
-async def expand_query(input_message, params, guid):
+def expand_query(input_message, params, guid):
     # What are the relevant qnodes and ids from the input message?
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
         input_q_chemical_node = edge["subject"]
@@ -598,7 +598,7 @@ async def multi_strider(messages, params, guid):
     return response, status_code
 
 
-async def merge_answer(results, qnode_ids):
+def merge_answer(results, qnode_ids):
     # We are going rename most of the node and edge bindings.  But, we want to preserve bindings to things in the
 
     # original query.  For the current creative one-hop, that is just nodes b/c we are replacing the one edge.
