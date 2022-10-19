@@ -578,6 +578,8 @@ def expand_query(input_message,params,guid):
         query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node,
                                 disease_id=input_disease_id)
         message = {'message':json.loads(query)}
+        if 'log_level' in input_message:
+            message['log_level'] = input_message['log_level']
         messages.append(message)
     return messages
 
