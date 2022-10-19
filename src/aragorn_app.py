@@ -141,6 +141,9 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
 
         async def publish() -> None:
             async with channel_pool.acquire() as channel:
+
+                await channel.get_queue(guid, ensure=True)
+
                 # create a file path/name
                 fname = "".join(random.choices(string.ascii_lowercase, k=12))
                 file_name = f"{queue_file_dir}/{guid}-{fname}-async-data.json"
