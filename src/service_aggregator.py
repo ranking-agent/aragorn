@@ -315,7 +315,7 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                         logger.debug(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
                         jr = process_message(message)
                         if is_end_message(jr):
-                            logger.debug("Received complete message from multistrider")
+                            logger.debug(f"{guid}: Received complete message from multistrider")
                             complete = True
                             break
 
