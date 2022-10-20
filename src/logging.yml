@@ -1,13 +1,13 @@
 version: 1
-formatters: 
-  default: 
-    format: "[%(asctime)s: %(levelname)s/%(name)s(%(processName)s)]: %(message)s"
-handlers: 
-  console: 
+formatters:
+  default:
+    format: "%(asctime)s | %(levelname)s | %(module)s:%(funcName)s | %(message)s"
+handlers:
+  console:
     class: logging.StreamHandler
     level: DEBUG
     formatter: default
-  file: 
+  file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     formatter: default
