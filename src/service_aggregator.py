@@ -143,7 +143,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     return final_answer, status_code
 
 
-async def is_end_message(message):
+def is_end_message(message):
     if message.get("status_communication", {}).get("strider_multiquery_status", "running") == "complete":
         return True
     return False
