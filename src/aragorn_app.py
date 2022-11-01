@@ -89,7 +89,7 @@ async def get_channel() -> aio_pika.Channel:
         return await connection.channel()
 
 
-channel_pool: Pool = Pool(get_channel, max_size=8, loop=loop)
+channel_pool: Pool = Pool(get_channel, max_size=10, loop=loop)
 
 
 # Create a async class
@@ -138,36 +138,30 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
     # logger.debug(f'{guid}: The sub-service response: {response.json()}')
 
     try:
+        async with channel_pool.acquire() as channel:
+            await channel.get_queue(guid, ensure=True)
 
-        async def publish() -> None:
-            async with channel_pool.acquire() as channel:
+            # create a file path/name
+            fname = "".join(random.choices(string.ascii_lowercase, k=12))
+            file_name = f"{queue_file_dir}/{guid}-{fname}-async-data.json"
 
-                await channel.get_queue(guid, ensure=True)
+            # save the response data to a file
+            with open(file_name, "w") as data_file:
+                data_file.write(response.json())
 
-                # create a file path/name
-                fname = "".join(random.choices(string.ascii_lowercase, k=12))
-                file_name = f"{queue_file_dir}/{guid}-{fname}-async-data.json"
+            # publish what was received for the sub-service. post the file name for the queue handler
+            publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
 
-                # save the response data to a file
-                with open(file_name, "w") as data_file:
-                    data_file.write(response.json())
-
-                # publish what was received for the sub-service. post the file name for the queue handler
-                publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
-
-                if publish_val:
-                    logger.info(f"{guid}: Callback message published to queue.")
-                else:
-                    logger.error(f"{guid}: Callback message publishing to queue failed, type: {type(publish_val)}")
-                # if isinstance(publish_val, spec.Basic.Ack):
-                #    logger.info(f'{guid}: Callback message published to queue.')
-                # else:
-                #    # set the html error code
-                #    ret_val = 422
-                #    logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
-
-        async with connection_pool, channel_pool:
-            await asyncio.wait([publish()])
+            if publish_val:
+                logger.info(f"{guid}: Callback message published to queue.")
+            else:
+                logger.error(f"{guid}: Callback message publishing to queue failed, type: {type(publish_val)}")
+            # if isinstance(publish_val, spec.Basic.Ack):
+            #    logger.info(f'{guid}: Callback message published to queue.')
+            # else:
+            #    # set the html error code
+            #    ret_val = 422
+            #    logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
 
     except Exception as e:
         logger.exception(f"Exception detected while handling sub-service callback using guid {guid}", e)
