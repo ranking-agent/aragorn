@@ -242,8 +242,7 @@ async def assemble_callbacks(guid, num_queries):
     start = dt.now()
 
     while not done:
-        num_new_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries)
-        num_responses += num_new_responses
+        num_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses)
         time_spent = dt.now() - start
         if time_spent > OVERALL_TIMEOUT:
             logger.info(f"{guid}: Timing out receiving callbacks")
@@ -291,9 +290,8 @@ async def delete_queue(guid):
         queue = await channel.queue_delete(guid)
 
 
-async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries):
+async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
     complete = False
-    num_responses = 0
     # We want to reset the connection to rabbit every once in a while
     # The timeout is how long to wait for a next message after processing.  So when there are many messages
     # coming in, the connection will stay open for longer than this time
