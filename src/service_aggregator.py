@@ -16,14 +16,15 @@ from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
-from reasoner_pydantic import Query,Message, KnowledgeGraph
+from reasoner_pydantic import Query, Message, KnowledgeGraph
 
 from src.rules.rules import rules as AMIE_EXPANSIONS
 
 logger = logging.getLogger(__name__)
 
 # declare the directory where the async data files will exist
-queue_file_dir = './queue-files'
+queue_file_dir = "./queue-files"
+
 
 def examine_query(message):
     """Decides whether the input is an infer. Returns the grouping node"""
@@ -34,25 +35,25 @@ def examine_query(message):
     try:
         # this can still fail if the input looks like e.g.:
         #  "query_graph": None
-        qedges = message.get('message',{}).get('query_graph',{}).get('edges',{})
+        qedges = message.get("message", {}).get("query_graph", {}).get("edges", {})
     except:
         qedges = {}
     n_infer_edges = 0
     for edge_id in qedges:
-        if qedges.get(edge_id,{}).get('knowledge_type','lookup') == 'inferred':
+        if qedges.get(edge_id, {}).get("knowledge_type", "lookup") == "inferred":
             n_infer_edges += 1
-    if (n_infer_edges > 1):
-        raise Exception("Only a single infer edge is supported",400)
+    if n_infer_edges > 1:
+        raise Exception("Only a single infer edge is supported", 400)
     if (n_infer_edges > 0) and (n_infer_edges < len(qedges)):
         raise Exception("Mixed infer and lookup queries not supported", 400)
-    infer = (n_infer_edges == 1)
+    infer = n_infer_edges == 1
     if not infer:
         return infer, None, None
-    qnodes = message.get('message',{}).get('query_graph',{}).get('nodes',{})
+    qnodes = message.get("message", {}).get("query_graph", {}).get("nodes", {})
     question_node = None
     answer_node = None
     for qnode_id, qnode in qnodes.items():
-        if qnode.get('ids',None) is None:
+        if qnode.get("ids", None) is None:
             answer_node = qnode_id
         else:
             question_node = qnode_id
@@ -60,7 +61,7 @@ def examine_query(message):
         raise Exception("Both nodes of creative edge pinned", 400)
     if question_node is None:
         raise Exception("No nodes of creative edge pinned", 400)
-    return infer,question_node,answer_node
+    return infer, question_node, answer_node
 
 
 async def entry(message, guid, coalesce_type, caller) -> (dict, int):
@@ -77,47 +78,48 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         infer, question_qnode, answer_qnode = examine_query(message)
     except Exception as e:
         print(e)
-        return None,500
-
+        return None, 500
 
     # A map from operations advertised in our x-trapi to functions
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
-    known_operations = {'lookup': partial(lookup, caller=caller, infer=infer, answer_qnode = answer_qnode, question_qnode = question_qnode),
-                        'enrich_results': partial(answercoalesce, coalesce_type=coalesce_type),
-                        'overlay_connect_knodes': omnicorp,
-                        'score': score,
-                        'sort_results_score': sort_results_score,
-                        'filter_results_top_n': filter_results_top_n,
-                        'filter_kgraph_orphans': filter_kgraph_orphans,
-                        'filter_message_top_n': filter_message_top_n,
-                        'merge_results_by_qnode': merge_results_by_node_op}
+    known_operations = {
+        "lookup": partial(lookup, caller=caller, infer=infer, answer_qnode=answer_qnode, question_qnode=question_qnode),
+        "enrich_results": partial(answercoalesce, coalesce_type=coalesce_type),
+        "overlay_connect_knodes": omnicorp,
+        "score": score,
+        "sort_results_score": sort_results_score,
+        "filter_results_top_n": filter_results_top_n,
+        "filter_kgraph_orphans": filter_kgraph_orphans,
+        "filter_message_top_n": filter_message_top_n,
+        "merge_results_by_qnode": merge_results_by_node_op,
+    }
 
     #  TODO: If inference, don't add enrich to the workflow.  We're already grouping in a particular way
     #  We could maybe enrich by the specific output node independent of the rest of the graph, could be interesting.
     # if the workflow is defined in the message use it, otherwise use the default aragorn workflow
-    if 'workflow' in message and not (message['workflow'] is None):
-        workflow_def = message['workflow']
+    if "workflow" in message and not (message["workflow"] is None):
+        workflow_def = message["workflow"]
 
         # The underlying tools (strider) don't want the workflow element and will 400
-        del message['workflow']
+        del message["workflow"]
     else:
         if infer:
             workflow_def = [
-                {'id': 'lookup'},
-                {'id': 'overlay_connect_knodes'},
-                {'id': 'score'},
-                {'id': 'filter_message_top_n', 'parameters': {'max_results': 500}}
+                {"id": "lookup"},
+                {"id": "overlay_connect_knodes"},
+                {"id": "score"},
+                {"id": "filter_message_top_n", "parameters": {"max_results": 500}},
             ]
         else:
-            #TODO: if this is robokop, need to normalize.
+            # TODO: if this is robokop, need to normalize.
             workflow_def = [
-                {'id': 'lookup'},
-                {'id': 'enrich_results', 'parameters': {'max_input_size': 5000}},
-                {'id': 'overlay_connect_knodes'},
-                {'id': 'score'},
-                {'id': 'filter_message_top_n', 'parameters': {'max_results': 5000}}
+                {"id": "lookup"},
+                {"id": "enrich_results", "parameters": {"max_input_size": 5000}},
+                {"id": "overlay_connect_knodes"},
+                {"id": "score"},
+                {"id": "filter_message_top_n", "parameters": {"max_results": 5000}},
             ]
 
     # convert the workflow def into function calls.
@@ -128,23 +130,24 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     for op in workflow_def:
         try:
-            workflow.append((known_operations[op['id']], op.get('parameters', {})))
+            workflow.append((known_operations[op["id"]], op.get("parameters", {})))
         except KeyError:
             return f"Unknown Operation: {op}", 422
 
     final_answer, status_code = await run_workflow(message, workflow, guid)
 
     # return the workflow def so that the caller can see what we did
-    final_answer['workflow'] = workflow_def
+    final_answer["workflow"] = workflow_def
 
     # return the answer
     return final_answer, status_code
 
 
 def is_end_message(message):
-    if message.get('status_communication', {}).get('strider_multiquery_status','running') == 'complete':
+    if message.get("status_communication", {}).get("strider_multiquery_status", "running") == "complete":
         return True
     return False
+
 
 async def post_with_callback(host_url, query, guid, params=None):
     """
@@ -159,33 +162,33 @@ async def post_with_callback(host_url, query, guid, params=None):
     :return:
     """
     # get the server root path
-    callback_host = os.environ.get('CALLBACK_HOST', '/')
+    callback_host = os.environ.get("CALLBACK_HOST", "/")
 
-    callback_url = f'{callback_host}/callback/{guid}'
+    callback_url = f"{callback_host}/callback/{guid}"
 
-    #query can be a single trapi message, or it can be a dict where each value is a trapi message
+    # query can be a single trapi message, or it can be a dict where each value is a trapi message
     # (e.g. for multiquery strider)
     # If we move the callback to the outer for multiquery this gets alittle easier, but we still need to count the
     # queries, so it's not completely easy
-    if 'message' in query.keys():
+    if "message" in query.keys():
         # set the callback host in the query
-        query['callback'] = callback_url
+        query["callback"] = callback_url
         num_queries = 1
         # make sure there is a place for the trapi log messages
-        if 'logs' not in query:
-            query['logs'] = []
+        if "logs" not in query:
+            query["logs"] = []
     else:
-        for qname,individual_query in query.items():
-            individual_query['callback'] = callback_url
-            if 'logs' not in individual_query:
-                individual_query['logs'] = []
+        for qname, individual_query in query.items():
+            individual_query["callback"] = callback_url
+            if "logs" not in individual_query:
+                individual_query["logs"] = []
         num_queries = len(query)
 
     # set the debug level
     # TODO: make sure other aragorn friends do this too
     # query['log_level'] = 'DEBUG'
 
-    #Create the callback queue
+    # Create the callback queue
     await create_queue(guid)
 
     # Send the query, using the pid for the callback
@@ -207,7 +210,7 @@ async def post_with_callback(host_url, query, guid, params=None):
         # check the response status.
         if post_response.status_code != 200:
             # queue isn't needed for failed service call
-            logger.warn(f"Deleting unneeded queue for {guid}")
+            logger.warning(f"Deleting unneeded queue for {guid}")
             await delete_queue(guid)
             # if there is an error this will return a <requests.models.Response> type
             return post_response
@@ -217,22 +220,21 @@ async def post_with_callback(host_url, query, guid, params=None):
         # exception handled in subservice_post
         raise
 
-
     # async wait for callbacks to come on queue
-    response = await assemble_callbacks(guid,num_queries)
+    response = await assemble_callbacks(guid, num_queries)
     return response
 
-async def assemble_callbacks(guid,num_queries):
+
+async def assemble_callbacks(guid, num_queries):
     # create the response object
     response = Response()
 
-    #pydantic_message = Message()
-    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes":{}, "edges":{}})
+    # pydantic_message = Message()
+    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
     accumulated_results = []
 
-
-    #Don't spend any more time than this assembling messages
-    OVERALL_TIMEOUT = timedelta(hours=1) # 1 hour
+    # Don't spend any more time than this assembling messages
+    OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
 
     num_responses = 0
     done = False
@@ -240,11 +242,10 @@ async def assemble_callbacks(guid,num_queries):
     start = dt.now()
 
     while not done:
-        num_new_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries)
-        num_responses += num_new_responses
+        num_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses)
         time_spent = dt.now() - start
         if time_spent > OVERALL_TIMEOUT:
-            logger.info(f'{guid}: Timing out receiving callbacks')
+            logger.info(f"{guid}: Timing out receiving callbacks")
             done = True
 
     await delete_queue(guid)
@@ -252,21 +253,22 @@ async def assemble_callbacks(guid,num_queries):
     # set the status to indicate success
     response.status_code = 200
     # save the data to the Response object
-    query = Query.parse_obj({"message":{}})
+    query = Query.parse_obj({"message": {}})
     query.message.knowledge_graph = pydantic_kgraph
     json_query = query.dict()
-    json_query['message']['results'] = accumulated_results
-    response._content = bytes(json.dumps(json_query),'utf-8')
+    json_query["message"]["results"] = accumulated_results
+    response._content = bytes(json.dumps(json_query), "utf-8")
 
     return response
 
 
 async def get_pika_connection():
-    q_username = os.environ.get('QUEUE_USER', 'guest')
-    q_password = os.environ.get('QUEUE_PW', 'guest')
-    q_host = os.environ.get('QUEUE_HOST', '127.0.0.1')
+    q_username = os.environ.get("QUEUE_USER", "guest")
+    q_password = os.environ.get("QUEUE_PW", "guest")
+    q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
     connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
     return connection
+
 
 async def create_queue(guid):
     connection = await get_pika_connection()
@@ -277,6 +279,7 @@ async def create_queue(guid):
         # declare the queue using the guid as the key
         queue = await channel.declare_queue(guid)
 
+
 async def delete_queue(guid):
     connection = await get_pika_connection()
     # use the connection to create a queue using the guid
@@ -286,13 +289,13 @@ async def delete_queue(guid):
         # declare the queue using the guid as the key
         queue = await channel.queue_delete(guid)
 
-async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries):
+
+async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
     complete = False
-    num_responses = 0
-    #We want to reset the connection to rabbit every once in a while
+    # We want to reset the connection to rabbit every once in a while
     # The timeout is how long to wait for a next message after processing.  So when there are many messages
     # coming in, the connection will stay open for longer than this time
-    CONNECTION_TIMEOUT = 1*60 #1 minutes
+    CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
 
     connection = await get_pika_connection()
     # use the connection to create a queue using the guid
@@ -306,27 +309,27 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                 async for message in queue_iter:
                     async with message.process():
                         num_responses += 1
-                        logger.debug(f'{guid}: Strider returned {num_responses} out of {num_queries}.')
+                        logger.debug(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
                         jr = process_message(message)
                         if is_end_message(jr):
-                            logger.debug(f'{guid}: Received complete message from multistrider')
+                            logger.debug(f"{guid}: Received complete message from multistrider")
                             complete = True
                             break
 
-                        #it's a real message; update the kgraph and results
+                        # it's a real message; update the kgraph and results
                         query = Query.parse_obj(jr)
                         pydantic_kgraph.update(query.message.knowledge_graph)
-                        accumulated_results += jr['message']['results']
+                        accumulated_results += jr["message"]["results"]
 
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
                         # and single query (no end message; single query)
                         if num_queries == 1:
-                            logger.debug(f'{guid}: Single message returned from strider; continuing')
+                            logger.debug(f"{guid}: Single message returned from strider; continuing")
                             complete = True
                             break
 
         except TimeoutError as e:
-            logger.debug(f'{guid}: cycling aio_pika connection')
+            logger.debug(f"{guid}: cycling aio_pika connection")
 
     return num_responses, complete
 
@@ -334,9 +337,9 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
 def process_message(message):
     file_name = message.body.decode()
     # open and save the file saved from the callback
-    with open(file_name, 'r') as f:
+    with open(file_name, "r") as f:
         # load the contents of the data in the file
-        content = bytes(f.read(), 'utf-8')
+        content = bytes(f.read(), "utf-8")
     os.remove(file_name)
     jr = json.loads(content)
     return jr
@@ -358,17 +361,17 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
     ret_val = message
 
     # are we going to include the timings
-    debug = os.environ.get('DEBUG_TIMING', 'False')
+    debug = os.environ.get("DEBUG_TIMING", "False")
 
     # if we are capturing the timings
-    if debug == 'True':
+    if debug == "True":
         dt_start = datetime.now()
     else:
         dt_start = None
 
     # remove the workflow element
-    if 'workflow' in message and message['workflow'] is None:
-        del message['workflow']
+    if "workflow" in message and message["workflow"] is None:
+        del message["workflow"]
 
     logger.debug(f"{guid}: Calling {url}")
 
@@ -379,7 +382,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
             response = await post_with_callback(url, message, guid, params)
         else:
             # async call to external services with hour timeout
-            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60*60)) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
                 if params is None:
                     response = await client.post(
                         url,
@@ -392,11 +395,10 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
                         params=params,
                     )
 
-
         # save the response code
         status_code = response.status_code
 
-        logger.debug(f'{guid}: {name} returned with {status_code}')
+        logger.debug(f"{guid}: {name} returned with {status_code}")
 
         if status_code == 200:
             try:
@@ -410,50 +412,50 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
     except ConnectionError as ce:
         status_code = 404
-        logger.exception(f'{guid}: ARAGORN ConnectionError {ce} posting to {name}')
+        logger.exception(f"{guid}: ARAGORN ConnectionError {ce} posting to {name}")
     except Exception as e:
         status_code = 500
         logger.exception(f"{guid}: ARAGORN Exception {e} posting to {name}")
 
-    if ('message' not in ret_val):
+    if "message" not in ret_val:
         # this mainly handles multistrider exceptions
         # grab first sub-query
         ret_val = ret_val.items()[0]
 
-    #The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
-    if (ret_val['message']['query_graph'] is None) and ('message' in message):
-        ret_val['message']['query_graph'] = deepcopy(message['message']['query_graph'])
+    # The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
+    if (ret_val["message"]["query_graph"] is None) and ("message" in message):
+        ret_val["message"]["query_graph"] = deepcopy(message["message"]["query_graph"])
 
     # make sure there is a place for the trapi log messages
-    if 'logs' not in ret_val:
-        ret_val['logs'] = []
+    if "logs" not in ret_val:
+        ret_val["logs"] = []
 
     # html error code returned
     if status_code != 200:
-        msg = f'{name} HTML error status code {status_code} returned.'
+        msg = f"{name} HTML error status code {status_code} returned."
 
-        logger.error(f'{guid}: {msg}')
+        logger.error(f"{guid}: {msg}")
 
-        ret_val['logs'].append(create_log_entry(msg, "ERROR"))
+        ret_val["logs"].append(create_log_entry(msg, "ERROR"))
     # good html status code
-    elif len(ret_val['message'].get('results',[])) == 0:
-        msg = f'{name} No results returned.'
+    elif len(ret_val["message"].get("results", [])) == 0:
+        msg = f"{name} No results returned."
 
-        logger.warning(f'{guid}: {msg}')
+        logger.warning(f"{guid}: {msg}")
 
-        ret_val['logs'].append(create_log_entry(msg, "WARNING"))
+        ret_val["logs"].append(create_log_entry(msg, "WARNING"))
     else:
         logger.info(f'{guid}: {name} returned {len(ret_val["message"]["results"])} results.')
 
-    if debug == 'True':
+    if debug == "True":
         diff = datetime.now() - dt_start
 
-        ret_val['logs'].append(create_log_entry(f'End of {name} processing. Time elapsed: {diff.seconds} seconds', 'DEBUG'))
+        ret_val["logs"].append(create_log_entry(f"End of {name} processing. Time elapsed: {diff.seconds} seconds", "DEBUG"))
 
     return ret_val, status_code
 
 
-async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qnode=None, question_qnode=None) -> (dict, int):
+async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qnode=None, question_qnode=None) -> (dict, int):
     """
     Performs lookup, parameterized by ARAGORN/ROBOKOP and whether the query is an infer type query
 
@@ -464,70 +466,73 @@ async def lookup(message, params, guid, infer=False, caller='ARAGORN', answer_qn
     :return:
     """
 
-    if caller == 'ARAGORN':
-        return await aragorn_lookup(message,params,guid,infer,answer_qnode)
-    elif caller == 'ROBOKOP':
-        return await robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode)
-    return f'Illegal caller {caller}', 400
+    if caller == "ARAGORN":
+        return await aragorn_lookup(message, params, guid, infer, answer_qnode)
+    elif caller == "ROBOKOP":
+        return await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
+    return f"Illegal caller {caller}", 400
+
 
 def chunk(input, n):
     for i in range(0, len(input), n):
-        yield input[i:i+n]
+        yield input[i : i + n]
 
 
-async def aragorn_lookup(input_message,params,guid,infer,answer_qnode):
+async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     if not infer:
-        return await strider(input_message,params,guid)
-    #Now it's an infer query.
-    messages = expand_query(input_message,params,guid)
+        return await strider(input_message, params, guid)
+    # Now it's an infer query.
+    messages = expand_query(input_message, params, guid)
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
-    #nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
-    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",75))
+    # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 75))
     result_messages = []
     num = 0
     num_batches_returned = 0
-    for to_run in chunk(messages[:nrules],nrules_per_batch):
-        message={}
+    for to_run in chunk(messages[:nrules], nrules_per_batch):
+        message = {}
         for q in to_run:
             num += 1
-            message[f'query_{num}'] = q
-        result_message, sc = await multi_strider(message,params,guid)
+            message[f"query_{num}"] = q
+        result_message, sc = await multi_strider(message, params, guid)
         num_batches_returned += 1
-        logger.info(f'{guid}: {num_batches_returned} batches returned')
+        logger.info(f"{guid}: {num_batches_returned} batches returned")
         result_messages.append(result_message)
     logger.info(f"{guid}: strider complete")
-    #We have to stitch stuff together again
-    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes":{}, "edges":{}})
+    # We have to stitch stuff together again
+    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
     for rm in result_messages:
-        pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm['message']['knowledge_graph']))
+        pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
     result = result_messages[0]
-    result['message']['knowledge_graph'] = pydantic_kgraph.dict()
-    #Now the merged message has the wrong query, let's fix it:
-    result['message']['query_graph'] = deepcopy(input_message['message']['query_graph'])
+    result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
+    # Now the merged message has the wrong query, let's fix it:
+    result["message"]["query_graph"] = deepcopy(input_message["message"]["query_graph"])
     for rm in result_messages[1:]:
-        result['message']['results'].extend( rm['message']['results'])
-    mergedresults = merge_results_by_node(result,answer_qnode)
-    logger.info(f'{guid}: results merged')
+        result["message"]["results"].extend(rm["message"]["results"])
+    mergedresults = merge_results_by_node(result, answer_qnode)
+    logger.info(f"{guid}: results merged")
     return mergedresults, sc
 
-def merge_results_by_node_op(message,params,guid) -> (dict,int):
-    qn = params['merge_qnode']
-    merged_results = merge_results_by_node(message, qn)
-    return merged_results,200
 
-async def strider(message,params,guid) -> (dict, int):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+def merge_results_by_node_op(message, params, guid) -> (dict, int):
+    qn = params["merge_qnode"]
+    merged_results = merge_results_by_node(message, qn)
+    return merged_results, 200
+
+
+async def strider(message, params, guid) -> (dict, int):
+    # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
     strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
-    if 'test' in message:
-        strider_url += 'query'
+    if "test" in message:
+        strider_url += "query"
         asyncquery = False
     else:
-        strider_url += 'asyncquery'
+        strider_url += "asyncquery"
         asyncquery = True
 
-    response = await subservice_post('strider', strider_url, message, guid, asyncquery=asyncquery)
+    response = await subservice_post("strider", strider_url, message, guid, asyncquery=asyncquery)
 
     return response
 
@@ -556,123 +561,126 @@ async def normalize_qgraph_ids(m):
     return m
 
 
-async def robokop_lookup(message,params,guid,infer,question_qnode,answer_qnode) -> (dict, int):
-    #For robokop, gotta normalize
+async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode) -> (dict, int):
+    # For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
         kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.3/")
-        return await subservice_post('robokopkg', f'{kg_url}query', message, guid)
+        return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
 
-    #It's an infer, just look it up
-    rokres =  await robokop_infer(message, guid, question_qnode, answer_qnode)
+    # It's an infer, just look it up
+    rokres = await robokop_infer(message, guid, question_qnode, answer_qnode)
     return rokres
-    #return await normalize(rokres,params,guid)
+    # return await normalize(rokres,params,guid)
 
 
-#TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
-def expand_query(input_message,params,guid):
-    #What are the relevant qnodes and ids from the input message?
-    for edge_id, edge in input_message['message']['query_graph']['edges'].items():
-        input_q_chemical_node = edge['subject']
-        input_q_disease_node = edge['object']
-    input_disease_id = input_message['message']['query_graph']['nodes'][input_q_disease_node]['ids'][0]
+# TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
+def expand_query(input_message, params, guid):
+    # What are the relevant qnodes and ids from the input message?
+    for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
+        input_q_chemical_node = edge["subject"]
+        input_q_disease_node = edge["object"]
+    input_disease_id = input_message["message"]["query_graph"]["nodes"][input_q_disease_node]["ids"][0]
     messages = []
     for rule in AMIE_EXPANSIONS:
-        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node,
-                                disease_id=input_disease_id)
-        message = {'message':json.loads(query)}
-        if 'log_level' in input_message:
-            message['log_level'] = input_message['log_level']
+        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id=input_disease_id)
+        message = {"message": json.loads(query)}
+        if "log_level" in input_message:
+            message["log_level"] = input_message["log_level"]
         messages.append(message)
     return messages
 
-async def multi_strider(messages,params,guid):
+
+async def multi_strider(messages, params, guid):
     strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
 
-    strider_url += 'multiquery'
-    response, status_code = await subservice_post('strider', strider_url, messages, guid, asyncquery=True)
+    strider_url += "multiquery"
+    response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
 
     return response, status_code
 
-def merge_answer(results,qnode_ids):
-    #We are going rename most of the node and edge bindings.  But, we want to preserve bindings to things in the
-    # original query.  For the current creative one-hop, that is just nodes b/c we are replacing the one edge.
-    #The original qnode bindings are the same in all results by construction
-    mergedresult = {'node_bindings': { q: results[0]['node_bindings'][q] for q in qnode_ids},
-                    'edge_bindings': {}}
 
-    for bindingtype in ['node', 'edge']:
+def merge_answer(results, qnode_ids):
+    # We are going rename most of the node and edge bindings.  But, we want to preserve bindings to things in the
+
+    # original query.  For the current creative one-hop, that is just nodes b/c we are replacing the one edge.
+    # The original qnode bindings are the same in all results by construction
+    mergedresult = {"node_bindings": {q: results[0]["node_bindings"][q] for q in qnode_ids}, "edge_bindings": {}}
+
+    for bindingtype in ["node", "edge"]:
         bound_things = set()
         for result in results:
             # the gross part here is dealing with the lists in the values of the bindings.
-            for key,binding in result[f'{bindingtype}_bindings'].items():
+            for key, binding in result[f"{bindingtype}_bindings"].items():
                 if key in qnode_ids:
                     continue
-                bound = frozenset([x['id'] for x in binding])
+                bound = frozenset([x["id"] for x in binding])
                 if bound not in bound_things:
-                    #found a binding to add
-                    n = f'_dummy_{bindingtype}_{len(bound_things)}'
-                    mergedresult[f'{bindingtype}_bindings'][n] = binding
+                    # found a binding to add
+                    n = f"_dummy_{bindingtype}_{len(bound_things)}"
+                    mergedresult[f"{bindingtype}_bindings"][n] = binding
                     bound_things.add(bound)
     return mergedresult
 
-#TODO move into operations? Make a translator op out of this
+
+# TODO move into operations? Make a translator op out of this
 def merge_results_by_node(result_message, merge_qnode):
     """This assumes a single result message, with a single merged KG.  The goal is to take all results that share a
     binding for merge_qnode and combine them into a single result.
     Assumes that the results are not scored."""
-    #This is relatively straightforward: group all the results by the merge_qnode
+    # This is relatively straightforward: group all the results by the merge_qnode
     # for each one, the only complication is in the keys for the "dummy" bindings.
-    original_results = result_message['message']['results']
-    original_qnodes = result_message['message']['query_graph']['nodes'].keys()
-    #group results
+    original_results = result_message["message"]["results"]
+    original_qnodes = result_message["message"]["query_graph"]["nodes"].keys()
+    # group results
     grouped_results = defaultdict(list)
     for result in original_results:
-        answer = result['node_bindings'][merge_qnode]
-        bound = frozenset([x['id'] for x in answer])
+        answer = result["node_bindings"][merge_qnode]
+        bound = frozenset([x["id"] for x in answer])
         grouped_results[bound].append(result)
-    #TODO : I'm sure there's a better way to handle this with asyncio
+    # TODO : I'm sure there's a better way to handle this with asyncio
     new_results = []
     for r in grouped_results:
-        x = merge_answer(grouped_results[r],original_qnodes)
+        x = merge_answer(grouped_results[r], original_qnodes)
         new_results.append(x)
-    result_message['message']['results'] = new_results
+    result_message["message"]["results"] = new_results
     return result_message
 
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    messages = expand_query(input_message,{},guid)
+    messages = expand_query(input_message, {}, guid)
     result_messages = []
     for message in messages:
         # async timeout in 1 hour
-        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60*60)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
             results = await client.post(
                 f"{automat_url}query",
                 json=message,
             )
         if results.status_code == 200:
             message = results.json()
-            if len(message['message']['results']) > 0:
+            if len(message["message"]["results"]) > 0:
                 result_messages.append(message)
     if len(result_messages) > 0:
         # We have to stitch stuff together again
         # Should this somehow be merged with the similar stuff merging from multistrider?  Probably
         pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
         for rm in result_messages:
-            pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm['message']['knowledge_graph']))
+            pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
         result = result_messages[0]
-        result['message']['knowledge_graph'] = pydantic_kgraph.dict()
+        result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
         for rm in result_messages[1:]:
-            result['message']['results'].extend(rm['message']['results'])
+            result["message"]["results"].extend(rm["message"]["results"])
         mergedresults = merge_results_by_node(result, answer_qnode)
     else:
-        mergedresults = {'message':{'knowledge_graph':{'nodes':{},'edges':{}}, 'results':[]}}
-    #The merged results will have some expanded query, we want the original query.
-    mergedresults['message']['query_graph'] = input_message['message']['query_graph']
+        mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
+    # The merged results will have some expanded query, we want the original query.
+    mergedresults["message"]["query_graph"] = input_message["message"]["query_graph"]
     return mergedresults, 200
 
-async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, int):
+
+async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, int):
     """
     Calls answercoalesce
     :param message:
@@ -682,22 +690,24 @@ async def answercoalesce(message, params, guid, coalesce_type='all') -> (dict, i
     :return:
     """
     url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
-    #url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
+    # url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
 
-    with open('crap.json','w') as outf:
-        json.dump(message,outf)
+    # with open("crap.json", "w") as outf:
+    #     json.dump(message, outf)
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
-    if 'max_input_size' in params:
-        if len(message['message'].get('results',0)) > params['max_input_size']:
+    if "max_input_size" in params:
+        if len(message["message"].get("results", 0)) > params["max_input_size"]:
             # This is already too big, don't do anything else
             return message, 200
-    return await subservice_post('answer_coalesce', url, message, guid)
+    return await subservice_post("answer_coalesce", url, message, guid)
 
-async def normalize(message,params, guid) -> (dict,int):
+
+async def normalize(message, params, guid) -> (dict, int):
     url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}response'
-    return await subservice_post('nodenorm', url, message, guid)
+    return await subservice_post("nodenorm", url, message, guid)
+
 
 async def omnicorp(message, params, guid) -> (dict, int):
     """
@@ -709,7 +719,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     """
     url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
 
-    return await subservice_post('omnicorp', url, message, guid)
+    return await subservice_post("omnicorp", url, message, guid)
 
 
 async def score(message, params, guid) -> (dict, int):
@@ -722,11 +732,12 @@ async def score(message, params, guid) -> (dict, int):
     """
     ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")
 
-    weight_url = f'{ranker_url}weight_correctness'
-    message, status_code = await subservice_post('weight', weight_url, message, guid)
+    weight_url = f"{ranker_url}weight_correctness"
+    message, status_code = await subservice_post("weight", weight_url, message, guid)
 
-    score_url = f'{ranker_url}score'
-    return await subservice_post('score', score_url, message, guid)
+    score_url = f"{ranker_url}score"
+    return await subservice_post("score", score_url, message, guid)
+
 
 async def run_workflow(message, workflow, guid) -> (dict, int):
     """
@@ -736,22 +747,22 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    logger.debug(f'{guid}: incoming message: {message}')
+    logger.debug(f"{guid}: incoming message: {message}")
 
     status_code = None
 
     for operator_function, params in workflow:
         message, status_code = await operator_function(message, params, guid)
 
-        if status_code != 200 or 'results' not in message['message']:
+        if status_code != 200 or "results" not in message["message"]:
             break
-        elif len(message['message']['results']) == 0:
+        elif len(message["message"]["results"]) == 0:
             break
 
         # loop through all the log entries and fix the timestamps
-        if 'logs' in message:
-            for item in message['logs']:
-                item['timestamp'] = str(item['timestamp'])
+        if "logs" in message:
+            for item in message["logs"]:
+                item["timestamp"] = str(item["timestamp"])
 
     # return the requested data
     return message, status_code
@@ -768,39 +779,16 @@ def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
     :return:
     """
     query_graph = {
-                    "nodes": [
-                        {
-                            "id": "a",
-                            "type": type_a,
-                            "curie": curie_a
-                        },
-                        {
-                            "id": "b",
-                            "type": type_b
-                        }
-                    ],
-                    "edges": [
-                        {
-                            "id": "ab",
-                            "source_id": "a",
-                            "target_id": "b"
-                        }
-                    ]
-                }
+        "nodes": [{"id": "a", "type": type_a, "curie": curie_a}, {"id": "b", "type": type_b}],
+        "edges": [{"id": "ab", "source_id": "a", "target_id": "b"}],
+    }
 
     if edge_type is not None:
-        query_graph['edges'][0]['type'] = edge_type
+        query_graph["edges"][0]["type"] = edge_type
 
         if reverse:
-            query_graph['edges'][0]['source_id'] = 'b'
-            query_graph['edges'][0]['target_id'] = 'a'
+            query_graph["edges"][0]["source_id"] = "b"
+            query_graph["edges"][0]["target_id"] = "a"
 
-    message = {
-                "message":
-                {
-                    "query_graph": query_graph,
-                    'knowledge_graph': {"nodes": [], "edges": []},
-                    'results': []
-                }
-            }
+    message = {"message": {"query_graph": query_graph, "knowledge_graph": {"nodes": [], "edges": []}, "results": []}}
     return message
