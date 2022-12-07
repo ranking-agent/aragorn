@@ -533,11 +533,11 @@ async def strider(message,params,guid) -> (dict, int):
 
 
 async def normalize_qgraph_ids(m):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_node'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_nodes'
     qnodes = m['message']['query_graph']['nodes']
     qnode_ids = set()
     for qid, qnode in qnodes.items():
-        if 'ids' in qnode:
+        if ('ids' in qnode) and ('ids' is not None):
             qnode_ids.update(qnode['ids'])
     nnp = { "curies": list(qnode_ids), "conflate": True }
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120)) as client:
@@ -546,10 +546,13 @@ async def normalize_qgraph_ids(m):
             json=nnp,
         )
     if nnresult.status_code == 200:
+        nnresult = nnresult.json()
         for qid, qnode in qnodes.items():
             if 'ids' in qnode:
                 new_ids = [ nnresult[i]['id']['identifier'] for i in qnode['ids']]
                 qnode['ids'] = new_ids
+    else:
+        logger.error("Error reaching node normalizer: {nnresult.status_code}")
     return m
 
 
