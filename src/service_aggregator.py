@@ -116,7 +116,9 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             # TODO: if this is robokop, need to normalize.
             workflow_def = [
                 {"id": "lookup"},
-                {"id": "enrich_results", "parameters": {"max_input_size": 5000}},
+                #Removing enrich results for the time being; it's not bl3 compliant and we want to replace it
+                # with tagging anyway
+                #{"id": "enrich_results", "parameters": {"max_input_size": 5000}},
                 {"id": "overlay_connect_knodes"},
                 {"id": "score"},
                 {"id": "filter_message_top_n", "parameters": {"max_results": 5000}},
@@ -538,23 +540,26 @@ async def strider(message, params, guid) -> (dict, int):
 
 
 async def normalize_qgraph_ids(m):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_node'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_nodes'
     qnodes = m["message"]["query_graph"]["nodes"]
     qnode_ids = set()
     for qid, qnode in qnodes.items():
-        if "ids" in qnode:
+        if ("ids" in qnode) and ("ids" is not None):
             qnode_ids.update(qnode["ids"])
-    nnp = {"curies": list(qnode_ids), "conflate": True}
+    nnp = { "curies": list(qnode_ids), "conflate": True }
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120)) as client:
         nnresult = await client.post(
             url,
             json=nnp,
         )
     if nnresult.status_code == 200:
+        nnresult = nnresult.json()
         for qid, qnode in qnodes.items():
-            if "ids" in qnode:
-                new_ids = [nnresult[i]["id"]["identifier"] for i in qnode["ids"]]
+            if 'ids' in qnode:
+                new_ids = [ nnresult[i]["id"]["identifier"] for i in qnode["ids"]]
                 qnode["ids"] = new_ids
+    else:
+        logger.error("Error reaching node normalizer: {nnresult.status_code}")
     return m
 
 
