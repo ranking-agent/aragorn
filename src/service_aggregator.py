@@ -411,6 +411,10 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
             except Exception as e:
                 status_code = 500
                 logger.exception(f"{guid}: ARAGORN Exception {e} translating json from post to {name}")
+        elif status_code == 422:
+            logger.exception(f"{guid}: {name} was sent an invalid message: {message}")
+            logger.exception(response.json())
+            logger.exception(response)
 
     except ConnectionError as ce:
         status_code = 404
@@ -544,7 +548,7 @@ async def normalize_qgraph_ids(m):
     qnodes = m["message"]["query_graph"]["nodes"]
     qnode_ids = set()
     for qid, qnode in qnodes.items():
-        if ("ids" in qnode) and ("ids" is not None):
+        if ("ids" in qnode) and (qnode["ids"] is not None):
             qnode_ids.update(qnode["ids"])
     nnp = { "curies": list(qnode_ids), "conflate": True }
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120)) as client:
