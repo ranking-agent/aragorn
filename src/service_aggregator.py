@@ -655,7 +655,7 @@ def merge_results_by_node(result_message, merge_qnode):
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    max_conns = os.environ.get("MAX_CONNECTIONS", 20)
+    max_conns = os.environ.get("MAX_CONNECTIONS", 30)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 75))
     messages = expand_query(input_message, {}, guid)
     logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
