@@ -41,7 +41,7 @@ if os.environ.get("OTEL_ENABLED"):
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    service_name = os.environ.get('PLATER_TITLE', 'PLATER')
+    service_name = os.environ.get('OTEL_SERVICE_NAME', 'Aragorn')
     assert service_name and isinstance(service_name, str)
     trace.set_tracer_provider(
         TracerProvider(
