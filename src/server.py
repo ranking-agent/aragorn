@@ -32,30 +32,3 @@ APP.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-if os.environ.get("OTEL_ENABLED"):
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry import trace
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-    from opentelemetry.sdk.resources import SERVICE_NAME as telemetery_service_name_key, Resource
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    service_name = os.environ.get('OTEL_SERVICE_NAME', 'Aragorn')
-    assert service_name and isinstance(service_name, str)
-    trace.set_tracer_provider(
-        TracerProvider(
-            resource=Resource.create({telemetery_service_name_key: service_name})
-        )
-    )
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=os.environ.get("JAEGER_HOST", "localhost"),
-        agent_port=int(os.environ.get("JAEGER_PORT", "6831")),
-    )
-    trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(jaeger_exporter)
-    )
-    tracer = trace.get_tracer(__name__)
-    FastAPIInstrumentor.instrument_app(APP, tracer_provider=trace, excluded_urls=
-                                       "docs,openapi.json") #,*cypher,*1.3/sri_testing_data")
-    HTTPXClientInstrumentor().instrument()
