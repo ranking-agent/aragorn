@@ -20,3 +20,4 @@ uvloop==0.17.0
 opentelemetry-sdk
 opentelemetry-exporter-jaeger
 opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
