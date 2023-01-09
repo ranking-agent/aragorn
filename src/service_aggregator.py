@@ -1,6 +1,7 @@
 """Literature co-occurrence support."""
 import json
 import logging
+import asyncio
 import httpx
 import os
 import aio_pika
@@ -559,7 +560,7 @@ async def normalize_qgraph_ids(m):
     if nnresult.status_code == 200:
         nnresult = nnresult.json()
         for qid, qnode in qnodes.items():
-            if 'ids' in qnode:
+            if 'ids' in qnode and qnode['ids'] is not None:
                 new_ids = [ nnresult[i]["id"]["identifier"] for i in qnode["ids"]]
                 qnode["ids"] = new_ids
     else:
@@ -652,22 +653,36 @@ def merge_results_by_node(result_message, merge_qnode):
     result_message["message"]["results"] = new_results
     return result_message
 
+async def make_one_request(client, automat_url, message, sem):
+    async with sem:
+        r = await client.post(f"{automat_url}query", json=message)
+    return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
+    max_conns = os.environ.get("MAX_CONNECTIONS", 10)
+    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 75))
     messages = expand_query(input_message, {}, guid)
+    logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []
-    for message in messages:
-        # async timeout in 1 hour
-        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
-            results = await client.post(
-                f"{automat_url}query",
-                json=message,
-            )
-        if results.status_code == 200:
-            message = results.json()
-            if len(message["message"]["results"]) > 0:
-                result_messages.append(message)
+    #limits = httpx.Limits(max_keepalive_connections=None, max_connections=max_conns)
+    limit = asyncio.Semaphore(max_conns)
+    # async timeout in 1 hour
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
+        tasks = []
+        for message in messages[:nrules]:
+            tasks.append(asyncio.create_task( make_one_request(client, automat_url, message, limit) ))
+
+        responses = await asyncio.gather(*tasks)
+
+        for response in responses:
+            if response.status_code == 200:
+                rmessage = response.json()
+                num_results = len(rmessage["message"]["results"])
+                if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
+                    result_messages.append(rmessage)
+            else:
+                logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
         # We have to stitch stuff together again
         # Should this somehow be merged with the similar stuff merging from multistrider?  Probably
