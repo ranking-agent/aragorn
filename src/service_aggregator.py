@@ -656,13 +656,11 @@ def merge_results_by_node(result_message, merge_qnode):
 async def make_one_request(client, automat_url, message, sem):
     async with sem:
         r = await client.post(f"{automat_url}query", json=message)
-        if sem.locked():
-            await asyncio.sleep(1)
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    max_conns = os.environ.get("MAX_CONNECTIONS", 20)
+    max_conns = os.environ.get("MAX_CONNECTIONS", 10)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 75))
     messages = expand_query(input_message, {}, guid)
     logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
