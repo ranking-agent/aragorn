@@ -8,6 +8,7 @@ import aio_pika
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime as dt, timedelta
+from string import Template
 
 from functools import partial
 from src.util import create_log_entry
@@ -498,9 +499,9 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         return await strider(input_message, params, guid)
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
-    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 100))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 101))
     result_messages = []
     num = 0
     num_batches_returned = 0
@@ -588,6 +589,10 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     return rokres
     # return await normalize(rokres,params,guid)
 
+def get_key(predicate, qualifiers):
+    keydict = {'predicate': predicate}
+    keydict.update(qualifiers)
+    return json.dumps(keydict,sort_keys=True)
 
 # TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 def expand_query(input_message, params, guid):
@@ -605,10 +610,24 @@ def expand_query(input_message, params, guid):
         input_id= input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
         source_input = False
     key = get_key(predicate,qualifier_set)
-    messages = []
-    for rule in AMIE_EXPANSIONS:
-        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id=input_disease_id)
-        message = {"message": json.loads(query)}
+    #We want to run the non-inferred version of the query as well
+    qg = deepcopy(input_message["query_graph"])
+    for eid,edge in qg["edges"]:
+        del edge["knowledge_type"]
+    messages = [{"message": qg}]
+    #just in case?
+    if AMIE_EXPANSIONS is None:
+        load_expansions()
+    for rule_def in AMIE_EXPANSIONS[key]:
+        query = rule_def["template"]
+        #need to do a bit of surgery depending on what the input is.
+        if source_input:
+            del query["query_graph"]["nodes"]["target"]["ids"]
+            query["query_graph"]["nodes"]["source"]["ids"] = [input_id]
+        else:
+            del query["query_graph"]["nodes"]["source"]["ids"]
+            query["query_graph"]["nodes"]["target"]["ids"] = [input_id]
+        message = {"message": query}
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
@@ -677,8 +696,8 @@ async def make_one_request(client, automat_url, message, sem):
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    max_conns = os.environ.get("MAX_CONNECTIONS", 10)
-    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 100))
+    max_conns = os.environ.get("MAX_CONNECTIONS", 21)
+    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
     logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []
