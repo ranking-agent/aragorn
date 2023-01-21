@@ -99,7 +99,7 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
         except Exception as e:
             logger.exception(f"{guid}: Exception detected: POSTing to callback {callback_url}", e)
 
-
+#whether the request is sync/async, creative or not, aragorn v robokop, everything comes through here.
 async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     """
     Launches an asynchronous ARAGORN run

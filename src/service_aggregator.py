@@ -19,13 +19,21 @@ from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
 from reasoner_pydantic import Query, Message, KnowledgeGraph
 
-from src.rules.rules import rules as AMIE_EXPANSIONS
+#from src.rules.rules import rules as AMIE_EXPANSIONS
 
 logger = logging.getLogger(__name__)
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
 
+#Load in the AMIE rules.  I'm not sure how this works wrt startup and workers.
+AMIE_EXPANSIONS=None
+def load_expansions():
+    thisdir = os.path.dirname(__file__)
+    rulefile = os.path.join(thisdir,"rules","rules.json")
+    with open(rulefile,'r') as inf:
+        AMIE_EXPANSIONS = json.load(inf)
+load_expansions()
 
 def examine_query(message):
     """Decides whether the input is an infer. Returns the grouping node"""
@@ -492,7 +500,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     messages = expand_query(input_message, params, guid)
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
-    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 75))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 100))
     result_messages = []
     num = 0
     num_batches_returned = 0
@@ -583,11 +591,20 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
 
 # TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 def expand_query(input_message, params, guid):
-    # What are the relevant qnodes and ids from the input message?
+    #Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
+    #          or the target has IDs, but not both. 4. The number of ids on the query node is 1.
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
-        input_q_chemical_node = edge["subject"]
-        input_q_disease_node = edge["object"]
-    input_disease_id = input_message["message"]["query_graph"]["nodes"][input_q_disease_node]["ids"][0]
+        source = edge["subject"]
+        target = edge["object"]
+        predicate = edge["predicate"]
+        qualifier_set = edge.get("qualifier_set",None)
+    if "ids" in input_message["message"]["query_graph"]["nodes"][source]:
+        input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
+        source_input = True
+    else:
+        input_id= input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
+        source_input = False
+    key = get_key(predicate,qualifier_set)
     messages = []
     for rule in AMIE_EXPANSIONS:
         query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id=input_disease_id)
@@ -661,7 +678,7 @@ async def make_one_request(client, automat_url, message, sem):
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 10)
-    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 75))
+    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 100))
     messages = expand_query(input_message, {}, guid)
     logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []

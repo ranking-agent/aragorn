@@ -1,0 +1,700 @@
+{
+	"biolink:active_in":
+	{
+		"predicate": "biolink:active_in",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:actively_involved_in":
+	{
+		"predicate": "biolink:actively_involved_in",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:acts_upstream_of":
+	{
+		"predicate": "biolink:acts_upstream_of",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:acts_upstream_of_negative_effect":
+	{
+		"predicate": "biolink:acts_upstream_of_negative_effect",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:acts_upstream_of_or_within_negative_effect":
+	{
+		"predicate": "biolink:acts_upstream_of_or_within_negative_effect",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:acts_upstream_of_or_within_positive_effect":
+	{
+		"predicate": "biolink:acts_upstream_of_or_within_positive_effect",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:acts_upstream_of_positive_effect":
+	{
+		"predicate": "biolink:acts_upstream_of_positive_effect",
+		"qualifier_set":
+		{
+		}
+	},
+	"decreased_activity_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_degradation_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "degradation",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_expression_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "expression",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_localization_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "localization",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_metabolic_processing_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "metabolic_processing",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_molecular_interaction_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "molecular_interaction",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_molecular_modification_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "molecular_modification",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_mutation_rate_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "mutation_rate",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_secretion_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "secretion",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_synthesis_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "synthesis",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_transport_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "transport",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_uptake_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "uptake",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"increased_activity_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_degradation_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "degradation",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_expression_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "expression",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_localization_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "localization",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_metabolic_processing_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "metabolic_processing",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_molecular_interaction_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "molecular_interaction",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_molecular_modification_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "molecular_modification",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_mutation_rate_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "mutation_rate",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_secretion_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "secretion",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_splicing_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "splicing",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_synthesis_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "synthesis",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_transport_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "transport",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_uptake_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "uptake",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "abundance"
+		}
+	},
+	"activity_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity"
+		}
+	},
+	"degradation_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "degradation"
+		}
+	},
+	"localization_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "localization"
+		}
+	},
+	"metabolic_processing_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "metabolic_processing"
+		}
+	},
+	"secretion_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "secretion"
+		}
+	},
+	"synthesis_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "synthesis"
+		}
+	},
+	"transport_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "transport"
+		}
+	},
+	"uptake_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "uptake"
+		}
+	},
+	"biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:affects_response_to":
+	{
+		"predicate": "biolink:affects_response_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:ameliorates":
+	{
+		"predicate": "biolink:ameliorates",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:associated_with":
+	{
+		"predicate": "biolink:associated_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:binds":
+	{
+		"predicate": "biolink:binds",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:biomarker_for":
+	{
+		"predicate": "biolink:biomarker_for",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:capable_of":
+	{
+		"predicate": "biolink:capable_of",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:causes":
+	{
+		"predicate": "biolink:causes",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:coexists_with":
+	{
+		"predicate": "biolink:coexists_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:coexpressed_with":
+	{
+		"predicate": "biolink:coexpressed_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:composed_primarily_of":
+	{
+		"predicate": "biolink:composed_primarily_of",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:contraindicated_for":
+	{
+		"predicate": "biolink:contraindicated_for",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:contributes_to":
+	{
+		"predicate": "biolink:contributes_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:correlated_with":
+	{
+		"predicate": "biolink:correlated_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:decreases_response_to":
+	{
+		"predicate": "biolink:decreases_response_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:derives_from":
+	{
+		"predicate": "biolink:derives_from",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:develops_from":
+	{
+		"predicate": "biolink:develops_from",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:directly_physically_interacts_with":
+	{
+		"predicate": "biolink:directly_physically_interacts_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:disrupts":
+	{
+		"predicate": "biolink:disrupts",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:enables":
+	{
+		"predicate": "biolink:enables",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:expressed_in":
+	{
+		"predicate": "biolink:expressed_in",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:gene_associated_with_condition":
+	{
+		"predicate": "biolink:gene_associated_with_condition",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:genetic_association":
+	{
+		"predicate": "biolink:genetic_association",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:genetically_interacts_with":
+	{
+		"predicate": "biolink:genetically_interacts_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_adverse_event":
+	{
+		"predicate": "biolink:has_adverse_event",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_input":
+	{
+		"predicate": "biolink:has_input",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_output":
+	{
+		"predicate": "biolink:has_output",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_part":
+	{
+		"predicate": "biolink:has_part",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_participant":
+	{
+		"predicate": "biolink:has_participant",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:has_phenotype":
+	{
+		"predicate": "biolink:has_phenotype",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:homologous_to":
+	{
+		"predicate": "biolink:homologous_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:in_taxon":
+	{
+		"predicate": "biolink:in_taxon",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:increases_response_to":
+	{
+		"predicate": "biolink:increases_response_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:interacts_with":
+	{
+		"predicate": "biolink:interacts_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:located_in":
+	{
+		"predicate": "biolink:located_in",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:negatively_correlated_with":
+	{
+		"predicate": "biolink:negatively_correlated_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:occurs_in":
+	{
+		"predicate": "biolink:occurs_in",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:orthologous_to":
+	{
+		"predicate": "biolink:orthologous_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:overlaps":
+	{
+		"predicate": "biolink:overlaps",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:physically_interacts_with":
+	{
+		"predicate": "biolink:physically_interacts_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:positively_correlated_with":
+	{
+		"predicate": "biolink:positively_correlated_with",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:precedes":
+	{
+		"predicate": "biolink:precedes",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:produces":
+	{
+		"predicate": "biolink:produces",
+		"qualifier_set":
+		{
+		}
+	},
+	"downregulated_biolink:regulates":
+	{
+		"predicate": "biolink:regulates",
+		"qualifier_set":
+		{
+			"biolink:object_direction_qualifier": "downregulated"
+		}
+	},
+	"upregulated_biolink:regulates":
+	{
+		"predicate": "biolink:regulates",
+		"qualifier_set":
+		{
+			"biolink:object_direction_qualifier": "upregulated"
+		}
+	},
+	"biolink:regulates":
+	{
+		"predicate": "biolink:regulates",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:related_to":
+	{
+		"predicate": "biolink:related_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:similar_to":
+	{
+		"predicate": "biolink:similar_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:temporally_related_to":
+	{
+		"predicate": "biolink:temporally_related_to",
+		"qualifier_set":
+		{
+		}
+	},
+	"biolink:treats":
+	{
+		"predicate": "biolink:treats",
+		"qualifier_set":
+		{
+		}
+	}
+}

@@ -53,7 +53,8 @@ async def filter_kgraph_orphans(message,params,guid):
 
 async def filter_message_top_n(message,params,guid):
     """Aggregator for sort_results_score, filter_results_top_n, filter_kgraph_orphans.
-    Aggregating these allows us to skip (potentially expensive) filter_kgraph_orphans if no filtering is done on the results."""
+    Aggregating these allows us to skip (potentially expensive) filter_kgraph_orphans if no
+    filtering is done on the results."""
     logger.info(f'{guid}: filtering message top n.')
     n = params.get('max_results', 20000)
     sortedmessage, status = await sort_results_score(message,params,guid)

@@ -1,0 +1,100 @@
+{
+  "treats":
+  {
+    "edge_definition": { "predicate":  "biolink:treats" },
+    "AMIE_inputs": [
+      {
+        "input_file": "robokop_biolink3_fixed_treats_len3_correct_rules.txt",
+        "min_positive_example": 2000,
+        "min_std_confidence": 0.001,
+        "max_body_size": 100000
+      }
+    ],
+    "source": "biolink:ChemicalEntity",
+    "target": "biolink:DiseaseOrPhenotypicFeature",
+    "sort": "Std Confidence",
+    "keep": 100
+  },
+  "contraindicated_for":
+  {
+    "edge_definition": { "predicate":  "biolink:contraindicated_for" },
+    "AMIE_inputs": [
+      {
+        "input_file": "robokop_biolink3_fixed_contraindicated_for_len2_correct_rules.txt",
+        "min_positive_example": 10,
+        "min_std_confidence": 0.001,
+        "max_body_size": 100000
+      }
+    ],
+    "source": "biolink:ChemicalEntity",
+    "target": "biolink:DiseaseOrPhenotypicFeature",
+    "sort": "Std Confidence",
+    "keep": 100
+  },
+  "increases_activity":
+  {
+    "edge_definition": {
+      "predicate":  "biolink:affects",
+      "qualifier_constraints":
+      [
+        {
+          "qualifier_set": [
+            {
+              "qualifier_type_id": "biolink:object_aspect_qualifier",
+              "qualifier_value": "activity"
+            },
+            {
+              "qualifier_type_id": "biolink:object_direction_qualifier",
+              "qualifier_value": "increased"
+            }
+          ]
+        }
+      ]
+    },
+    "AMIE_inputs": [
+      {
+        "input_file": "robokop_biolink3_fixed_increased_activity_len2_correct_rules.txt",
+        "min_positive_example": 10,
+        "min_std_confidence": 0.01,
+        "max_body_size": 100000
+      }
+    ],
+    "sort": "Std Confidence",
+    "keep": 100,
+    "source": "biolink:ChemicalEntity",
+    "target": "biolink:Gene"
+  },
+  "decreases_activity":
+  {
+    "edge_definition": {
+      "predicate":  "biolink:affects",
+      "qualifier_constraints":
+      [
+        {
+          "qualifier_set": [
+            {
+              "qualifier_type_id": "biolink:object_aspect_qualifier",
+              "qualifier_value": "activity"
+            },
+            {
+              "qualifier_type_id": "biolink:object_direction_qualifier",
+              "qualifier_value": "decreased"
+            }
+          ]
+        }
+      ]
+    },
+    "AMIE_inputs": [
+      {
+        "input_file": "robokop_biolink3_fixed_decreased_activity_len2_correct_rules.txt",
+        "min_positive_example": 10,
+        "min_std_confidence": 0.01,
+        "max_body_size": 100000
+      }
+    ],
+    "sort": "Std Confidence",
+    "keep": 100,
+    "source": "biolink:ChemicalEntity",
+    "target": "biolink:Gene"
+  }
+}
