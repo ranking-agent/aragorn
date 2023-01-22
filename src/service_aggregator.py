@@ -28,13 +28,10 @@ logger = logging.getLogger(__name__)
 queue_file_dir = "./queue-files"
 
 #Load in the AMIE rules.  I'm not sure how this works wrt startup and workers.
-AMIE_EXPANSIONS=None
-def load_expansions():
-    thisdir = os.path.dirname(__file__)
-    rulefile = os.path.join(thisdir,"rules","rules.json")
-    with open(rulefile,'r') as inf:
-        AMIE_EXPANSIONS = json.load(inf)
-load_expansions()
+thisdir = os.path.dirname(__file__)
+rulefile = os.path.join(thisdir,"rules","rules.json")
+with open(rulefile,'r') as inf:
+    AMIE_EXPANSIONS = json.load(inf)
 
 def examine_query(message):
     """Decides whether the input is an infer. Returns the grouping node"""
@@ -321,10 +318,10 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                 async for message in queue_iter:
                     async with message.process():
                         num_responses += 1
-                        logger.debug(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
+                        logger.info(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
                         jr = process_message(message)
                         if is_end_message(jr):
-                            logger.debug(f"{guid}: Received complete message from multistrider")
+                            logger.info(f"{guid}: Received complete message from multistrider")
                             complete = True
                             break
 
@@ -332,11 +329,12 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                         query = Query.parse_obj(jr)
                         pydantic_kgraph.update(query.message.knowledge_graph)
                         accumulated_results += jr["message"]["results"]
+                        logger.info(f"{guid}: {len(jr['message']['results'])} results from {jr['message']['query_graph']}")
 
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
                         # and single query (no end message; single query)
                         if num_queries == 1:
-                            logger.debug(f"{guid}: Single message returned from strider; continuing")
+                            logger.info(f"{guid}: Single message returned from strider; continuing")
                             complete = True
                             break
 
@@ -499,7 +497,9 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         return await strider(input_message, params, guid)
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
+    print(len(messages))
+    #nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 1))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 101))
     result_messages = []
@@ -510,6 +510,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         for q in to_run:
             num += 1
             message[f"query_{num}"] = q
+        logger.info(f"Sending {len(message)} messages to strider")
         result_message, sc = await multi_strider(message, params, guid)
         num_batches_returned += 1
         logger.info(f"{guid}: {num_batches_returned} batches returned")
@@ -601,8 +602,8 @@ def expand_query(input_message, params, guid):
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
         source = edge["subject"]
         target = edge["object"]
-        predicate = edge["predicate"]
-        qualifier_set = edge.get("qualifier_set",None)
+        predicate = edge["predicates"][0]
+        qualifier_set = edge.get("qualifier_set",{})
     if "ids" in input_message["message"]["query_graph"]["nodes"][source]:
         input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
         source_input = True
@@ -611,22 +612,23 @@ def expand_query(input_message, params, guid):
         source_input = False
     key = get_key(predicate,qualifier_set)
     #We want to run the non-inferred version of the query as well
-    qg = deepcopy(input_message["query_graph"])
-    for eid,edge in qg["edges"]:
+    qg = deepcopy(input_message["message"]["query_graph"])
+    for eid,edge in qg["edges"].items():
         del edge["knowledge_type"]
-    messages = [{"message": qg}]
+    messages = [{"message": {"query_graph":qg}}]
     #just in case?
-    if AMIE_EXPANSIONS is None:
-        load_expansions()
     for rule_def in AMIE_EXPANSIONS[key]:
-        query = rule_def["template"]
+        query_template = Template(json.dumps(rule_def["template"]))
         #need to do a bit of surgery depending on what the input is.
         if source_input:
-            del query["query_graph"]["nodes"]["target"]["ids"]
-            query["query_graph"]["nodes"]["source"]["ids"] = [input_id]
+            qs = query_template.substitute(source=source,target=target,source_id = input_id, target_id='')
         else:
-            del query["query_graph"]["nodes"]["source"]["ids"]
-            query["query_graph"]["nodes"]["target"]["ids"] = [input_id]
+            qs = query_template.substitute(source=source, target=target, target_id=input_id, source_id='')
+        query = json.loads(qs)
+        if source_input:
+            del query["query_graph"]["nodes"][target]["ids"]
+        else:
+            del query["query_graph"]["nodes"][source]["ids"]
         message = {"message": query}
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
@@ -699,26 +701,27 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     max_conns = os.environ.get("MAX_CONNECTIONS", 21)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
-    logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
+    logger.info(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []
     #limits = httpx.Limits(max_keepalive_connections=None, max_connections=max_conns)
     limit = asyncio.Semaphore(max_conns)
     # async timeout in 1 hour
-    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=5 * 60)) as client:
         tasks = []
         for message in messages[:nrules]:
             tasks.append(asyncio.create_task( make_one_request(client, automat_url, message, limit) ))
 
         responses = await asyncio.gather(*tasks)
 
-        for response in responses:
-            if response.status_code == 200:
-                rmessage = response.json()
-                num_results = len(rmessage["message"]["results"])
-                if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
-                    result_messages.append(rmessage)
-            else:
-                logger.error(f"{guid}: {response.status_code} returned.")
+    for response in responses:
+        if response.status_code == 200:
+            rmessage = response.json()
+            num_results = len(rmessage["message"]["results"])
+            logger.info(f"Returned {num_results} results")
+            if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
+                result_messages.append(rmessage)
+        else:
+            logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
         # We have to stitch stuff together again
         # Should this somehow be merged with the similar stuff merging from multistrider?  Probably

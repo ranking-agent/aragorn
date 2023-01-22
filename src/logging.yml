@@ -5,11 +5,11 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: DEBUG
+    level: INFO
     formatter: default
   file:
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
+    level: INFO
     formatter: default
     filename: "aragorn.log"
     mode: a
@@ -18,12 +18,12 @@ handlers:
     backupCount: 30
 loggers:
   src:
-    level: DEBUG
+    level: INFO
     handlers:
       - console
       - file
   aio_pika:
-    level: DEBUG
+    level: INFO
     handlers:
       - console
       - file

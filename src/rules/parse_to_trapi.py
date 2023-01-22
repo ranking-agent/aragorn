@@ -15,7 +15,7 @@ def add_edge(trapi,subject,object,predicate,n,qpredmap):
         qpp = qpredmap[predicate]
         biolink_predicate = qpp['predicate']
         qualifiers = qpp['qualifier_set']
-        trapi['query_graph']['edges'][f'edge_{n}'] = {'subject': subject, 'object': object, 'predicates': biolink_predicate}
+        trapi['query_graph']['edges'][f'edge_{n}'] = {'subject': subject, 'object': object, 'predicates': [biolink_predicate]}
         qset = []
         qset = [{'qualifier_type_id':k, 'qualifier_value': v} for k,v in qualifiers.items()]
         trapi['query_graph']['edges'][f'edge_{n}']['qualifier_constraints']=[{'qualifier_set':qset}]
@@ -24,13 +24,13 @@ def rule_to_trapi(rule,rule_conf,qmap):
     #Note that we're putting a category on the disease node.  This is to make the cypher index happy.  It should not be
     # required in future versions of the transpiler
     t = {'query_graph': {
-        'nodes': {'source':{'ids':['$source_id'],'categories':[rule_conf["source"]]},
-                  'target':{'ids':['$target_id'], 'categories':[rule_conf["target"]]}},
+        'nodes': {'$source':{'ids':['$source_id'],'categories':[rule_conf["source"]]},
+                  '$target':{'ids':['$target_id'], 'categories':[rule_conf["target"]]}},
         'edges': {}}}
     head_tail = rule.split('=> ')
     head = head_tail[0]
     tail_parts = head_tail[1].split()
-    nodemap = {tail_parts[0]: "source", tail_parts[2]: "target"}
+    nodemap = {tail_parts[0]: "$source", tail_parts[2]: "$target"}
     rulesplit = head.split()
     ecount = 0
     #There are some rules like (x)-(source)-(target) => (source)-(target) that I want to get rid of
@@ -50,13 +50,13 @@ def rule_to_trapi(rule,rule_conf,qmap):
             n1 = n1[1:]
         add_node(t,n0)
         add_node(t,n1)
-        if (n0 == "source") and (not n1 == "target"):
+        if (n0 == "$source") and (not n1 == "$target"):
             source_ok = True
-        if (n1 == "source") and (not n0 == "target"):
+        if (n1 == "$source") and (not n0 == "$target"):
             source_ok = True
-        if (n0 == "target") and (not n1 == "source"):
+        if (n0 == "$target") and (not n1 == "$source"):
             target_ok = True
-        if (n1 == "target") and (not n0 == "source"):
+        if (n1 == "$target") and (not n0 == "$source"):
             target_ok = True
         add_edge(t,n0,n1,predicate,ecount,qmap)
         ecount += 1
