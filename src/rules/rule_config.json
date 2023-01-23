@@ -5,9 +5,9 @@
     "AMIE_inputs": [
       {
         "input_file": "robokop_biolink3_fixed_treats_len3_correct_rules.txt",
-        "min_positive_example": 2000,
-        "min_std_confidence": 0.001,
-        "max_body_size": 100000
+        "min_positive_example": 1000,
+        "min_std_confidence": 0.01,
+        "max_negative_examples": 10000
       }
     ],
     "source": "biolink:ChemicalEntity",

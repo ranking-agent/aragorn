@@ -83,8 +83,9 @@ def parse_line(line, header, source, rule_conf, qmap):
     if float(rule["Std Confidence"]) <= minconf:
         return {}
     # Is the rule going to bring back too many results?
-    maxbody = source.get("max_body_size", 99999999999)
-    if int(rule["Body size"]) >= maxbody:
+    maxnegs = source.get("max_negative_examples", 99999999999)
+    negatives = int(rule["Body size"]) - int(rule["Positive Examples"])
+    if int(negatives) >= maxnegs:
         return {}
     template = rule_to_trapi(rule['Rule'],rule_conf,qmap)
     if template is not None:

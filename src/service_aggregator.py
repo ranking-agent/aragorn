@@ -498,8 +498,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
     print(len(messages))
-    #nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 1))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
+    #nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 1))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
     nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 101))
     result_messages = []
@@ -528,6 +528,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         result["message"]["results"].extend(rm["message"]["results"])
     mergedresults = merge_results_by_node(result, answer_qnode)
     logger.info(f"{guid}: results merged")
+    with open('junk.json','w') as outf:
+        json.dump(mergedresults,outf)
     return mergedresults, sc
 
 
@@ -698,7 +700,7 @@ async def make_one_request(client, automat_url, message, sem):
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    max_conns = os.environ.get("MAX_CONNECTIONS", 21)
+    max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
     logger.info(f"{guid}: {len(messages)} to send to {automat_url}")
@@ -737,6 +739,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
     # The merged results will have some expanded query, we want the original query.
     mergedresults["message"]["query_graph"] = input_message["message"]["query_graph"]
+
     return mergedresults, 200
 
 
