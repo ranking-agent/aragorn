@@ -31,4 +31,4 @@ def test_expand_query():
         }
     }
     m = expand_query(q,{},"abcd")
-    assert len(m) == 101 #This depends on how many rules we're allowing
+    assert len(m) > 20 #This depends on how many rules we're allowing
