@@ -74,6 +74,11 @@ def parse_line(line, header, source, rule_conf, qmap):
         #It's probably some trailing info
         return {}
     rule = { h:p for h,p in zip(header,line_parts)}
+    #cull predicates that are too chunky or otherwise we don't like
+    exclude_preds = source.get("excluded_predicates",[])
+    for pred in exclude_preds:
+        if pred in rule["Rule"]:
+            return {}
     #Do we have enough positive examples?
     minpos = source.get('min_positive_example', 0)
     if int( rule["Positive Examples"] ) <= minpos:

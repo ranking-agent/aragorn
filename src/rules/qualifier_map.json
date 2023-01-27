@@ -48,12 +48,30 @@
 		{
 		}
 	},
+	"decreased_abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "abundance",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
 	"decreased_activity_biolink:affects":
 	{
 		"predicate": "biolink:affects",
 		"qualifier_set":
 		{
 			"biolink:object_aspect_qualifier": "activity",
+			"biolink:object_direction_qualifier": "decreased"
+		}
+	},
+	"decreased_activity_or_abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity_or_abundance",
 			"biolink:object_direction_qualifier": "decreased"
 		}
 	},
@@ -156,12 +174,30 @@
 			"biolink:object_direction_qualifier": "decreased"
 		}
 	},
+	"increased_abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "abundance",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
 	"increased_activity_biolink:affects":
 	{
 		"predicate": "biolink:affects",
 		"qualifier_set":
 		{
 			"biolink:object_aspect_qualifier": "activity",
+			"biolink:object_direction_qualifier": "increased"
+		}
+	},
+	"increased_activity_or_abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity_or_abundance",
 			"biolink:object_direction_qualifier": "increased"
 		}
 	},
@@ -287,6 +323,14 @@
 		"qualifier_set":
 		{
 			"biolink:object_aspect_qualifier": "activity"
+		}
+	},
+	"activity_or_abundance_biolink:affects":
+	{
+		"predicate": "biolink:affects",
+		"qualifier_set":
+		{
+			"biolink:object_aspect_qualifier": "activity_or_abundance"
 		}
 	},
 	"degradation_biolink:affects":
