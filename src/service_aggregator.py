@@ -605,14 +605,18 @@ def expand_query(input_message, params, guid):
         source = edge["subject"]
         target = edge["object"]
         predicate = edge["predicates"][0]
-        qualifier_set = edge.get("qualifier_set",{})
+        qc = edge.get("qualifier_constraints",[])
+        if len(qc) == 0:
+            qualifiers = {}
+        else:
+            qualifiers = { "qualifier_constraints": qc}
     if "ids" in input_message["message"]["query_graph"]["nodes"][source]:
         input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
         source_input = True
     else:
         input_id= input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
         source_input = False
-    key = get_key(predicate,qualifier_set)
+    key = get_key(predicate,qualifiers)
     #We want to run the non-inferred version of the query as well
     qg = deepcopy(input_message["message"]["query_graph"])
     for eid,edge in qg["edges"].items():
