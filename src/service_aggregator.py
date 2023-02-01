@@ -822,7 +822,7 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
 
     for operator_function, params in workflow:
         #make sure results is [] rather than a key that doesn't exist or None
-        if len(message["message"].get("results",[])) == 0:
+        if (not "results" in message["message"]) or (message["message"]["results"] is None):
             message["message"]["results"] = []
 
         message, status_code = await operator_function(message, params, guid)
