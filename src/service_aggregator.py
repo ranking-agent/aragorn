@@ -681,7 +681,7 @@ def merge_results_by_node(result_message, merge_qnode):
     Assumes that the results are not scored."""
     # This is relatively straightforward: group all the results by the merge_qnode
     # for each one, the only complication is in the keys for the "dummy" bindings.
-    original_results = result_message["message"]["results"]
+    original_results = result_message["message"].get("results",[])
     original_qnodes = result_message["message"]["query_graph"]["nodes"].keys()
     # group results
     grouped_results = defaultdict(list)
@@ -722,7 +722,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     for response in responses:
         if response.status_code == 200:
             rmessage = response.json()
-            num_results = len(rmessage["message"]["results"])
+            num_results = len(rmessage["message"].get("results",[]))
             logger.info(f"Returned {num_results} results")
             if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
                 result_messages.append(rmessage)
@@ -735,6 +735,8 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         for rm in result_messages:
             pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
         result = result_messages[0]
+        if (not "results" in result["message"]) or (result["message"]["results"] is None):
+            result["message"]["results"] = []
         result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
         for rm in result_messages[1:]:
             result["message"]["results"].extend(rm["message"]["results"])
@@ -765,7 +767,7 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
     if "max_input_size" in params:
-        if len(message["message"].get("results", 0)) > params["max_input_size"]:
+        if len(message["message"].get("results", [])) > params["max_input_size"]:
             # This is already too big, don't do anything else
             return message, 200
     return await subservice_post("answer_coalesce", url, message, guid)
@@ -819,6 +821,10 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
     status_code = None
 
     for operator_function, params in workflow:
+        #make sure results is [] rather than a key that doesn't exist or None
+        if len(message["message"].get("results",[])) == 0:
+            message["message"]["results"] = []
+
         message, status_code = await operator_function(message, params, guid)
 
         if status_code != 200 or "results" not in message["message"]:
@@ -833,7 +839,6 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
 
     # return the requested data
     return message, status_code
-
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
     """

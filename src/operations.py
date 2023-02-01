@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 # because all operation workflows are expected to be async
 async def sort_results_score(message,params,guid):
     logger.info(f'{guid}: sorting results.')
-    results = message['message']['results']
+    results = message['message'].get("results",[])
     aord = params.get('ascending_or_descending','descending')
     reverse = (aord=='descending')
     try:
@@ -23,7 +23,7 @@ async def filter_results_top_n(message,params,guid):
     logger.info(f'{guid}: filtering results.')
     n = params.get('max_results',20000)
     try:
-        message['message']['results'] = message['message']['results'][:n]
+        message['message']['results'] = message['message'].get("results",[])[:n]
     except KeyError:
         #not a 'mesage' or 'results'
         logger.error(f'{guid}: error filtering results.')
