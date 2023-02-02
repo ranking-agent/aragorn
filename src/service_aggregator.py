@@ -497,7 +497,6 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         return await strider(input_message, params, guid)
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
-    print(len(messages))
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
     #nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 1))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
@@ -610,7 +609,8 @@ def expand_query(input_message, params, guid):
             qualifiers = {}
         else:
             qualifiers = { "qualifier_constraints": qc}
-    if "ids" in input_message["message"]["query_graph"]["nodes"][source]:
+    if ("ids" in input_message["message"]["query_graph"]["nodes"][source]) \
+            and (input_message["message"]["query_graph"]["nodes"][source]["ids"] is not None):
         input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
         source_input = True
     else:
