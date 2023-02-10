@@ -228,7 +228,7 @@ async def post_with_callback(host_url, query, guid, params=None):
         logger.error(f"Failed to contact {host_url}")
         await delete_queue(guid)
         # exception handled in subservice_post
-        raise
+        raise e
 
     # async wait for callbacks to come on queue
     response = await assemble_callbacks(guid, num_queries)
