@@ -281,23 +281,31 @@ async def get_pika_connection():
 
 
 async def create_queue(guid):
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        # declare the queue using the guid as the key
-        queue = await channel.declare_queue(guid)
+    try:
+        connection = await get_pika_connection()
+        # use the connection to create a queue using the guid
+        async with connection:
+            # create a channel to the rabbit mq
+            channel = await connection.channel()
+            # declare the queue using the guid as the key
+            queue = await channel.declare_queue(guid)
+    except Exception as e:
+        logger.error(f"{guid}: Failed to create queue.")
+        raise e
 
 
 async def delete_queue(guid):
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        # declare the queue using the guid as the key
-        queue = await channel.queue_delete(guid)
+    try:
+        connection = await get_pika_connection()
+        # use the connection to create a queue using the guid
+        async with connection:
+            # create a channel to the rabbit mq
+            channel = await connection.channel()
+            # declare the queue using the guid as the key
+            queue = await channel.queue_delete(guid)
+    except Exception:
+        logger.error(f"{guid}: Failed to delete queue.")
+        # Deleting queue isn't essential, so we will continue
 
 
 async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
@@ -307,14 +315,14 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
     # coming in, the connection will stay open for longer than this time
     CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
 
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        queue = await channel.get_queue(guid)
-        # wait for the response.  Timeout after
-        try:
+    try:
+        connection = await get_pika_connection()
+        # use the connection to create a queue using the guid
+        async with connection:
+            # create a channel to the rabbit mq
+            channel = await connection.channel()
+            queue = await channel.get_queue(guid, ensure=True)
+            # wait for the response.  Timeout after
             async with queue.iterator(timeout=CONNECTION_TIMEOUT) as queue_iter:
                 async for message in queue_iter:
                     async with message.process():
@@ -339,8 +347,11 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                             complete = True
                             break
 
-        except TimeoutError as e:
-            logger.debug(f"{guid}: cycling aio_pika connection")
+    except TimeoutError as e:
+        logger.debug(f"{guid}: cycling aio_pika connection")
+    except Exception as e:
+        logger.error(f"{guid}: Exception {e}. Returning {num_responses} results we have so far.")
+        return num_responses, True
 
     return num_responses, complete
 
