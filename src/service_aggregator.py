@@ -18,7 +18,8 @@ from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
-from reasoner_pydantic import Query, Message, KnowledgeGraph
+from reasoner_pydantic import Query, KnowledgeGraph
+from reasoner_pydantic import Response as PDResponse
 
 #from src.rules.rules import rules as AMIE_EXPANSIONS
 
@@ -414,7 +415,8 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
             try:
                 # if there is a response return it as a dict
                 if len(response.json()):
-                    ret_val = response.json()
+                    #pass it through pydantic for validation and cleaning
+                    ret_val = PDResponse(response.json()).dict(exclude_none = True)
 
             except Exception as e:
                 status_code = 500

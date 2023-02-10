@@ -16,7 +16,9 @@ async def async_query(background_tasks, request, answer_coalesce_type, logger, c
         if isinstance(request, dict):
             message = request
         else:
-            message = request.dict()
+            #Exclude_none should remove any keys with a null value, which should make working with the
+            # message a bit cleaner & lead to fewer 500s.
+            message = request.dict(exclude_none=True)
 
         callback_url = message["callback"]
 
@@ -116,7 +118,7 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
     if type(request) is dict:
         message = request
     else:
-        message = request.dict(exclude_unset=True)
+        message = request.dict(exclude_unset=True, exclude_none=True)
 
     if "logs" not in message or message["logs"] is None:
         message["logs"] = []
