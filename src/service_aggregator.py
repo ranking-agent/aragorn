@@ -446,8 +446,16 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
     if "message" not in ret_val:
         # this mainly handles multistrider exceptions
-        # grab first sub-query
-        ret_val = ret_val.items()[0]
+        ret_val = {
+            "message": {
+                "query_graph": {},
+                "knowledge_graph": {
+                    "nodes": {},
+                    "edges": {},
+                },
+                "results": [],
+            },
+        }
 
     # The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
     if ("query_graph" not in ret_val["message"]) and ("message" in message):
