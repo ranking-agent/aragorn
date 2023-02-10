@@ -416,7 +416,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
                 # if there is a response return it as a dict
                 if len(response.json()):
                     #pass it through pydantic for validation and cleaning
-                    ret_val = PDResponse(response.json()).dict(exclude_none = True)
+                    ret_val = PDResponse.parse_obj(response.json()).dict(exclude_none = True)
 
             except Exception as e:
                 status_code = 500
@@ -439,7 +439,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         ret_val = ret_val.items()[0]
 
     # The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
-    if (ret_val["message"]["query_graph"] is None) and ("message" in message):
+    if ("query_graph" not in ret_val["message"]) and ("message" in message):
         ret_val["message"]["query_graph"] = deepcopy(message["message"]["query_graph"])
 
     # make sure there is a place for the trapi log messages
