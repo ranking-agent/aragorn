@@ -377,11 +377,11 @@ import pydantic.json
 JSONABLE_TYPES = (dict, list, tuple, str, int, float, bool, type(None))
 async def to_jsonable_dict(obj):
     if isinstance(obj, dict):
-        return {key: to_jsonable_dict(value) for key, value in obj.items()}
+        return {key: await to_jsonable_dict(value) for key, value in obj.items()}
     elif isinstance(obj, list):
-        return [to_jsonable_dict(value) for value in obj]
+        return [await to_jsonable_dict(value) for value in obj]
     elif isinstance(obj, tuple):
-        return tuple(to_jsonable_dict(value) for value in obj)
+        return tuple(await to_jsonable_dict(value) for value in obj)
     elif isinstance(obj, JSONABLE_TYPES):
         return obj
     return pydantic.json.pydantic_encoder(obj)
