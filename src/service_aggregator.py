@@ -366,6 +366,26 @@ def process_message(message):
     jr = json.loads(content)
     return jr
 
+#There's a problem where our pydantic model includes a datetime.  But that doesn't serialize to json.
+# So when we pass a response through pydantic to remove nulls, it converts log datetimes into python
+# datetimes, which then barf when we try to json serialize them.
+# This is a frequent complain re: pydantic. See https://github.com/pydantic/pydantic/issues/1409
+# Apparently it will be handled in v2, real soon now.  But for the time being, the following code
+# from that thread takes the output from .dict() and makes it serializable.
+import pydantic.json
+# https://github.com/python/cpython/blob/7b21108445969398f6d1db9234fc0fe727565d2e/Lib/json/encoder.py#L78
+JSONABLE_TYPES = (dict, list, tuple, str, int, float, bool, type(None))
+async def to_jsonable_dict(obj):
+    if isinstance(obj, dict):
+        return {key: to_jsonable_dict(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [to_jsonable_dict(value) for value in obj]
+    elif isinstance(obj, tuple):
+        return tuple(to_jsonable_dict(value) for value in obj)
+    elif isinstance(obj, JSONABLE_TYPES):
+        return obj
+    return pydantic.json.pydantic_encoder(obj)
+####
 
 async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
@@ -427,7 +447,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
                 # if there is a response return it as a dict
                 if len(response.json()):
                     #pass it through pydantic for validation and cleaning
-                    ret_val = PDResponse.parse_obj(response.json()).dict(exclude_none = True)
+                    ret_val = await to_jsonable_dict(PDResponse.parse_obj(response.json()).dict(exclude_none = True))
 
             except Exception as e:
                 status_code = 500
