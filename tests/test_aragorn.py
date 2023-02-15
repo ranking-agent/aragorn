@@ -142,7 +142,6 @@ def workflow_A1(appname):
         if atts is None:
             atts = []
         for a in atts:
-            #oan = a["original_attribute_name"]
             oan = a.get("original_attribute_name","")
             if oan is not None and oan.startswith("omnicorp_article_count"):
                 found = True
