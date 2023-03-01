@@ -321,3 +321,47 @@ def x_test_standup_2():
             break
 
     assert found
+
+def test_null_results():
+    #make sure that aragorn can handle cases where results is null (as opposed to missing)
+    query= {
+    "message": {
+        "query_graph": {
+            "nodes": {
+                "disease": {
+                    "ids": [
+                        "MONDO:0005321"
+                    ]
+                },
+                "chemical": {
+                    "categories": [
+                        "biolink:ChemicalEntity"
+                    ]
+                }
+            },
+            "edges": {
+                "t_edge": {
+                    "object": "disease",
+                    "subject": "chemical",
+                    "predicates": [
+                        "biolink:treats"
+                    ]
+                }
+            }
+        },
+        "knowledge_graph": {
+            "nodes": {},
+            "edges": {}
+        },
+        "results": None
+    },
+    "workflow": [
+        {
+            "id": "score"
+        }
+    ]
+    }
+    # make a good request
+    response = client.post("/aragorn/query", json=query)
+    # was the request successful
+    assert response.status_code == 200
