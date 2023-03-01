@@ -581,7 +581,8 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 async def strider(message, params, guid) -> (dict, int):
     # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
     if "test" in message:
@@ -684,7 +685,8 @@ def expand_query(input_message, params, guid):
 
 
 async def multi_strider(messages, params, guid):
-    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
 
     strider_url += "multiquery"
     response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
