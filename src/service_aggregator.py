@@ -664,8 +664,8 @@ def expand_query(input_message, params, guid):
     for eid,edge in qg["edges"].items():
         del edge["knowledge_type"]
     messages = [{"message": {"query_graph":qg}}]
-    #just in case?
-    for rule_def in AMIE_EXPANSIONS[key]:
+    #If we don't have any AMIE expansions, this will just generate the direct query
+    for rule_def in AMIE_EXPANSIONS.get(key,[]):
         query_template = Template(json.dumps(rule_def["template"]))
         #need to do a bit of surgery depending on what the input is.
         if source_input:
@@ -831,7 +831,12 @@ async def omnicorp(message, params, guid) -> (dict, int):
     """
     url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
 
-    return await subservice_post("omnicorp", url, message, guid)
+    rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
+
+    # Omnicorp is not strictly necessary.  When we get something other than a 200,
+    # we still want to proceed, so we return a 200 no matter what happened.
+    # Note that subservice_post will have already written an error in the TRAPI logs.
+    return rval,200
 
 
 async def score(message, params, guid) -> (dict, int):
