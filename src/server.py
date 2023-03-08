@@ -51,7 +51,7 @@ if os.environ.get('JAEGER_ENALBED') == "True":
     # these supresses such warnings.
     logging.captureWarnings(capture=True)
     warnings.filterwarnings("ignore",category=ResourceWarning)
-    service_name = os.environ.get('OTEL_SERVICE_NAME', 'STRIDER')
+    service_name = os.environ.get('OTEL_SERVICE_NAME', 'ARAGORN')
     jaeger_host = os.environ.get('JAEGER_HOST', 'jaeger-otel-agent')
     jaeger_port = int(os.environ.get('JAEGER_PORT', '6831'))
     trace.set_tracer_provider(
