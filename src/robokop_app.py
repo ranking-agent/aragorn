@@ -13,10 +13,14 @@ from fastapi import Body, FastAPI, BackgroundTasks
 from src.openapi_constructor import construct_open_api_schema
 from src.common import sync_query, async_query
 from src.default_queries import default_input_sync, default_input_async
+# import open telemetery configuration
+from otel_config import configure_otel
 
 # declare the FastAPI details
-ROBOKOP_APP = FastAPI(title="ROBOKOP")
-
+title = "ROBOKOP"
+ROBOKOP_APP = FastAPI(title=title)
+service_name = os.environ.get('OTEL_SERVICE_NAME', 'ARAGORN') + '-' + title
+configure_otel(service_name=service_name, APP=ROBOKOP_APP)
 # Set up default logger.
 with pkg_resources.resource_stream("src", "logging.yml") as f:
     config = yaml.safe_load(f.read())
