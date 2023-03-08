@@ -3,7 +3,7 @@ import logging, warnings, os
 
 def configure_otel(service_name, APP):
     # open telemetry
-    if os.environ.get('JAEGER_ENALBED') == "True":
+    if os.environ.get('JAEGER_ENABLED') == "True":
         logging.info("starting up jaeger telemetry")
 
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
