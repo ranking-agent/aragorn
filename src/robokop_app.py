@@ -14,7 +14,7 @@ from src.openapi_constructor import construct_open_api_schema
 from src.common import sync_query, async_query
 from src.default_queries import default_input_sync, default_input_async
 # import open telemetery configuration
-from otel_config import configure_otel
+from src.otel_config import configure_otel
 
 # declare the FastAPI details
 title = "ROBOKOP"
