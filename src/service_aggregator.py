@@ -4,17 +4,15 @@ import logging
 import asyncio
 import httpx
 import os
-import aio_pika
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime as dt, timedelta
 from string import Template
 
 from functools import partial
-from src.util import create_log_entry
+from src.util import create_log_entry, get_channel_pool
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
 from datetime import datetime
-from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
@@ -24,6 +22,9 @@ from reasoner_pydantic import Response as PDResponse
 #from src.rules.rules import rules as AMIE_EXPANSIONS
 
 logger = logging.getLogger(__name__)
+
+# Get rabbitmq channel pool
+channel_pool = get_channel_pool()
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
@@ -272,21 +273,9 @@ async def assemble_callbacks(guid, num_queries):
     return response
 
 
-async def get_pika_connection():
-    q_username = os.environ.get("QUEUE_USER", "guest")
-    q_password = os.environ.get("QUEUE_PW", "guest")
-    q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
-    connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
-    return connection
-
-
 async def create_queue(guid):
     try:
-        connection = await get_pika_connection()
-        # use the connection to create a queue using the guid
-        async with connection:
-            # create a channel to the rabbit mq
-            channel = await connection.channel()
+        async with channel_pool.acquire() as channel:
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid)
     except Exception as e:
@@ -296,11 +285,7 @@ async def create_queue(guid):
 
 async def delete_queue(guid):
     try:
-        connection = await get_pika_connection()
-        # use the connection to create a queue using the guid
-        async with connection:
-            # create a channel to the rabbit mq
-            channel = await connection.channel()
+        async with channel_pool.acquire() as channel:
             # declare the queue using the guid as the key
             queue = await channel.queue_delete(guid)
     except Exception:
@@ -316,11 +301,7 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
     CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
 
     try:
-        connection = await get_pika_connection()
-        # use the connection to create a queue using the guid
-        async with connection:
-            # create a channel to the rabbit mq
-            channel = await connection.channel()
+        async with channel_pool.acquire() as channel:
             queue = await channel.get_queue(guid, ensure=True)
             # wait for the response.  Timeout after
             async with queue.iterator(timeout=CONNECTION_TIMEOUT) as queue_iter:

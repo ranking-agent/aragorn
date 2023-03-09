@@ -1,12 +1,9 @@
 """aragorn server."""
-import asyncio
 import os
 import logging.config
 import pkg_resources
 import yaml
 import aio_pika
-from aio_pika.abc import AbstractRobustConnection
-from aio_pika.pool import Pool
 import random
 import string
 
@@ -18,6 +15,7 @@ from fastapi import Body, FastAPI, BackgroundTasks
 from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query
 from src.default_queries import default_input_sync, default_input_async
+from src.util import get_channel_pool
 
 # declare the FastAPI details
 ARAGORN_APP = FastAPI(title="ARAGORN")
@@ -47,6 +45,9 @@ logging.config.dictConfig(config)
 # create a logger
 logger = logging.getLogger(__name__)
 
+# Get rabbitmq channel pool
+channel_pool = get_channel_pool()
+
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
 
@@ -66,30 +67,6 @@ class MethodName(str, Enum):
 # define the default request bodies
 default_request_sync: Body = Body(default=default_input_sync)
 default_request_async: Body = Body(default=default_input_async, example=default_input_async)
-
-# get the queue connection params
-q_username = os.environ.get("QUEUE_USER", "guest")
-q_password = os.environ.get("QUEUE_PW", "guest")
-q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
-
-
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
-
-async def get_connection() -> AbstractRobustConnection:
-    return await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
-
-
-connection_pool: Pool = Pool(get_connection, max_size=4, loop=loop)
-
-
-async def get_channel() -> aio_pika.Channel:
-    async with connection_pool.acquire() as connection:
-        return await connection.channel()
-
-
-channel_pool: Pool = Pool(get_channel, max_size=10, loop=loop)
 
 
 # Create a async class
