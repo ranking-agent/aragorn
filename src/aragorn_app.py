@@ -16,9 +16,15 @@ from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query
 from src.default_queries import default_input_sync, default_input_async
 from src.util import get_channel_pool
+from src.otel_config import configure_otel
 
 # declare the FastAPI details
-ARAGORN_APP = FastAPI(title="ARAGORN")
+title = "ARAGORN"
+ARAGORN_APP = FastAPI(title=title)
+
+# configures open telemetry iff enabled.
+service_name = os.environ.get('OTEL_SERVICE_NAME', 'ARAGORN') + '-' + title
+configure_otel(service_name=service_name, APP=ARAGORN_APP)
 
 # Set up default logger.
 with pkg_resources.resource_stream("src", "logging.yml") as f:
