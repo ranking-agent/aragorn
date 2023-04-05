@@ -1,5 +1,5 @@
 import pytest
-from src.service_aggregator import merge_results_by_node
+from src.service_aggregator import merge_results_by_node, examine_query
 
 def test_simple_merge():
     m = {'message':
@@ -19,3 +19,37 @@ def test_simple_merge():
     assert len(results) == 1
     assert len(results[0]['node_bindings']) == 2
     assert len(results[0]['edge_bindings']) == 2
+
+def test_query_examination():
+    query = {
+        "message": {
+            "query_graph": {
+                "nodes": {
+                    "disease": {
+                        "ids": [
+                            "MONDO:0011399"
+                        ]
+                    },
+                    "chemical": {
+                        "categories": [
+                            "biolink:ChemicalEntity"
+                        ]
+                    }
+                },
+                "edges": {
+                    "t_edge": {
+                        "object": "disease",
+                        "subject": "chemical",
+                        "predicates": [
+                            "biolink:treats"
+                        ],
+                        "knowledge_type": "inferred"
+                    }
+                }
+            }
+        }
+    }
+    inferred, qnode, anode =  examine_query(query)
+    assert inferred
+    assert qnode == 'disease'
+    assert anode == 'chemical'

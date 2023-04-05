@@ -4,28 +4,36 @@ import logging
 import asyncio
 import httpx
 import os
-import aio_pika
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime as dt, timedelta
+from string import Template
 
 from functools import partial
-from src.util import create_log_entry
+from src.util import create_log_entry, get_channel_pool
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
 from datetime import datetime
-from fastapi import HTTPException
 from requests.models import Response
 from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
-from reasoner_pydantic import Query, Message, KnowledgeGraph
+from reasoner_pydantic import Query, KnowledgeGraph
+from reasoner_pydantic import Response as PDResponse
 
-from src.rules.rules import rules as AMIE_EXPANSIONS
+#from src.rules.rules import rules as AMIE_EXPANSIONS
 
 logger = logging.getLogger(__name__)
+
+# Get rabbitmq channel pool
+channel_pool = get_channel_pool()
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
 
+#Load in the AMIE rules.  I'm not sure how this works wrt startup and workers.
+thisdir = os.path.dirname(__file__)
+rulefile = os.path.join(thisdir,"rules","rules.json")
+with open(rulefile,'r') as inf:
+    AMIE_EXPANSIONS = json.load(inf)
 
 def examine_query(message):
     """Decides whether the input is an infer. Returns the grouping node"""
@@ -221,7 +229,7 @@ async def post_with_callback(host_url, query, guid, params=None):
         logger.error(f"Failed to contact {host_url}")
         await delete_queue(guid)
         # exception handled in subservice_post
-        raise
+        raise e
 
     # async wait for callbacks to come on queue
     response = await assemble_callbacks(guid, num_queries)
@@ -265,32 +273,24 @@ async def assemble_callbacks(guid, num_queries):
     return response
 
 
-async def get_pika_connection():
-    q_username = os.environ.get("QUEUE_USER", "guest")
-    q_password = os.environ.get("QUEUE_PW", "guest")
-    q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
-    connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
-    return connection
-
-
 async def create_queue(guid):
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        # declare the queue using the guid as the key
-        queue = await channel.declare_queue(guid)
+    try:
+        async with channel_pool.acquire() as channel:
+            # declare the queue using the guid as the key
+            queue = await channel.declare_queue(guid)
+    except Exception as e:
+        logger.error(f"{guid}: Failed to create queue.")
+        raise e
 
 
 async def delete_queue(guid):
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        # declare the queue using the guid as the key
-        queue = await channel.queue_delete(guid)
+    try:
+        async with channel_pool.acquire() as channel:
+            # declare the queue using the guid as the key
+            queue = await channel.queue_delete(guid)
+    except Exception:
+        logger.error(f"{guid}: Failed to delete queue.")
+        # Deleting queue isn't essential, so we will continue
 
 
 async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
@@ -300,22 +300,18 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
     # coming in, the connection will stay open for longer than this time
     CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
 
-    connection = await get_pika_connection()
-    # use the connection to create a queue using the guid
-    async with connection:
-        # create a channel to the rabbit mq
-        channel = await connection.channel()
-        queue = await channel.get_queue(guid)
-        # wait for the response.  Timeout after
-        try:
+    try:
+        async with channel_pool.acquire() as channel:
+            queue = await channel.get_queue(guid, ensure=True)
+            # wait for the response.  Timeout after
             async with queue.iterator(timeout=CONNECTION_TIMEOUT) as queue_iter:
                 async for message in queue_iter:
                     async with message.process():
                         num_responses += 1
-                        logger.debug(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
+                        logger.info(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
                         jr = process_message(message)
                         if is_end_message(jr):
-                            logger.debug(f"{guid}: Received complete message from multistrider")
+                            logger.info(f"{guid}: Received complete message from multistrider")
                             complete = True
                             break
 
@@ -323,16 +319,20 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                         query = Query.parse_obj(jr)
                         pydantic_kgraph.update(query.message.knowledge_graph)
                         accumulated_results += jr["message"]["results"]
+                        logger.info(f"{guid}: {len(jr['message']['results'])} results from {jr['message']['query_graph']}")
 
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
                         # and single query (no end message; single query)
                         if num_queries == 1:
-                            logger.debug(f"{guid}: Single message returned from strider; continuing")
+                            logger.info(f"{guid}: Single message returned from strider; continuing")
                             complete = True
                             break
 
-        except TimeoutError as e:
-            logger.debug(f"{guid}: cycling aio_pika connection")
+    except TimeoutError as e:
+        logger.debug(f"{guid}: cycling aio_pika connection")
+    except Exception as e:
+        logger.error(f"{guid}: Exception {e}. Returning {num_responses} results we have so far.")
+        return num_responses, True
 
     return num_responses, complete
 
@@ -347,6 +347,26 @@ def process_message(message):
     jr = json.loads(content)
     return jr
 
+#There's a problem where our pydantic model includes a datetime.  But that doesn't serialize to json.
+# So when we pass a response through pydantic to remove nulls, it converts log datetimes into python
+# datetimes, which then barf when we try to json serialize them.
+# This is a frequent complain re: pydantic. See https://github.com/pydantic/pydantic/issues/1409
+# Apparently it will be handled in v2, real soon now.  But for the time being, the following code
+# from that thread takes the output from .dict() and makes it serializable.
+import pydantic.json
+# https://github.com/python/cpython/blob/7b21108445969398f6d1db9234fc0fe727565d2e/Lib/json/encoder.py#L78
+JSONABLE_TYPES = (dict, list, tuple, str, int, float, bool, type(None))
+async def to_jsonable_dict(obj):
+    if isinstance(obj, dict):
+        return {key: await to_jsonable_dict(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [await to_jsonable_dict(value) for value in obj]
+    elif isinstance(obj, tuple):
+        return tuple(await to_jsonable_dict(value) for value in obj)
+    elif isinstance(obj, JSONABLE_TYPES):
+        return obj
+    return pydantic.json.pydantic_encoder(obj)
+####
 
 async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
@@ -407,7 +427,8 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
             try:
                 # if there is a response return it as a dict
                 if len(response.json()):
-                    ret_val = response.json()
+                    #pass it through pydantic for validation and cleaning
+                    ret_val = await to_jsonable_dict(PDResponse.parse_obj(response.json()).dict(exclude_none = True))
 
             except Exception as e:
                 status_code = 500
@@ -426,11 +447,19 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
 
     if "message" not in ret_val:
         # this mainly handles multistrider exceptions
-        # grab first sub-query
-        ret_val = ret_val.items()[0]
+        ret_val = {
+            "message": {
+                "query_graph": {},
+                "knowledge_graph": {
+                    "nodes": {},
+                    "edges": {},
+                },
+                "results": [],
+            },
+        }
 
     # The query_graph is getting dropped under some circumstances.  This really isn't the place to fix it
-    if (ret_val["message"]["query_graph"] is None) and ("message" in message):
+    if ("query_graph" not in ret_val["message"]) and ("message" in message):
         ret_val["message"]["query_graph"] = deepcopy(message["message"]["query_graph"])
 
     # make sure there is a place for the trapi log messages
@@ -490,9 +519,10 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         return await strider(input_message, params, guid)
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
-    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 100))
+    nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
+    #nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 1))
     # nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES",len(messages)))
-    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 75))
+    nrules = int(os.environ.get("MAXIMUM_MULTISTRIDER_RULES", 101))
     result_messages = []
     num = 0
     num_batches_returned = 0
@@ -501,6 +531,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         for q in to_run:
             num += 1
             message[f"query_{num}"] = q
+        logger.info(f"Sending {len(message)} messages to strider")
         result_message, sc = await multi_strider(message, params, guid)
         num_batches_returned += 1
         logger.info(f"{guid}: {num_batches_returned} batches returned")
@@ -518,6 +549,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         result["message"]["results"].extend(rm["message"]["results"])
     mergedresults = merge_results_by_node(result, answer_qnode)
     logger.info(f"{guid}: results merged")
+    with open('junk.json','w') as outf:
+        json.dump(mergedresults,outf)
     return mergedresults, sc
 
 
@@ -529,7 +562,8 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 async def strider(message, params, guid) -> (dict, int):
     # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
     if "test" in message:
@@ -580,18 +614,51 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     return rokres
     # return await normalize(rokres,params,guid)
 
+def get_key(predicate, qualifiers):
+    keydict = {'predicate': predicate}
+    keydict.update(qualifiers)
+    return json.dumps(keydict,sort_keys=True)
 
 # TODO this is a temp implementation that assumes we will have (something treats identifier) as the query.
 def expand_query(input_message, params, guid):
-    # What are the relevant qnodes and ids from the input message?
+    #Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
+    #          or the target has IDs, but not both. 4. The number of ids on the query node is 1.
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
-        input_q_chemical_node = edge["subject"]
-        input_q_disease_node = edge["object"]
-    input_disease_id = input_message["message"]["query_graph"]["nodes"][input_q_disease_node]["ids"][0]
-    messages = []
-    for rule in AMIE_EXPANSIONS:
-        query = rule.substitute(disease=input_q_disease_node, chemical=input_q_chemical_node, disease_id=input_disease_id)
-        message = {"message": json.loads(query)}
+        source = edge["subject"]
+        target = edge["object"]
+        predicate = edge["predicates"][0]
+        qc = edge.get("qualifier_constraints",[])
+        if len(qc) == 0:
+            qualifiers = {}
+        else:
+            qualifiers = { "qualifier_constraints": qc}
+    if ("ids" in input_message["message"]["query_graph"]["nodes"][source]) \
+            and (input_message["message"]["query_graph"]["nodes"][source]["ids"] is not None):
+        input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
+        source_input = True
+    else:
+        input_id= input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
+        source_input = False
+    key = get_key(predicate,qualifiers)
+    #We want to run the non-inferred version of the query as well
+    qg = deepcopy(input_message["message"]["query_graph"])
+    for eid,edge in qg["edges"].items():
+        del edge["knowledge_type"]
+    messages = [{"message": {"query_graph":qg}}]
+    #If we don't have any AMIE expansions, this will just generate the direct query
+    for rule_def in AMIE_EXPANSIONS.get(key,[]):
+        query_template = Template(json.dumps(rule_def["template"]))
+        #need to do a bit of surgery depending on what the input is.
+        if source_input:
+            qs = query_template.substitute(source=source,target=target,source_id = input_id, target_id='')
+        else:
+            qs = query_template.substitute(source=source, target=target, target_id=input_id, source_id='')
+        query = json.loads(qs)
+        if source_input:
+            del query["query_graph"]["nodes"][target]["ids"]
+        else:
+            del query["query_graph"]["nodes"][source]["ids"]
+        message = {"message": query}
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
@@ -599,7 +666,8 @@ def expand_query(input_message, params, guid):
 
 
 async def multi_strider(messages, params, guid):
-    strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
 
     strider_url += "multiquery"
     response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
@@ -637,7 +705,7 @@ def merge_results_by_node(result_message, merge_qnode):
     Assumes that the results are not scored."""
     # This is relatively straightforward: group all the results by the merge_qnode
     # for each one, the only complication is in the keys for the "dummy" bindings.
-    original_results = result_message["message"]["results"]
+    original_results = result_message["message"].get("results",[])
     original_qnodes = result_message["message"]["query_graph"]["nodes"].keys()
     # group results
     grouped_results = defaultdict(list)
@@ -660,29 +728,30 @@ async def make_one_request(client, automat_url, message, sem):
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
-    max_conns = os.environ.get("MAX_CONNECTIONS", 10)
-    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 75))
+    max_conns = os.environ.get("MAX_CONNECTIONS", 5)
+    nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
-    logger.debug(f"{guid}: {len(messages)} to send to {automat_url}")
+    logger.info(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []
     #limits = httpx.Limits(max_keepalive_connections=None, max_connections=max_conns)
     limit = asyncio.Semaphore(max_conns)
     # async timeout in 1 hour
-    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=5 * 60)) as client:
         tasks = []
         for message in messages[:nrules]:
             tasks.append(asyncio.create_task( make_one_request(client, automat_url, message, limit) ))
 
         responses = await asyncio.gather(*tasks)
 
-        for response in responses:
-            if response.status_code == 200:
-                rmessage = response.json()
-                num_results = len(rmessage["message"]["results"])
-                if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
-                    result_messages.append(rmessage)
-            else:
-                logger.error(f"{guid}: {response.status_code} returned.")
+    for response in responses:
+        if response.status_code == 200:
+            rmessage = response.json()
+            num_results = len(rmessage["message"].get("results",[]))
+            logger.info(f"Returned {num_results} results")
+            if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
+                result_messages.append(rmessage)
+        else:
+            logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
         # We have to stitch stuff together again
         # Should this somehow be merged with the similar stuff merging from multistrider?  Probably
@@ -690,6 +759,8 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         for rm in result_messages:
             pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
         result = result_messages[0]
+        if (not "results" in result["message"]) or (result["message"]["results"] is None):
+            result["message"]["results"] = []
         result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
         for rm in result_messages[1:]:
             result["message"]["results"].extend(rm["message"]["results"])
@@ -698,6 +769,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
     # The merged results will have some expanded query, we want the original query.
     mergedresults["message"]["query_graph"] = input_message["message"]["query_graph"]
+
     return mergedresults, 200
 
 
@@ -719,7 +791,7 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
     if "max_input_size" in params:
-        if len(message["message"].get("results", 0)) > params["max_input_size"]:
+        if len(message["message"].get("results", [])) > params["max_input_size"]:
             # This is already too big, don't do anything else
             return message, 200
     return await subservice_post("answer_coalesce", url, message, guid)
@@ -740,7 +812,12 @@ async def omnicorp(message, params, guid) -> (dict, int):
     """
     url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
 
-    return await subservice_post("omnicorp", url, message, guid)
+    rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
+
+    # Omnicorp is not strictly necessary.  When we get something other than a 200,
+    # we still want to proceed, so we return a 200 no matter what happened.
+    # Note that subservice_post will have already written an error in the TRAPI logs.
+    return rval,200
 
 
 async def score(message, params, guid) -> (dict, int):
@@ -773,6 +850,10 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
     status_code = None
 
     for operator_function, params in workflow:
+        #make sure results is [] rather than a key that doesn't exist or None
+        if (not "results" in message["message"]) or (message["message"]["results"] is None):
+            message["message"]["results"] = []
+
         message, status_code = await operator_function(message, params, guid)
 
         if status_code != 200 or "results" not in message["message"]:
@@ -787,7 +868,6 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
 
     # return the requested data
     return message, status_code
-
 
 def one_hop_message(curie_a, type_a, type_b, edge_type, reverse=False) -> dict:
     """
