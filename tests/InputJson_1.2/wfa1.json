@@ -6,7 +6,7 @@
                     "object": "n1",
                     "subject": "n0",
                     "predicates": [
-                        "biolink:entity_regulates_entity"
+                        "biolink:regulates"
                     ]
                 }
             },
