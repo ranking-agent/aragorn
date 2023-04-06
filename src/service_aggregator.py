@@ -34,7 +34,7 @@ thisdir = os.path.dirname(__file__)
 #Temporarily point to a typed rules file.  In the future, we will get types in the basic rules and use the config
 # to generate "rules.json" in the "rules" directory.
 #rulefile = os.path.join(thisdir,"rules","rules.json")
-rulefile = os.path.join(thisdir,"kara_typed_rules","rules_with_types_cleaned.json")
+rulefile = os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned.json")
 with open(rulefile,'r') as inf:
     AMIE_EXPANSIONS = json.load(inf)
 
