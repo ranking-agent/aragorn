@@ -31,7 +31,10 @@ queue_file_dir = "./queue-files"
 
 #Load in the AMIE rules.  I'm not sure how this works wrt startup and workers.
 thisdir = os.path.dirname(__file__)
-rulefile = os.path.join(thisdir,"rules","rules.json")
+#Temporarily point to a typed rules file.  In the future, we will get types in the basic rules and use the config
+# to generate "rules.json" in the "rules" directory.
+#rulefile = os.path.join(thisdir,"rules","rules.json")
+rulefile = os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned.json")
 with open(rulefile,'r') as inf:
     AMIE_EXPANSIONS = json.load(inf)
 

@@ -11,7 +11,7 @@ servers:
 #  url: http://127.0.0.1:5000
 termsOfService: http://robokop.renci.org:7055/tos?service_long=ARAGORN&provider_long=RENCI
 title: ARAGORN
-version: 2.3.11
+version: 2.3.12
 tags:
 - name: translator
 - name: ARA
