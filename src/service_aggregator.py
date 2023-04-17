@@ -680,10 +680,20 @@ async def multi_strider(messages, params, guid):
 
 def merge_answer(results, qnode_ids):
     # We are going rename most of the node and edge bindings.  But, we want to preserve bindings to things in the
-
     # original query.  For the current creative one-hop, that is just nodes b/c we are replacing the one edge.
-    # The original qnode bindings are the same in all results by construction
-    mergedresult = {"node_bindings": {q: results[0]["node_bindings"][q] for q in qnode_ids}, "edge_bindings": {}}
+    # The original qnode bindings are not necessarily the same because of the dumb way that we are handling
+    # subclass entailment.  If one of the merged answers involved a subclass, then the qnode binding will be
+    # to the subclass. So we loop over all the results and find all the different qnode bindings by serializing.
+    mergedresult = {"node_bindings": {}, "edge_bindings": {}}
+    serkeys = defaultdict(set)
+    for q in qnode_ids:
+        mergedresult["node_bindings"][q] = []
+        for result in results:
+            for nb in result["node_bindings"][q]:
+                serialized_binding = json.dumps(nb,sort_keys=True)
+                if serialized_binding not in serkeys[q]:
+                    mergedresult["node_bindings"][q].append(nb)
+                    serkeys[q].add(serialized_binding)
 
     for bindingtype in ["node", "edge"]:
         bound_things = set()
@@ -712,6 +722,7 @@ def merge_results_by_node(result_message, merge_qnode):
     original_qnodes = result_message["message"]["query_graph"]["nodes"].keys()
     # group results
     grouped_results = defaultdict(list)
+    # Group results by the merge_qnode
     for result in original_results:
         answer = result["node_bindings"][merge_qnode]
         bound = frozenset([x["id"] for x in answer])
