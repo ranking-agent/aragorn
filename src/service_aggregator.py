@@ -598,10 +598,10 @@ async def normalize_qgraph_ids(m):
         nnresult = nnresult.json()
         for qid, qnode in qnodes.items():
             if 'ids' in qnode and qnode['ids'] is not None:
-                new_ids = [ nnresult[i]["id"]["identifier"] for i in qnode["ids"]]
-                qnode["ids"] = new_ids
+                normalized_ids = [nnresult[i]["id"]["identifier"] if nnresult[i] else i for i in qnode["ids"]]
+                qnode["ids"] = normalized_ids
     else:
-        logger.error("Error reaching node normalizer: {nnresult.status_code}")
+        logger.error(f"Error reaching node normalizer: {nnresult.status_code}")
     return m
 
 
