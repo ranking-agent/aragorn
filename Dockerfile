@@ -10,6 +10,9 @@ RUN apt-get update
 # make a directory for the repo
 RUN mkdir /repo
 
+#This is for reasoner-pydantic
+ENV PYTHONHASHSEED=0
+
 # go to the directory where we are going to upload the repo
 WORKDIR /repo
 
