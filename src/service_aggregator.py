@@ -709,13 +709,6 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
     predicate = qedge["predicates"][0]
     # Create a new knowledge edge
     new_edge_id = str(uuid.uuid4())
-    subname = result_message["message"]["knowledge_graph"]["nodes"][qnode_subject].get("name",qnode_subject)
-    obname = result_message["message"]["knowledge_graph"]["nodes"][qnode_object].get("name",qnode_object)
-    new_edge_id = f"{subname}-{predicate}-{obname}"
-    counter = 0
-    while new_edge_id in result_message["message"]["knowledge_graph"]["edges"]:
-        new_edge_id = f"{subname}-{predicate}-{obname}.{counter}"
-        counter += 1
     new_edge = {
         "subject": qnode_subject,
         "object": qnode_object,
