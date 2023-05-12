@@ -509,9 +509,17 @@ async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qn
     if caller == "ARAGORN":
         return await aragorn_lookup(message, params, guid, infer, answer_qnode)
     elif caller == "ROBOKOP":
-        return await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
+        robo_results = await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
+        return await add_provenance(robo_results)
     return f"Illegal caller {caller}", 400
 
+async def add_provenance(message):
+    """When ROBOKOP looks things up via plater, the provenance is just from plater.  We need to go through
+    each knowledge_graph edge and add an aggregated knowledge source of infores:robokop to it"""
+    new_provenance = {"resource_id": "infores:robokop", "resource_role": "aggregator_knowledge_source",
+                      "upstream_resource_ids": ["infores:automat-robokop"]}
+    for edge in message["message"]["knowledge_graph"]["edges"].values():
+        edge["sources"].append(new_provenance)
 
 def chunk(input, n):
     for i in range(0, len(input), n):
