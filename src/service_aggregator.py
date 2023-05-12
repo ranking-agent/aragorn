@@ -720,7 +720,7 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
             }
         ],
         # Aragorn is the primary ks because aragorn inferred the existence of this edge.
-        "sources": [{"resource_id":"infores:aragorn", "resource_role":"biolink:primary_knowledge_source"}]
+        "sources": [{"resource_id":"infores:aragorn", "resource_role":"primary_knowledge_source"}]
     }
     result_message["message"]["knowledge_graph"]["edges"][new_edge_id] = new_edge
     return new_edge_id
