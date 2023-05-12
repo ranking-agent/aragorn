@@ -715,7 +715,7 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
         "predicate": predicate,
         "attributes": [
             {
-                "attribute_type_id": "support graph",
+                "attribute_type_id": "biolink:support_graphs",
                 "value": aux_graph_ids
             }
         ],
