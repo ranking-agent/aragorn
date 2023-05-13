@@ -949,18 +949,18 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
             message["message"]["results"] = []
 
         log_message = f"Starting operation {operator_id} with {len(message['message']['results'])} results"
-        add_item(guid, operator_function.__name__, 200)
+        add_item(guid, f"Starting operation {operator_id}", 200)
 
         message, status_code = await operator_function(message, params, guid)
 
         if status_code != 200 or "results" not in message["message"]:
-            add_item(guid, f"{operator_function.__name__} failed", status_code)
+            add_item(guid, f"{operator_id} failed", status_code)
             break
         elif len(message["message"]["results"]) == 0:
-            add_item(guid, f"{operator_function.__name__} returned 0 results", 200)
+            add_item(guid, f"{operator_id} returned 0 results", 200)
             break
 
-        add_item(guid, f"{operator_function.__name__} succeeded with {len(message['message']['results'])}", status_code)
+        add_item(guid, f"{operator_id} succeeded with {len(message['message']['results'])}", status_code)
 
         # loop through all the log entries and fix the timestamps
         if "logs" in message:
