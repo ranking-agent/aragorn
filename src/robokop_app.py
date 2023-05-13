@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from fastapi import Body, FastAPI, BackgroundTasks
 
 from src.openapi_constructor import construct_open_api_schema
-from src.common import sync_query, async_query
+from src.common import sync_query, async_query, status_query
 from src.default_queries import default_input_sync, default_input_async
 # import open telemetery configuration
 from src.otel_config import configure_otel
@@ -95,5 +95,9 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
 
     return await sync_query(request, answer_coalesce_type, logger, "ROBOKOP")
 
+@ROBOKOP_APP.get("/asyncquery_status", tags=["ROBOKOP"], status_code=200)
+async def status_query_handler(job_id: str):
+    """Checks the status of an asynchronous query operation."""
+    return await status_query(job_id)
 
 ROBOKOP_APP.openapi_schema = construct_open_api_schema(ROBOKOP_APP, prefix="robokop", description="ROBOKOP: A non-federated ARA", infores="infores:robokop")

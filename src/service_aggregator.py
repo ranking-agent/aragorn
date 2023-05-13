@@ -12,6 +12,7 @@ from string import Template
 from functools import partial
 from src.util import create_log_entry, get_channel_pool
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
+from src.process_db import add_item
 from datetime import datetime
 from requests.models import Response
 from requests.exceptions import ConnectionError
@@ -947,12 +948,19 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
         if (not "results" in message["message"]) or (message["message"]["results"] is None):
             message["message"]["results"] = []
 
+        log_message = f"Starting operation {operator_function.__name__} with {len(message['message']['results'])} results"
+        add_item(guid, operator_function.__name__, 200)
+
         message, status_code = await operator_function(message, params, guid)
 
         if status_code != 200 or "results" not in message["message"]:
+            add_item(guid, f"{operator_function.__name__} failed", status_code)
             break
         elif len(message["message"]["results"]) == 0:
+            add_item(guid, f"{operator_function.__name__} returned 0 results", 200)
             break
+
+        add_item(guid, f"{operator_function.__name__} succeeded with {len(message['message']['results'])}", status_code)
 
         # loop through all the log entries and fix the timestamps
         if "logs" in message:
