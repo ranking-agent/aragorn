@@ -146,7 +146,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     for op in workflow_def:
         try:
-            workflow.append((known_operations[op["id"]], op.get("parameters", {})))
+            workflow.append((known_operations[op["id"]], op.get("parameters", {}), op["id"]))
         except KeyError:
             return f"Unknown Operation: {op}", 422
 
@@ -943,12 +943,12 @@ async def run_workflow(message, workflow, guid) -> (dict, int):
 
     status_code = None
 
-    for operator_function, params in workflow:
+    for operator_function, params, operator_id in workflow:
         #make sure results is [] rather than a key that doesn't exist or None
         if (not "results" in message["message"]) or (message["message"]["results"] is None):
             message["message"]["results"] = []
 
-        log_message = f"Starting operation {operator_function.__name__} with {len(message['message']['results'])} results"
+        log_message = f"Starting operation {operator_id} with {len(message['message']['results'])} results"
         add_item(guid, operator_function.__name__, 200)
 
         message, status_code = await operator_function(message, params, guid)
