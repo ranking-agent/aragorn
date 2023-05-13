@@ -43,7 +43,7 @@ def test_merge_answer():
     assert kedge["predicate"] == "biolink:treats"
     found = False
     for attribute in kedge["attributes"]:
-        if attribute["attribute_type_id"] == "support graph":
+        if attribute["attribute_type_id"] == "biolink:support_graphs":
             aux_graphs = attribute["value"]
             found = True
     assert found
@@ -81,7 +81,7 @@ def test_add_knowledge_edge():
         assert edge["predicate"] == "biolink:treats"
         assert edge["attributes"] == [
             {
-                "attribute_type_id": "support graph",
+                "attribute_type_id": "biolink:support_graphs",
                 "value": aux_graph_ids
             }
         ]
