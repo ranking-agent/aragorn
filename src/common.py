@@ -5,7 +5,8 @@ from uuid import uuid4
 from fastapi.responses import JSONResponse
 from src.service_aggregator import entry
 from src.util import create_log_entry
-
+from src.process_db import add_item, get_status
+import datetime
 
 async def async_query(background_tasks, request, answer_coalesce_type, logger, caller="ARAGORN"):
     # create a guid that will be used for tagging the log entries
@@ -39,6 +40,9 @@ async def async_query(background_tasks, request, answer_coalesce_type, logger, c
 
     # launch the process
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid, logger, caller)
+
+    #add the process to the database
+    add_item(guid, f"Query Commenced, callback url = {callback_url}", 200)
 
     # package up the response and return it
     return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
@@ -83,10 +87,13 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
     #    test_mode = False
     test_mode = False
 
+
     logger.info(f"{guid}: Awaiting async execute with callback URL: {callback_url}")
 
     # make the asynchronous request
     final_msg, status_code = await asyncexecute(request, answer_coalesce_type, guid, logger, caller)
+
+    add_item(guid, f"Executing return post to {callback_url}", 200)
 
     logger.info(f"{guid}: Executing POST to callback URL {callback_url}")
     # for some reason the "mock" test endpoint doesnt like the async client post
@@ -97,8 +104,10 @@ async def execute_with_callback(request, answer_coalesce_type, callback_url, gui
             # send back the result to the specified aragorn callback end point
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=600.0)) as client:
                 response = await client.post(callback_url, json=final_msg)
+                add_item(guid, f"Complete", 200)
                 logger.info(f"{guid}: Executed POST to callback URL {callback_url}, response: {response.status_code}")
         except Exception as e:
+            add_item(guid, f"Exception posting response to {callback_url}", 500)
             logger.exception(f"{guid}: Exception detected: POSTing to callback {callback_url}", e)
 
 #whether the request is sync/async, creative or not, aragorn v robokop, everything comes through here.
@@ -163,6 +172,42 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
 
     return final_msg, status_code
 
+async def status_query(job_id: str):
+    rows = get_status(job_id)
+    if len(rows) == 0:
+        resp = {"status": "Failed",
+                "description": "No record of this job id is found, possibly due to a server restart.",
+                "logs": []}
+    else:
+        final_response = rows[-1]
+        if final_response["status_msg"] == "Complete":
+            resp = {"status": "Completed",
+                    "description": "The job has completed successfully.",
+                    "logs": create_logs(rows)}
+        elif final_response["status_code"] != 200:
+            resp = {"status": "Failed",
+                    "description": rows[-1]["status_msg"],
+                    "logs": create_logs(rows)}
+        elif datetime.datetime.fromisoformat(final_response["status_time"]) < \
+                datetime.datetime.now() - datetime.timedelta(hours=1):
+            resp = {"status": "Failed",
+                    "description": "The job has internally timed out.",
+                    "logs": create_logs(rows)}
+        else:
+            resp = {"status": "Running",
+                    "description": "The job is still running.",
+                    "logs": create_logs(rows)}
+    return JSONResponse(content=resp, status_code=200)
+
+def create_logs(rows):
+    logs = []
+    for row in rows:
+        if row["status_code"] == "200":
+            log_level = "INFO"
+        else:
+            log_level = "ERROR"
+        logs.append(create_log_entry(row["status_msg"], log_level, timestamp=["timestamp"]))
+    return logs
 
 def callback(callback_url, final_msg, guid, logger):
     """

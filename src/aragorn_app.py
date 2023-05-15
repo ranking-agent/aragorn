@@ -13,7 +13,7 @@ from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Resp
 from pydantic import BaseModel
 from fastapi import Body, FastAPI, BackgroundTasks
 from src.openapi_constructor import construct_open_api_schema
-from src.common import async_query, sync_query
+from src.common import async_query, sync_query, status_query
 from src.default_queries import default_input_sync, default_input_async
 from src.util import get_channel_pool
 from src.otel_config import configure_otel
@@ -175,6 +175,11 @@ async def receive_aragorn_async_response(response: PDResponse) -> int:
 
     # return the response code
     return 200
+
+@ARAGORN_APP.get("/asyncquery_status/{job_id}", tags=["ARAGORN"], status_code=200)
+async def status_query_handler(job_id: str):
+    """Checks the status of an asynchronous query operation."""
+    return await status_query(job_id)
 
 
 ARAGORN_APP.openapi_schema = construct_open_api_schema(ARAGORN_APP, prefix="aragorn", description="ARAGORN: A fully-federated Translator ARA.")
