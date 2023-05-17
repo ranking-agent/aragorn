@@ -5,7 +5,7 @@ import pkg_resources
 import yaml
 
 from enum import Enum
-from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse
+from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse, AsyncQueryStatusResponse, AsyncQueryResponse
 from pydantic import BaseModel
 
 from fastapi import Body, FastAPI, BackgroundTasks
@@ -64,13 +64,8 @@ default_request_sync: Body = Body(default=default_input_sync)
 default_request_async: Body = Body(default=default_input_async, example=default_input_async)
 
 
-# Create a async class
-class AsyncReturn(BaseModel):
-    description: str
-
-
 # async entry point
-@ROBOKOP_APP.post("/asyncquery", tags=["ROBOKOP"], response_model=AsyncReturn)
+@ROBOKOP_APP.post("/asyncquery", tags=["ROBOKOP"], response_model=AsyncQueryResponse)
 async def async_query_handler(
     background_tasks: BackgroundTasks, request: PDAsyncQuery = default_request_async, answer_coalesce_type: MethodName = MethodName.all
 ):
@@ -95,7 +90,7 @@ async def sync_query_handler(request: PDQuery = default_request_sync, answer_coa
 
     return await sync_query(request, answer_coalesce_type, logger, "ROBOKOP")
 
-@ROBOKOP_APP.get("/asyncquery_status", tags=["ROBOKOP"], status_code=200)
+@ROBOKOP_APP.get("/asyncquery_status", tags=["ROBOKOP"], response_model=AsyncQueryStatusResponse, status_code=200)
 async def status_query_handler(job_id: str):
     """Checks the status of an asynchronous query operation."""
     return await status_query(job_id)

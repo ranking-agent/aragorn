@@ -33,10 +33,10 @@ async def async_query(background_tasks, request, answer_coalesce_type, logger, c
 
     except KeyError as e:
         logger.error(f"{guid}: Async message call key error {e}, callback URL was not specified")
-        return JSONResponse(content={"description": "callback URL missing"}, status_code=422)
+        return JSONResponse(content={"status": "Failed", "description": "callback URL missing", "job_id": guid}, status_code=422)
     except ValueError as e:
         logger.error(f"{guid}: Async message call value error {e}, callback URL was empty")
-        return JSONResponse(content={"description": "callback URL empty"}, status_code=422)
+        return JSONResponse(content={"status": "Failed", "description": "callback URL empty", "job_id": guid}, status_code=422)
 
     # launch the process
     background_tasks.add_task(execute_with_callback, message, answer_coalesce_type, callback_url, guid, logger, caller)
@@ -45,7 +45,9 @@ async def async_query(background_tasks, request, answer_coalesce_type, logger, c
     add_item(guid, f"Query Commenced, callback url = {callback_url}", 200)
 
     # package up the response and return it
-    return JSONResponse(content={"description": f"Query commenced. Will send result to {callback_url}"}, status_code=200)
+    return JSONResponse(content={"status": "Accepted",
+                                 "description": f"Query commenced. Will send result to {callback_url}",
+                                 "job_id": guid}, status_code=200)
 
 
 async def sync_query(request, answer_coalesce_type, logger, caller="ARAGORN"):
@@ -202,11 +204,11 @@ async def status_query(job_id: str):
 def create_logs(rows):
     logs = []
     for row in rows:
-        if row["status_code"] == "200":
+        if row["status_code"] == 200:
             log_level = "INFO"
         else:
             log_level = "ERROR"
-        logs.append(create_log_entry(row["status_msg"], log_level, timestamp=["timestamp"]))
+        logs.append(create_log_entry(row["status_msg"], log_level, timestamp=[row["status_time"]]))
     return logs
 
 def callback(callback_url, final_msg, guid, logger):

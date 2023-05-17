@@ -27,6 +27,7 @@ def test_add_items():
     assert status_response["description"] == "The job has completed successfully."
     assert len(status_response["logs"]) == 2
     assert status_response["logs"][0]["message"] == "Starting job"
+    assert status_response["logs"][0]["level"] == "INFO"
     assert status_response["logs"][1]["message"] == "Complete"
 
 def test_running():
