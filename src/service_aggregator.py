@@ -510,8 +510,8 @@ async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qn
     if caller == "ARAGORN":
         return await aragorn_lookup(message, params, guid, infer, answer_qnode)
     elif caller == "ROBOKOP":
-        robo_results = await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
-        return await add_provenance(robo_results)
+        robo_results, robo_status = await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
+        return await add_provenance(robo_results), robo_status
     return f"Illegal caller {caller}", 400
 
 async def add_provenance(message):
@@ -521,6 +521,7 @@ async def add_provenance(message):
                       "upstream_resource_ids": ["infores:automat-robokop"]}
     for edge in message["message"]["knowledge_graph"]["edges"].values():
         edge["sources"].append(new_provenance)
+    return message
 
 def chunk(input, n):
     for i in range(0, len(input), n):
