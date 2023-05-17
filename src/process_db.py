@@ -2,7 +2,7 @@ import os
 import sqlite3
 from datetime import datetime
 
-dir_path: str = os.path.dirname(os.path.realpath(__file__))
+dir_path: str = os.environ.get("PROCESS_DB_PATH") or os.path.dirname(os.path.realpath(__file__))
 process_filename = os.path.join(dir_path, "process.db")
 
 
