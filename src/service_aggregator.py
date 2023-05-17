@@ -575,7 +575,7 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 async def strider(message, params, guid) -> (dict, int):
     # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
     #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
@@ -619,7 +619,7 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     # For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
-        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.3/")
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.4/")
         return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
 
     # It's an infer, just look it up
@@ -680,7 +680,7 @@ def expand_query(input_message, params, guid):
 
 async def multi_strider(messages, params, guid):
     #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.3/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
 
     strider_url += "multiquery"
     response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
@@ -821,7 +821,7 @@ async def make_one_request(client, automat_url, message, sem):
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.3/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.4/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
@@ -892,7 +892,7 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
 
 
 async def normalize(message, params, guid) -> (dict, int):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}response'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")}response'
     return await subservice_post("nodenorm", url, message, guid)
 
 
@@ -904,7 +904,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")}omnicorp_overlay'
 
     rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
 
@@ -922,10 +922,7 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.3/")
-
-    weight_url = f"{ranker_url}weight_correctness"
-    message, status_code = await subservice_post("weight", weight_url, message, guid)
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")
 
     score_url = f"{ranker_url}score"
     return await subservice_post("score", score_url, message, guid)
