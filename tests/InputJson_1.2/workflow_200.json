@@ -17,7 +17,7 @@
                         "CHEBI:45783"
                     ],
                     "categories": [
-                        "biolink:ChemicalSubstance"
+                        "biolink:ChemicalEntity"
                     ]
                 }
             },
