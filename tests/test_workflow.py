@@ -6,6 +6,7 @@ import os
 import json
 from unittest.mock import patch
 from random import shuffle
+from src.process_db import init_db
 
 client = TestClient(APP)
 jsondir = 'InputJson_1.2'
@@ -26,6 +27,7 @@ def test_bad_ops():
 
 def test_lookup_only():
     """This has a workflow with a single op (lookup).  So the result should not have scores"""
+    init_db()
     dir_path: str = os.path.dirname(os.path.realpath(__file__))
     test_filename = os.path.join(dir_path, jsondir, 'workflow_200.json')
 
