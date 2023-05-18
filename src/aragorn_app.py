@@ -43,7 +43,7 @@ log_level = os.getenv("LOG_LEVEL", "DEBUG")
 config["handlers"]["console"]["level"] = log_level
 config["handlers"]["file"]["level"] = log_level
 config["loggers"]["src"]["level"] = log_level
-config["loggers"]["aio_pika"]["level"] = log_level
+#config["loggers"]["aio_pika"]["level"] = log_level
 
 # load the log config
 logging.config.dictConfig(config)
