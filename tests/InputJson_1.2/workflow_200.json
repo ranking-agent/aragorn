@@ -14,10 +14,10 @@
                 },
                 "n1": {
                     "ids": [
-                        "CHEBI:45783"
+                        "PUBCHEM.COMPOUND:5291"
                     ],
                     "categories": [
-                        "biolink:ChemicalSubstance"
+                        "biolink:ChemicalEntity"
                     ]
                 }
             },

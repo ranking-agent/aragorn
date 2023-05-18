@@ -6,6 +6,7 @@ import json
 from datetime import datetime as dt, timedelta
 from time import sleep
 from unittest.mock import patch
+from src.process_db import init_db
 
 client = TestClient(APP)
 
@@ -46,6 +47,7 @@ def xtest_async(mock_callback):
 
 
 def test_aragorn_wf():
+    init_db()
     workflow_A1("aragorn")
 
 
@@ -77,8 +79,8 @@ def workflow_A1(appname):
     # check the data
     ret = j_ret["message"]
 
-    # make sure we got back the query_graph, knowledge_graph and results data from strider
-    assert len(ret) == 3
+    # make sure we got back the query_graph, knowledge_graph, aux_graph, and results data from strider
+    assert len(ret) == 4
 
     # make sure the qgraph is still around
     assert ret["query_graph"] is not None
@@ -150,42 +152,14 @@ def workflow_A1(appname):
             break
 
     assert found
-
-    # found = False
-    #
-    # # ensure that ranker/omnicorp overlay added the omnicorp data
-    # for e in kg_edge_list:
-    #     if 'attributes' in e[1]:
-    #         for a in e[1]['attributes']:
-    #             if a['attribute_type_id'] == 'biolink:has_count' and a['original_attribute_name'] == 'num_publications':
-    #                 found = True
-    #                 break
-    #     if found:
-    #         break
-    #
-    # assert found
-
     found = False
-
-    # ensure that ranker/weight added the weight element
-    # for r in ret['results']:
-    #    if 'edge_bindings' in r:
-    #        for nb in r['edge_bindings']:
-    #            if len(r['edge_bindings'][nb][0]) > 1 and 'weight' in r['edge_bindings'][nb][0]:
-    #                found = True
-    #                break
-    #    if found:
-    #        break
-    #
-    #    assert found
-    #
-    #    found = False
 
     # ensure ranker/score added the score element
     for r in ret["results"]:
-        if "score" in r:
-            found = True
-            break
+        for analysis in r["analyses"]:
+            if "score" in analysis:
+                found = True
+                break
 
     assert found
 
@@ -323,6 +297,7 @@ def x_test_standup_2():
     assert found
 
 def test_null_results():
+    init_db()
     #make sure that aragorn can handle cases where results is null (as opposed to missing)
     query= {
     "message": {
