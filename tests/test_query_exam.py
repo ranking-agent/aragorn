@@ -29,14 +29,14 @@ def test_merge_answer():
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
-    merge_answer(result_message,answer,results,qnode_ids)
+    merge_answer(result_message,frozenset([answer]),results,qnode_ids)
     assert len(result_message["message"]["results"]) == 1
     assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
     assert len(result_message["message"]["results"][0]["analyses"]) == 1
     assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
     # e is the name of the query edge defined in create_result_graph()
     assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
-    kedge_id = result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"][0]
+    kedge_id = result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"][0]["id"]
     kedge = result_message["message"]["knowledge_graph"]["edges"][kedge_id]
     assert kedge["subject"] == "PUBCHEM.COMPOUND:789"
     assert kedge["object"] == "MONDO:1234"
@@ -50,7 +50,7 @@ def test_merge_answer():
     assert len(aux_graphs) == 2
     edges = frozenset([ frozenset( result_message["message"]["auxiliary_graphs"][aux_graph_id]["edges"] ) for aux_graph_id in aux_graphs ])
     assert edges == frozenset([frozenset(["KEDGE:1", "KEDGE:2"]), frozenset(["KEDGE:4", "KEDGE:8"])])
-
+    Response.parse_obj(result_message)
 
 
 def test_create_aux_graph():

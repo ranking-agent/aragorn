@@ -112,7 +112,7 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
     # init the return html status code
     ret_val: int = 200
 
-    logger.info(f"{guid}: Receiving sub-service callback")
+    logger.debug(f"{guid}: Receiving sub-service callback")
     # logger.debug(f'{guid}: The sub-service response: {response.json()}')
 
     try:
@@ -131,7 +131,7 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
             publish_val = await channel.default_exchange.publish(aio_pika.Message(body=file_name.encode()), routing_key=guid)
 
             if publish_val:
-                logger.info(f"{guid}: Callback message published to queue.")
+                logger.debug(f"{guid}: Callback message published to queue.")
             else:
                 logger.error(f"{guid}: Callback message publishing to queue failed, type: {type(publish_val)}")
             # if isinstance(publish_val, spec.Basic.Ack):

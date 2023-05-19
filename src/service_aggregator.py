@@ -323,6 +323,8 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                         # it's a real message; update the kgraph and results
                         query = Query.parse_obj(jr)
                         pydantic_kgraph.update(query.message.knowledge_graph)
+                        if jr["message"]["results"] is None:
+                            jr["message"]["results"] = []
                         accumulated_results += jr["message"]["results"]
                         logger.info(f"{guid}: {len(jr['message']['results'])} results from {jr['message']['query_graph']}")
 
@@ -401,7 +403,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
     if "workflow" in message and message["workflow"] is None:
         del message["workflow"]
 
-    logger.debug(f"{guid}: Calling {url}")
+    logger.info(f"{guid}: Calling {url}")
 
     try:
         # launch the post depending on the query type and get the response
@@ -563,8 +565,6 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         result["message"]["results"].extend(rm["message"]["results"])
     mergedresults = merge_results_by_node(result, answer_qnode)
     logger.info(f"{guid}: results merged")
-    with open('junk.json','w') as outf:
-        json.dump(mergedresults,outf)
     return mergedresults, sc
 
 
@@ -777,12 +777,16 @@ def merge_answer(result_message, answer, results, qnode_ids):
 
     # 3. Create a knowledge edge corresponding to the original creative query edge
     # 4. and add the aux graphs as support for this knowledge edge
-    knowledge_edge_id = add_knowledge_edge(result_message, aux_graph_ids, answer)
+    knowledge_edge_ids = []
+    for nid in answer:
+        knowledge_edge_id = add_knowledge_edge(result_message, aux_graph_ids, nid)
+        knowledge_edge_ids.append(knowledge_edge_id)
 
     # 5. create an analysis with an edge binding from the original creative query edge to the new knowledge edge
     qedge_id = list(result_message["message"]["query_graph"]["edges"].keys())[0]
-    analysis = {"edge_bindings":
-                    {qedge_id: [knowledge_edge_id]}
+    analysis = {
+        "resource_id": "infores:aragorn",
+        "edge_bindings": {qedge_id:[ { "id":kid } for kid in knowledge_edge_ids ] }
                 }
     mergedresult["analyses"].append(analysis)
 
