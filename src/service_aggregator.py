@@ -753,6 +753,12 @@ def merge_answer(result_message, answer, results, qnode_ids):
     4) add the aux graphs as support for this knowledge edge
     5) create an analysis with an edge binding from the original creative query edge to the new knowledge edge
     """
+    #print("========================================")
+    #print(answer)
+    #for r in results:
+    #    print(json.dumps(r,indent=2))
+    #    print('-------------------')
+
     # 1. Create node bindings for the original creative qnodes
     mergedresult = {"node_bindings": {}, "analyses": []}
     serkeys = defaultdict(set)
@@ -828,7 +834,7 @@ async def make_one_request(client, automat_url, message, sem):
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.4/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.4/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
@@ -846,7 +852,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
 
     for response in responses:
         if response.status_code == 200:
-            rmessage = response.json()
+            rmessage = await to_jsonable_dict(PDResponse.parse_obj(response.json()).dict(exclude_none=True))
             num_results = len(rmessage["message"].get("results",[]))
             logger.info(f"Returned {num_results} results")
             if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
