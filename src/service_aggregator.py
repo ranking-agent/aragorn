@@ -767,7 +767,7 @@ def merge_answer(result_message, answer, results, qnode_ids):
 
     # 2. convert the analysis of each input result into an auxiliary graph
     aux_graph_ids = []
-    if "auxiliary_graphs" not in result_message["message"]:
+    if "auxiliary_graphs" not in result_message["message"] or result_message["message"]["auxiliary_graphs"] is None:
         result_message["message"]["auxiliary_graphs"] = {}
     for result in results:
         for analysis in result["analyses"]:
