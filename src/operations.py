@@ -33,11 +33,16 @@ async def filter_results_top_n(message,params,guid):
 
 async def filter_kgraph_orphans(message,params,guid):
     """Remove from the knowledge graph any nodes and edges not references by a result, as well as any aux_graphs.
+    We do this by starting at results, marking reachable nodes & edges, then remove anything that isn't marked
     There are multiple sources:
     1. Result node bindings
     2. Result.Analysis edge bindings
-    3. Result.Analysis support graphs and their edges and nodes
-    4. For any edges found in 2 & 3, any auxgraphs they reference, and the edges and nodes in those auxgraphs
+    3. Result.Analysis support graphs
+    4. support graphs from edges found in 2
+    5. For all the auxgraphs collect their edges and nodes
+    Note that this will fail to find edges and nodes that are recursive.  So if an edge is supported by an edge,
+    and that edge is supported by a third edge, then that third edge won't get marked, and will be removed.
+    ATM, this is acceptable, but it'll need to be fixed.
     """
     #First, find all the result nodes and edges
     logger.info(f'{guid}: filtering kgraph.')
