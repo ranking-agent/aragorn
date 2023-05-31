@@ -10,7 +10,7 @@ async def sort_results_score(message,params,guid):
     aord = params.get('ascending_or_descending','descending')
     reverse = (aord=='descending')
     try:
-        message['message']['results'] = sorted(results,key=lambda x: x.get('score',0),reverse=reverse)
+        message['message']['results'] = sorted(results,key=lambda x: max([y.get('score',0) for y in x['analyses']]),reverse=reverse)
     except KeyError:
         #can't find the right structure of message
         logger.error(f'{guid}: error sorting results.')
@@ -32,22 +32,51 @@ async def filter_results_top_n(message,params,guid):
     return message,200
 
 async def filter_kgraph_orphans(message,params,guid):
-    """Remove from the knowledge graph any nodes and edges not references by a result"""
+    """Remove from the knowledge graph any nodes and edges not references by a result, as well as any aux_graphs.
+    There are multiple sources:
+    1. Result node bindings
+    2. Result.Analysis edge bindings
+    3. Result.Analysis support graphs and their edges and nodes
+    4. For any edges found in 2 & 3, any auxgraphs they reference, and the edges and nodes in those auxgraphs
+    """
     #First, find all the result nodes and edges
     logger.info(f'{guid}: filtering kgraph.')
     results = message.get('message',{}).get('results',[])
     nodes = set()
     edges = set()
+    auxgraphs = set()
+    #1. Result node bindings
     for result in results:
         for qnode,knodes in result.get('node_bindings',{}).items():
             nodes.update([ k['id'] for k in knodes ])
-        for qedge, kedges in result.get('edge_bindings', {}).items():
-            edges.update([k['id'] for k in kedges])
+    #2. Result.Analysis edge bindings
+    for result in results:
+        for analysis in result.get('analyses',[]):
+            for qedge, kedges in analysis.get('edge_bindings', {}).items():
+                edges.update([k['id'] for k in kedges])
+    #3. Result.Analysis support graphs
+    for result in results:
+        for analysis in result.get('analyses',[]):
+            for auxgraph in analysis.get('support_graphs',[]):
+                auxgraphs.add(auxgraph)
+    # 4. Support graphs from edges in 2
+    for edge in edges:
+        for attribute in message.get('message',{}).get('knowledge_graph',{}).get('edges',{}).get(edge,{}).get('attributes',{}):
+            if attribute.get('attribute_type_id',None) == 'biolink:support_graphs':
+                auxgraphs.update(attribute.get('value',[]))
+    # 5. For all the auxgraphs collect their edges and nodes
+    for auxgraph in auxgraphs:
+        aux_edges = message.get('message',{}).get('auxiliary_graphs',{}).get(auxgraph,{}).get('edges',[])
+        for aux_edge in aux_edges:
+            edges.add(aux_edge)
+            nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["subject"])
+            nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["object"])
     #now remove all knowledge_graph nodes and edges that are not in our nodes and edges sets.
     kg_nodes = message.get('message',{}).get('knowledge_graph',{}).get('nodes',{})
     message['message']['knowledge_graph']['nodes'] = { nid: ndata for nid, ndata in kg_nodes.items() if nid in nodes }
     kg_edges = message.get('message',{}).get('knowledge_graph',{}).get('edges',{})
     message['message']['knowledge_graph']['edges'] = { eid: edata for eid, edata in kg_edges.items() if eid in edges }
+    message["message"]["auxiliary_graphs"] = { auxgraph: adata for auxgraph, adata in message["message"]["auxiliary_graphs"].items() if auxgraph in auxgraphs }
     logger.info(f'{guid}: returning filtered kgraph.')
     return message,200
 
