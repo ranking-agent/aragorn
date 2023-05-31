@@ -11,7 +11,7 @@ import string
 from enum import Enum
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse, AsyncQueryResponse, AsyncQueryStatusResponse
 from pydantic import BaseModel
-from fastapi import Body, FastAPI, BackgroundTasks
+from fastapi import Body, FastAPI, BackgroundTasks, Query as fastquery
 from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query, status_query
 from src.default_queries import default_input_sync, default_input_async
@@ -172,7 +172,11 @@ async def receive_aragorn_async_response(response: PDResponse) -> int:
     return 200
 
 @ARAGORN_APP.get("/asyncquery_status/{job_id}", response_model=AsyncQueryStatusResponse, tags=["ARAGORN"], status_code=200)
-async def status_query_handler(job_id: str):
+async def status_query_handler(job_id: str = fastquery(
+        "",
+        description="job identifier",
+        example="abcdefg",
+    )):
     """Checks the status of an asynchronous query operation."""
     return await status_query(job_id)
 
