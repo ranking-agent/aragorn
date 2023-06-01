@@ -790,7 +790,8 @@ def merge_answer(result_message, answer, results, qnode_ids):
                 }
     mergedresult["analyses"].append(analysis)
 
-    result_message["message"]["results"].append(mergedresult)
+    #result_message["message"]["results"].append(mergedresult)
+    return mergedresult
 
 
 # TODO move into operations? Make a translator op out of this
@@ -805,7 +806,9 @@ def merge_results_by_node(result_message, merge_qnode):
     # TODO : I'm sure there's a better way to handle this with asyncio
     new_results = []
     for r in grouped_results:
-        merge_answer(result_message, r, grouped_results[r], original_qnodes)
+        new_result = merge_answer(result_message, r, grouped_results[r], original_qnodes)
+        new_results.append(new_result)
+    result_message["message"]["results"] = new_results
     return result_message
 
 
@@ -885,9 +888,6 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     """
     url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
     # url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
-
-    # with open("crap.json", "w") as outf:
-    #     json.dump(message, outf)
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...

@@ -1,9 +1,8 @@
 import pytest
-from src.service_aggregator import merge_answer, create_aux_graph, add_knowledge_edge
+from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_results_by_node
 from reasoner_pydantic.results import Analysis, EdgeBinding, Result, NodeBinding
 from reasoner_pydantic.auxgraphs import AuxiliaryGraph
-from reasoner_pydantic.message import Message, Response
-from reasoner_pydantic.qgraph import QueryGraph
+from reasoner_pydantic.message import Response
 
 def create_result_graph():
     """Create a "treats" result graph with a query graph."""
@@ -29,7 +28,9 @@ def test_merge_answer():
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
-    merge_answer(result_message,frozenset([answer]),results,qnode_ids)
+    #In reality the results will be in the message and we want to be sure that they get cleared out.
+    result_message["message"]["results"] = results
+    merge_results_by_node(result_message,"output")
     assert len(result_message["message"]["results"]) == 1
     assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
     assert len(result_message["message"]["results"][0]["analyses"]) == 1
