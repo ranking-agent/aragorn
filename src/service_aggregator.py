@@ -169,6 +169,9 @@ async def post_with_callback(host_url, query, guid, params=None):
     """
     Post an asynchronous message.
 
+    Put the callback inthe right place, fire the message, and collect and return all the
+    async returns with no further processing.
+
     Note: this method can return either a "request.models.Response " or a "reasoner-pydantic.message.response"
 
     :param host_url:
@@ -199,10 +202,6 @@ async def post_with_callback(host_url, query, guid, params=None):
             if "logs" not in individual_query:
                 individual_query["logs"] = []
         num_queries = len(query)
-
-    # set the debug level
-    # TODO: make sure other aragorn friends do this too
-    # query['log_level'] = 'DEBUG'
 
     # Create the callback queue
     await create_queue(guid)
@@ -237,28 +236,29 @@ async def post_with_callback(host_url, query, guid, params=None):
         raise e
 
     # async wait for callbacks to come on queue
-    response = await assemble_callbacks(guid, num_queries)
-    return response
+    responses = await collect_callback_responses(guid, num_queries)
+    return responses
 
 
-async def assemble_callbacks(guid, num_queries):
+async def collect_callback_responses(guid, num_queries):
+    """Collect all callback responses.  No parsing"""
     # create the response object
-    response = Response()
+    # response = Response()
 
     # pydantic_message = Message()
-    pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
-    accumulated_results = []
+    #pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
+    #accumulated_results = []
 
     # Don't spend any more time than this assembling messages
     OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
 
-    num_responses = 0
     done = False
-
     start = dt.now()
 
+    responses = []
     while not done:
-        num_responses, done = await check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses)
+        new_responses, done = await check_for_messages(guid, num_queries, len(responses) )
+        responses.extend(new_responses)
         time_spent = dt.now() - start
         if time_spent > OVERALL_TIMEOUT:
             logger.info(f"{guid}: Timing out receiving callbacks")
@@ -267,15 +267,15 @@ async def assemble_callbacks(guid, num_queries):
     await delete_queue(guid)
 
     # set the status to indicate success
-    response.status_code = 200
+    #response.status_code = 200
     # save the data to the Response object
-    query = Query.parse_obj({"message": {}})
-    query.message.knowledge_graph = pydantic_kgraph
-    json_query = query.dict()
-    json_query["message"]["results"] = accumulated_results
-    response._content = bytes(json.dumps(json_query), "utf-8")
+    #query = Query.parse_obj({"message": {}})
+    #query.message.knowledge_graph = pydantic_kgraph
+    #json_query = query.dict()
+    #json_query["message"]["results"] = accumulated_results
+    #response._content = bytes(json.dumps(json_query), "utf-8")
 
-    return response
+    return responses
 
 
 async def create_queue(guid):
@@ -316,13 +316,17 @@ async def filter_repeated_nodes(response,guid):
     if len(results) != original_result_count:
         await filter_kgraph_orphans(response,{},guid)
 
-async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
+async def check_for_messages(guid, num_queries, num_previously_received=0):
+    """Check for messages on the queue.  Return a list of responses.  This does not care if these
+    are TRAPI or anything else.  It does need to know whether to expect more than 1 query.
+    Mostly the num_queries and num_received are there for logging."""
     complete = False
     # We want to reset the connection to rabbit every once in a while
     # The timeout is how long to wait for a next message after processing.  So when there are many messages
     # coming in, the connection will stay open for longer than this time
+    responses = []
     CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
-
+    num_responses = num_previously_received
     try:
         async with channel_pool.acquire() as channel:
             queue = await channel.get_queue(guid, ensure=True)
@@ -339,12 +343,13 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                             break
 
                         # it's a real message; update the kgraph and results
-                        await filter_repeated_nodes(jr,guid)
-                        query = Query.parse_obj(jr)
-                        pydantic_kgraph.update(query.message.knowledge_graph)
-                        if jr["message"]["results"] is None:
-                            jr["message"]["results"] = []
-                        accumulated_results += jr["message"]["results"]
+                        #await filter_repeated_nodes(jr,guid)
+                        #query = Query.parse_obj(jr)
+                        #pydantic_kgraph.update(query.message.knowledge_graph)
+                        #if jr["message"]["results"] is None:
+                        #    jr["message"]["results"] = []
+                        #accumulated_results += jr["message"]["results"]
+                        responses.append(jr)
                         logger.info(f"{guid}: {len(jr['message']['results'])} results from {jr['message']['query_graph']}")
 
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
@@ -358,9 +363,9 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
         logger.debug(f"{guid}: cycling aio_pika connection")
     except Exception as e:
         logger.error(f"{guid}: Exception {e}. Returning {num_responses} results we have so far.")
-        return num_responses, True
+        return responses, True
 
-    return num_responses, complete
+    return responses, complete
 
 
 def process_message(message):
@@ -397,6 +402,7 @@ async def to_jsonable_dict(obj):
 async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
     """
     launches a post request, returns the response.
+    Assumes that the input and output are TRAPI.  This means that multistrider shouldn't go through here.`
 
     :param name: name of service
     :param url: the url of the service
@@ -428,7 +434,8 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         # launch the post depending on the query type and get the response
         if asyncquery:
             # handle the response
-            response = await post_with_callback(url, message, guid, params)
+            responses = await post_with_callback(url, message, guid, params)
+            response = responses[0]
         else:
             # async call to external services with hour timeout
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
@@ -568,20 +575,24 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
             num += 1
             message[f"query_{num}"] = q
         logger.info(f"Sending {len(message)} messages to strider")
-        result_message, sc = await multi_strider(message, params, guid)
+        batch_result_messages = await multi_strider(message, params, guid)
         num_batches_returned += 1
         logger.info(f"{guid}: {num_batches_returned} batches returned")
-        result_messages.append(result_message)
+        for result in batch_result_messages:
+            rmessage = await to_jsonable_dict(PDResponse.parse_obj(result).dict(exclude_none=True))
+            await filter_repeated_nodes(rmessage, guid)
+            result_messages.append(rmessage)
     logger.info(f"{guid}: strider complete")
+    #Clean out the repeat node stuff
     # We have to stitch stuff together again
-    with open(f"{guid}_individual_multistrider.json", "w") as f:
-        json.dump(result_messages, f, indent=2)
+    #with open(f"{guid}_individual_multistrider.json", "w") as f:
+    #    json.dump(result_messages, f, indent=2)
     mergedresults = await combine_messages(answer_qnode, input_message["message"]["query_graph"],
                                            lookup_query_graph, result_messages)
-    with open(f"{guid}_merged_multistrider.json", "w") as f:
-        json.dump(mergedresults, f, indent=2)
+    #with open(f"{guid}_merged_multistrider.json", "w") as f:
+    #    json.dump(mergedresults, f, indent=2)
     logger.info(f"{guid}: results merged")
-    return mergedresults, sc
+    return mergedresults, 200
 
 
 def merge_results_by_node_op(message, params, guid) -> (dict, int):
@@ -699,9 +710,12 @@ async def multi_strider(messages, params, guid):
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
 
     strider_url += "multiquery"
-    response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
+    #We don't want to do subservice_post, because that assumes TRAPI in and out.
+    #it leads to confusion.
+    #response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
+    responses = await post_with_callback(strider_url,messages,guid)
 
-    return response, status_code
+    return responses
 
 
 def create_aux_graph(analysis):
@@ -919,13 +933,13 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         else:
             logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
-        with open(f"{guid}_r_individual_answers.json", 'w') as outf:
-            json.dump(result_messages, outf, indent=2)
+        #with open(f"{guid}_r_individual_answers.json", 'w') as outf:
+        #    json.dump(result_messages, outf, indent=2)
         # We have to stitch stuff together again
         mergedresults = await combine_messages(answer_qnode, input_message["message"]["query_graph"],
                                                lookup_query_graph, result_messages)
-        with open(f"{guid}_r_merged.json", 'w') as outf:
-            json.dump(result_messages, outf, indent=2)
+        #with open(f"{guid}_r_merged.json", 'w') as outf:
+        #    json.dump(result_messages, outf, indent=2)
     else:
         mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
     # The merged results will have some expanded query, we want the original query.
