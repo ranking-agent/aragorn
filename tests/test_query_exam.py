@@ -1,5 +1,5 @@
 import pytest
-from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_results_by_node
+from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_results_by_node, filter_repeated_nodes
 from reasoner_pydantic.results import Analysis, EdgeBinding, Result, NodeBinding
 from reasoner_pydantic.auxgraphs import AuxiliaryGraph
 from reasoner_pydantic.message import Response
@@ -19,7 +19,7 @@ def create_result(node_bindings: dict[str,str], edge_bindings: dict[str,str]) ->
     result = Result(node_bindings = {k:[NodeBinding(id=v)] for k,v in node_bindings.items()}, analyses = set([analysis]))
     return result
 
-def test_merge_answer():
+def test_merge_answer_creative_only():
     """Test that merge_answer() puts all the aux graphs in the right places."""
     pydantic_result = create_result_graph()
     result_message = pydantic_result.to_dict()
@@ -30,7 +30,7 @@ def test_merge_answer():
     results = [result1, result2]
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
-    merge_results_by_node(result_message,"output")
+    merge_results_by_node(result_message,"output",[])
     assert len(result_message["message"]["results"]) == 1
     assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
     assert len(result_message["message"]["results"][0]["analyses"]) == 1
@@ -53,6 +53,89 @@ def test_merge_answer():
     assert edges == frozenset([frozenset(["KEDGE:1", "KEDGE:2"]), frozenset(["KEDGE:4", "KEDGE:8"])])
     Response.parse_obj(result_message)
 
+def test_merge_answer_lookup_only():
+    """Test that merge_answer() puts all the aux graphs in the right places."""
+    pydantic_result = create_result_graph()
+    result_message = pydantic_result.to_dict()
+    answer = "PUBCHEM.COMPOUND:789"
+    qnode_ids = ["input", "output"]
+    result1 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)
+    result2 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:2"}).dict(exclude_none=True)
+    lookup_results = [result1, result2]
+    result_message["message"]["results"] = []
+    merge_results_by_node(result_message,"output",lookup_results)
+    assert len(result_message["message"]["results"]) == 1
+    assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
+    assert len(result_message["message"]["results"][0]["analyses"]) == 1
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
+    # e is the name of the query edge defined in create_result_graph()
+    assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
+    assert result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"] == [{"id":"lookup:1"}, {"id":"lookup:2"}]
+    assert "auxiliary_graphs" not in result_message
+    Response.parse_obj(result_message)
+
+def test_merge_answer_creative_and_lookup():
+    """Test that merge_answer() puts all the aux graphs in the right places."""
+    pydantic_result = create_result_graph()
+    result_message = pydantic_result.to_dict()
+    answer = "PUBCHEM.COMPOUND:789"
+    qnode_ids = ["input", "output"]
+    result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
+    result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
+    results = [result1, result2]
+    lookup = [create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)]
+    #In reality the results will be in the message and we want to be sure that they get cleared out.
+    result_message["message"]["results"] = results
+    merge_results_by_node(result_message,"output",lookup)
+    assert len(result_message["message"]["results"]) == 1
+    assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
+    assert len(result_message["message"]["results"][0]["analyses"]) == 1
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
+    # e is the name of the query edge defined in create_result_graph()
+    assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
+    #There will be a binding to 2 kedges; 1 is the lookup and the other is creative
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"]) == 2
+    Response.parse_obj(result_message)
+
+def create_3hop_query () -> Response:
+    """Create a 3-hop query graph."""
+    query_graph = { "nodes": {  "chemical": { "categories": [ "biolink:ChemicalEntity" ] },
+                                "disease": { "ids": [ "MONDO:0015626" ], "categories": [ "biolink:DiseaseOrPhenotypicFeature" ] },
+                                "i": { "categories": [ "biolink:BiologicalProcessOrActivity" ] },
+                                "e": { "categories": [ "biolink:ChemicalEntity" ] } },
+                    "edges": {  "edge_0": { "subject": "i", "object": "chemical", "predicates": [ "biolink:has_input" ] },
+                                "edge_1": { "subject": "i", "object": "e", "predicates": [ "biolink:has_input" ] },
+                                "edge_2": { "subject": "e", "object": "disease", "predicates": [ "biolink:treats" ] } } }
+    result_message = {"query_graph": query_graph, "knowledge_graph": {"nodes": {}, "edges": {}}, "auxiliary_graphs": set(), "results": []}
+    pydantic_message = Response(**{"message": result_message})
+    return pydantic_message
+
+
+@pytest.mark.asyncio
+async def test_filter_repeats():
+    """Create a 3 hop query with 2 results.  One of them is 4 separate nodes, the other has 2 nodes that are the same.
+    Make sure that the result with the repeated node is filtered out, along with its nodes and edges."""
+    message = create_3hop_query().dict(exclude_none=True)
+    #results are (diseaes) edge_2 (e) edge_1 (i) edge_0 (chemical)
+    #all the nodes are different and the edges are different
+    good_result = create_result({"i":"GO:keep", "chemical":"PUBCHEM.COMPOUND:1", "e":"PUBCHEM.COMPOUND:2", "disease":"MONDO:1"},
+                                {"edge_0":"keep:0", "edge_1":"keep:1", "edge_2":"keep:2"}).dict(exclude_none=True)
+    # in this one the final chemical is the same as e from the good result, so edge 0 and edge 1 are the same and same as
+    # the first edge 1.  Edge 2 is also the same as edge 2 in the good result
+    bad_result = create_result({"i":"GO:keep", "chemical":"PUBCHEM.COMPOUND:1", "e":"PUBCHEM.COMPOUND:1", "disease":"MONDO:1"},
+                               {"edge_0":"keep:1", "edge_1":"keep:1", "edge_2":"keep:2"}).dict(exclude_none = True)
+    # this one has all different chemical & i than the first, but it does have the repeat, so everything should be removed
+    other_bad_result = create_result({"i":"GO:remove", "chemical":"PUBCHEM.COMPOUND:3", "e":"PUBCHEM.COMPOUND:3", "disease":"MONDO:1"},
+                                     {"edge_0":"remove:0", "edge_1":"remove:0", "edge_2":"remove:1"}).dict(exclude_none = True)
+    message["message"]["results"] = [good_result, bad_result, other_bad_result]
+    for node_id in ["PUBCHEM.COMPOUND:1", "PUBCHEM.COMPOUND:2", "PUBCHEM.COMPOUND:3", "MONDO:1", "GO:keep", "GO:remove"]:
+        message["message"]["knowledge_graph"]["nodes"][node_id] = {}
+    for edge_id in ["keep:0", "keep:1", "keep:2", "remove:0", "remove:1"]:
+        message["message"]["knowledge_graph"]["edges"][edge_id] = {}
+    await filter_repeated_nodes(message, "guid")
+    assert len(message["message"]["results"]) == 1
+    assert len(message["message"]["knowledge_graph"]["nodes"]) == 4
+    assert len(message["message"]["knowledge_graph"]["edges"]) == 3
 
 def test_create_aux_graph():
     """Given an analysis object with multiple edge bindings, test that create_aux_graph() returns a valid aux graph."""

@@ -45,45 +45,50 @@ async def filter_kgraph_orphans(message,params,guid):
     ATM, this is acceptable, but it'll need to be fixed.
     """
     #First, find all the result nodes and edges
-    logger.info(f'{guid}: filtering kgraph.')
-    results = message.get('message',{}).get('results',[])
-    nodes = set()
-    edges = set()
-    auxgraphs = set()
-    #1. Result node bindings
-    for result in results:
-        for qnode,knodes in result.get('node_bindings',{}).items():
-            nodes.update([ k['id'] for k in knodes ])
-    #2. Result.Analysis edge bindings
-    for result in results:
-        for analysis in result.get('analyses',[]):
-            for qedge, kedges in analysis.get('edge_bindings', {}).items():
-                edges.update([k['id'] for k in kedges])
-    #3. Result.Analysis support graphs
-    for result in results:
-        for analysis in result.get('analyses',[]):
-            for auxgraph in analysis.get('support_graphs',[]):
-                auxgraphs.add(auxgraph)
-    # 4. Support graphs from edges in 2
-    for edge in edges:
-        for attribute in message.get('message',{}).get('knowledge_graph',{}).get('edges',{}).get(edge,{}).get('attributes',{}):
-            if attribute.get('attribute_type_id',None) == 'biolink:support_graphs':
-                auxgraphs.update(attribute.get('value',[]))
-    # 5. For all the auxgraphs collect their edges and nodes
-    for auxgraph in auxgraphs:
-        aux_edges = message.get('message',{}).get('auxiliary_graphs',{}).get(auxgraph,{}).get('edges',[])
-        for aux_edge in aux_edges:
-            edges.add(aux_edge)
-            nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["subject"])
-            nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["object"])
-    #now remove all knowledge_graph nodes and edges that are not in our nodes and edges sets.
-    kg_nodes = message.get('message',{}).get('knowledge_graph',{}).get('nodes',{})
-    message['message']['knowledge_graph']['nodes'] = { nid: ndata for nid, ndata in kg_nodes.items() if nid in nodes }
-    kg_edges = message.get('message',{}).get('knowledge_graph',{}).get('edges',{})
-    message['message']['knowledge_graph']['edges'] = { eid: edata for eid, edata in kg_edges.items() if eid in edges }
-    message["message"]["auxiliary_graphs"] = { auxgraph: adata for auxgraph, adata in message["message"]["auxiliary_graphs"].items() if auxgraph in auxgraphs }
-    logger.info(f'{guid}: returning filtered kgraph.')
-    return message,200
+    try:
+        logger.info(f'{guid}: filtering kgraph.')
+        results = message.get('message',{}).get('results',[])
+        nodes = set()
+        edges = set()
+        auxgraphs = set()
+        #1. Result node bindings
+        for result in results:
+            for qnode,knodes in result.get('node_bindings',{}).items():
+                nodes.update([ k['id'] for k in knodes ])
+        #2. Result.Analysis edge bindings
+        for result in results:
+            for analysis in result.get('analyses',[]):
+                for qedge, kedges in analysis.get('edge_bindings', {}).items():
+                    edges.update([k['id'] for k in kedges])
+        #3. Result.Analysis support graphs
+        for result in results:
+            for analysis in result.get('analyses',[]):
+                for auxgraph in analysis.get('support_graphs',[]):
+                    auxgraphs.add(auxgraph)
+        # 4. Support graphs from edges in 2
+        for edge in edges:
+            for attribute in message.get('message',{}).get('knowledge_graph',{}).get('edges',{}).get(edge,{}).get('attributes',{}):
+                if attribute.get('attribute_type_id',None) == 'biolink:support_graphs':
+                    auxgraphs.update(attribute.get('value',[]))
+        # 5. For all the auxgraphs collect their edges and nodes
+        for auxgraph in auxgraphs:
+            aux_edges = message.get('message',{}).get('auxiliary_graphs',{}).get(auxgraph,{}).get('edges',[])
+            for aux_edge in aux_edges:
+                edges.add(aux_edge)
+                nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["subject"])
+                nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["object"])
+        #now remove all knowledge_graph nodes and edges that are not in our nodes and edges sets.
+        kg_nodes = message.get('message',{}).get('knowledge_graph',{}).get('nodes',{})
+        message['message']['knowledge_graph']['nodes'] = { nid: ndata for nid, ndata in kg_nodes.items() if nid in nodes }
+        kg_edges = message.get('message',{}).get('knowledge_graph',{}).get('edges',{})
+        message['message']['knowledge_graph']['edges'] = { eid: edata for eid, edata in kg_edges.items() if eid in edges }
+        message["message"]["auxiliary_graphs"] = { auxgraph: adata for auxgraph, adata in message["message"].get("auxiliary_graphs",{}).items() if auxgraph in auxgraphs }
+        logger.info(f'{guid}: returning filtered kgraph.')
+        return message,200
+    except Exception as e:
+        print(e)
+        logger.error(e)
+        return None,500
 
 async def filter_message_top_n(message,params,guid):
     """Aggregator for sort_results_score, filter_results_top_n, filter_kgraph_orphans.
