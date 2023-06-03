@@ -19,7 +19,7 @@ def create_result(node_bindings: dict[str,str], edge_bindings: dict[str,str]) ->
     result = Result(node_bindings = {k:[NodeBinding(id=v)] for k,v in node_bindings.items()}, analyses = set([analysis]))
     return result
 
-def test_merge_answer():
+def test_merge_answer_creative_only():
     """Test that merge_answer() puts all the aux graphs in the right places."""
     pydantic_result = create_result_graph()
     result_message = pydantic_result.to_dict()
@@ -30,7 +30,7 @@ def test_merge_answer():
     results = [result1, result2]
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
-    merge_results_by_node(result_message,"output")
+    merge_results_by_node(result_message,"output",[])
     assert len(result_message["message"]["results"]) == 1
     assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
     assert len(result_message["message"]["results"][0]["analyses"]) == 1
@@ -51,6 +51,50 @@ def test_merge_answer():
     assert len(aux_graphs) == 2
     edges = frozenset([ frozenset( result_message["message"]["auxiliary_graphs"][aux_graph_id]["edges"] ) for aux_graph_id in aux_graphs ])
     assert edges == frozenset([frozenset(["KEDGE:1", "KEDGE:2"]), frozenset(["KEDGE:4", "KEDGE:8"])])
+    Response.parse_obj(result_message)
+
+def test_merge_answer_lookup_only():
+    """Test that merge_answer() puts all the aux graphs in the right places."""
+    pydantic_result = create_result_graph()
+    result_message = pydantic_result.to_dict()
+    answer = "PUBCHEM.COMPOUND:789"
+    qnode_ids = ["input", "output"]
+    result1 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)
+    result2 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:2"}).dict(exclude_none=True)
+    lookup_results = [result1, result2]
+    result_message["message"]["results"] = []
+    merge_results_by_node(result_message,"output",lookup_results)
+    assert len(result_message["message"]["results"]) == 1
+    assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
+    assert len(result_message["message"]["results"][0]["analyses"]) == 1
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
+    # e is the name of the query edge defined in create_result_graph()
+    assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
+    assert result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"] == [{"id":"lookup:1"}, {"id":"lookup:2"}]
+    assert "auxiliary_graphs" not in result_message
+    Response.parse_obj(result_message)
+
+def test_merge_answer_creative_and_lookup():
+    """Test that merge_answer() puts all the aux graphs in the right places."""
+    pydantic_result = create_result_graph()
+    result_message = pydantic_result.to_dict()
+    answer = "PUBCHEM.COMPOUND:789"
+    qnode_ids = ["input", "output"]
+    result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
+    result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
+    results = [result1, result2]
+    lookup = [create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)]
+    #In reality the results will be in the message and we want to be sure that they get cleared out.
+    result_message["message"]["results"] = results
+    merge_results_by_node(result_message,"output",lookup)
+    assert len(result_message["message"]["results"]) == 1
+    assert len(result_message["message"]["results"][0]["node_bindings"]) == 2
+    assert len(result_message["message"]["results"][0]["analyses"]) == 1
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
+    # e is the name of the query edge defined in create_result_graph()
+    assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
+    #There will be a binding to 2 kedges; 1 is the lookup and the other is creative
+    assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"]) == 2
     Response.parse_obj(result_message)
 
 def create_3hop_query () -> Response:
