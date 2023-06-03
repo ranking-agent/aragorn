@@ -1,5 +1,5 @@
 import pytest
-from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_results_by_node
+from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_results_by_node, filter_repeated_nodes
 from reasoner_pydantic.results import Analysis, EdgeBinding, Result, NodeBinding
 from reasoner_pydantic.auxgraphs import AuxiliaryGraph
 from reasoner_pydantic.message import Response
@@ -53,6 +53,45 @@ def test_merge_answer():
     assert edges == frozenset([frozenset(["KEDGE:1", "KEDGE:2"]), frozenset(["KEDGE:4", "KEDGE:8"])])
     Response.parse_obj(result_message)
 
+def create_3hop_query () -> Response:
+    """Create a 3-hop query graph."""
+    query_graph = { "nodes": {  "chemical": { "categories": [ "biolink:ChemicalEntity" ] },
+                                "disease": { "ids": [ "MONDO:0015626" ], "categories": [ "biolink:DiseaseOrPhenotypicFeature" ] },
+                                "i": { "categories": [ "biolink:BiologicalProcessOrActivity" ] },
+                                "e": { "categories": [ "biolink:ChemicalEntity" ] } },
+                    "edges": {  "edge_0": { "subject": "i", "object": "chemical", "predicates": [ "biolink:has_input" ] },
+                                "edge_1": { "subject": "i", "object": "e", "predicates": [ "biolink:has_input" ] },
+                                "edge_2": { "subject": "e", "object": "disease", "predicates": [ "biolink:treats" ] } } }
+    result_message = {"query_graph": query_graph, "knowledge_graph": {"nodes": {}, "edges": {}}, "auxiliary_graphs": set(), "results": []}
+    pydantic_message = Response(**{"message": result_message})
+    return pydantic_message
+
+
+@pytest.mark.asyncio
+async def test_filter_repeats():
+    """Create a 3 hop query with 2 results.  One of them is 4 separate nodes, the other has 2 nodes that are the same.
+    Make sure that the result with the repeated node is filtered out, along with its nodes and edges."""
+    message = create_3hop_query().dict(exclude_none=True)
+    #results are (diseaes) edge_2 (e) edge_1 (i) edge_0 (chemical)
+    #all the nodes are different and the edges are different
+    good_result = create_result({"i":"GO:keep", "chemical":"PUBCHEM.COMPOUND:1", "e":"PUBCHEM.COMPOUND:2", "disease":"MONDO:1"},
+                                {"edge_0":"keep:0", "edge_1":"keep:1", "edge_2":"keep:2"}).dict(exclude_none=True)
+    # in this one the final chemical is the same as e from the good result, so edge 0 and edge 1 are the same and same as
+    # the first edge 1.  Edge 2 is also the same as edge 2 in the good result
+    bad_result = create_result({"i":"GO:keep", "chemical":"PUBCHEM.COMPOUND:1", "e":"PUBCHEM.COMPOUND:1", "disease":"MONDO:1"},
+                               {"edge_0":"keep:1", "edge_1":"keep:1", "edge_2":"keep:2"}).dict(exclude_none = True)
+    # this one has all different chemical & i than the first, but it does have the repeat, so everything should be removed
+    other_bad_result = create_result({"i":"GO:remove", "chemical":"PUBCHEM.COMPOUND:3", "e":"PUBCHEM.COMPOUND:3", "disease":"MONDO:1"},
+                                     {"edge_0":"remove:0", "edge_1":"remove:0", "edge_2":"remove:1"}).dict(exclude_none = True)
+    message["message"]["results"] = [good_result, bad_result, other_bad_result]
+    for node_id in ["PUBCHEM.COMPOUND:1", "PUBCHEM.COMPOUND:2", "PUBCHEM.COMPOUND:3", "MONDO:1", "GO:keep", "GO:remove"]:
+        message["message"]["knowledge_graph"]["nodes"][node_id] = {}
+    for edge_id in ["keep:0", "keep:1", "keep:2", "remove:0", "remove:1"]:
+        message["message"]["knowledge_graph"]["edges"][edge_id] = {}
+    await filter_repeated_nodes(message, "guid")
+    assert len(message["message"]["results"]) == 1
+    assert len(message["message"]["knowledge_graph"]["nodes"]) == 4
+    assert len(message["message"]["knowledge_graph"]["edges"]) == 3
 
 def test_create_aux_graph():
     """Given an analysis object with multiple edge bindings, test that create_aux_graph() returns a valid aux graph."""

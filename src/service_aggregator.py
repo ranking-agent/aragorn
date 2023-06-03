@@ -297,6 +297,24 @@ async def delete_queue(guid):
         logger.error(f"{guid}: Failed to delete queue.")
         # Deleting queue isn't essential, so we will continue
 
+def has_unique_nodes(result):
+    """Given a result, return True if all nodes are unique, False otherwise"""
+    seen = set()
+    for qnode, knodes in result["node_bindings"].items():
+        knode_ids = frozenset([knode["id"] for knode in knodes])
+        if knode_ids in seen:
+            return False
+        seen.add(knode_ids)
+    return True
+
+async def filter_repeated_nodes(response,guid):
+    """We have some rules that include e.g. 2 chemicals.   We don't want responses in which those two
+    are the same.   If you have A-B-A-C then what shows up in the ui is B-A-C which makes no sense."""
+    original_result_count = len(response["message"]["results"])
+    results = list(filter( lambda x: has_unique_nodes(x), response["message"]["results"] ))
+    response["message"]["results"] = results
+    if len(results) != original_result_count:
+        await filter_kgraph_orphans(response,{},guid)
 
 async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_queries, num_responses):
     complete = False
@@ -321,6 +339,7 @@ async def check_for_messages(guid, pydantic_kgraph, accumulated_results, num_que
                             break
 
                         # it's a real message; update the kgraph and results
+                        await filter_repeated_nodes(jr,guid)
                         query = Query.parse_obj(jr)
                         pydantic_kgraph.update(query.message.knowledge_graph)
                         if jr["message"]["results"] is None:
@@ -554,6 +573,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
         result_messages.append(result_message)
     logger.info(f"{guid}: strider complete")
     # We have to stitch stuff together again
+    with open(f"{guid}_individual_multistrider.json", "w") as f:
+        json.dump(result_messages, f, indent=2)
     pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
     for rm in result_messages:
         pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
@@ -564,6 +585,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     for rm in result_messages[1:]:
         result["message"]["results"].extend(rm["message"]["results"])
     mergedresults = merge_results_by_node(result, answer_qnode)
+    with open(f"{guid}_merged_multistrider.json", "w") as f:
+        json.dump(mergedresults, f, indent=2)
     logger.info(f"{guid}: results merged")
     return mergedresults, sc
 
@@ -799,13 +822,15 @@ def merge_results_by_node(result_message, merge_qnode):
     """This assumes a single result message, with a single merged KG.  The goal is to take all results that share a
     binding for merge_qnode and combine them into a single result.
     Assumes that the results are not scored."""
-    # This is relatively straightforward: group all the results by the merge_qnode
-    # for each one, the only complication is in the keys for the "dummy" bindings.
     grouped_results = group_results_by_qnode(merge_qnode, result_message)
     original_qnodes = result_message["message"]["query_graph"]["nodes"].keys()
     # TODO : I'm sure there's a better way to handle this with asyncio
     new_results = []
     for r in grouped_results:
+        if "PUBCHEM.COMPOUND:586" in r:
+            with open('debug.json', 'w') as outf:
+                for gr in grouped_results[r]:
+                    outf.write(json.dumps(gr, indent=2))
         new_result = merge_answer(result_message, r, grouped_results[r], original_qnodes)
         new_results.append(new_result)
     result_message["message"]["results"] = new_results
@@ -850,6 +875,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     for response in responses:
         if response.status_code == 200:
             rmessage = response.json()
+            await filter_repeated_nodes(rmessage,guid)
             num_results = len(rmessage["message"].get("results",[]))
             logger.info(f"Returned {num_results} results")
             if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
@@ -857,6 +883,8 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         else:
             logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
+        with open(f"{guid}_r_individual_answers.json", 'w') as outf:
+            json.dump(result_messages, outf, indent=2)
         # We have to stitch stuff together again
         # Should this somehow be merged with the similar stuff merging from multistrider?  Probably
         pydantic_kgraph = KnowledgeGraph.parse_obj({"nodes": {}, "edges": {}})
@@ -869,6 +897,8 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         for rm in result_messages[1:]:
             result["message"]["results"].extend(rm["message"]["results"])
         mergedresults = merge_results_by_node(result, answer_qnode)
+        with open(f"{guid}_r_merged.json", 'w') as outf:
+            json.dump(result_messages, outf, indent=2)
     else:
         mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
     # The merged results will have some expanded query, we want the original query.
