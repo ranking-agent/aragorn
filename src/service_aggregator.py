@@ -435,7 +435,11 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
         if asyncquery:
             # handle the response
             responses = await post_with_callback(url, message, guid, params)
-            response = responses[0]
+            #post_with_callback is returning the json dict, not a response, but the stuff below expects
+            # response object
+            response = Response()
+            response.status_code = 200
+            response._content = bytes(json.dumps(responses[0]), "utf-8")
         else:
             # async call to external services with hour timeout
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60 * 60)) as client:
