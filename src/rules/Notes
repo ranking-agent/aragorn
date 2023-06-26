@@ -1,10 +1,11 @@
-to turn the original files from Kara into the rules going into robokop/aragorn we do the following:
-1. remove any rule with precision (first numerical column) < 0.05.
-2. remove any rule with "subclass, causes, contributes, causes_adverse_events" predicates
+The current rules have been created through a somewhat complicated process:
+1. Kara created rules
+2. I used parse_to_trapi to filter out to a smaller number of rules that don't have as many false positives
+3. Kara took those rules and added classes to them (and I did some cleaning)
+4. I used print_rules and finalize_list to apply several filters
+   * remove causes, contributes, causes_adverse_events from treats
+   * Remove superclasses of the opposite (if the goal is decreases activity, don't include affects activity b/c it will allow increases activity)
+   * Remove symmetrics
+   * remove subclass rules
 
-There's still something that has to be done by hand which is culling symmetric rules.  For something like related_to, there will be two rules, one pointing each direction.  One needs to be removed
-
-Also in the 3hops, there are some funky has_part(a,b), has_part(b,a) that appear to be driven by robokop problems.  Removing them.
-And keeping maybe the top 50 rules from 3-hops.
-
-Also add the self rule treats->treats to the 2-hop rules by hand
+This process is obviously roundabout and we are going to clarify it in the next round of rule minings.

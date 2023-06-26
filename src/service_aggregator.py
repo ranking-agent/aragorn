@@ -36,7 +36,7 @@ thisdir = os.path.dirname(__file__)
 #Temporarily point to a typed rules file.  In the future, we will get types in the basic rules and use the config
 # to generate "rules.json" in the "rules" directory.
 #rulefile = os.path.join(thisdir,"rules","rules.json")
-rulefile = os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned.json")
+rulefile = os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned_finalized.json")
 with open(rulefile,'r') as inf:
     AMIE_EXPANSIONS = json.load(inf)
 
@@ -351,6 +351,7 @@ async def check_for_messages(guid, num_queries, num_previously_received=0):
                         #accumulated_results += jr["message"]["results"]
                         responses.append(jr)
                         logger.info(f"{guid}: {len(jr['message']['results'])} results from {jr['message']['query_graph']}")
+                        logger.info(f"{guid}: {len(jr['message']['auxiliary_graphs'])} auxgraphs")
 
                         # this is a little messy because this is trying to handle multiquery (returns an end message)
                         # and single query (no end message; single query)
@@ -977,9 +978,13 @@ async def combine_messages(answer_qnode, original_query_graph, lookup_query_grap
     result = PDResponse(**{
         "message": {"query_graph": {"nodes": {}, "edges": {}},
                     "knowledge_graph": {"nodes": {}, "edges": {}},
-                    "results": []}}).dict(exclude_none=True)
+                    "results": [],
+                    "auxiliary_graphs": {}}}).dict(exclude_none=True)
     result["message"]["query_graph"] = original_query_graph
     result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
+    for rm in result_messages:
+        if "auxiliary_graphs" in result["message"]:
+            result["message"]["auxiliary_graphs"].update(rm["message"]["auxiliary_graphs"])
     # The result with the direct lookup needs to be handled specially.   It's the one with the lookup query graph
     lookup_results = []  # in case we don't have any
     for result_message in result_messages:
