@@ -7,5 +7,7 @@ The current rules have been created through a somewhat complicated process:
    * Remove superclasses of the opposite (if the goal is decreases activity, don't include affects activity b/c it will allow increases activity)
    * Remove symmetrics
    * remove subclass rules
+5. By hand, I went into kara_typed_rules/rules_with_types_cleaned_finalized.json and changed "biolink:correlated_with"
+     to "biolink:positively_correlated_with"
 
 This process is obviously roundabout and we are going to clarify it in the next round of rule minings.
