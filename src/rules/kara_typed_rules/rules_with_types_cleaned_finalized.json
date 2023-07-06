@@ -1132,7 +1132,7 @@
             }
         },
         {
-            "Rule": "?f  biolink:correlated_with  ?b  ?a  biolink:treats  ?f   => ?a  biolink:treats  ?b",
+            "Rule": "?f  biolink:positively_correlated_with  ?b  ?a  biolink:treats  ?f   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.028869887",
             "Std Confidence": "0.259046866",
             "PCA Confidence": "0.259046866",
@@ -1170,7 +1170,7 @@
                             "subject": "f",
                             "object": "$target",
                             "predicates": [
-                                "biolink:correlated_with"
+                                "biolink:positively_correlated_with"
                             ]
                         },
                         "edge_1": {
@@ -3117,7 +3117,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:contraindicated_for  ?f  ?f  biolink:correlated_with  ?b  ?f  biolink:has_phenotype  ?b   => ?a  biolink:contraindicated_for  ?b",
+            "Rule": "?a  biolink:contraindicated_for  ?f  ?f  biolink:positively_correlated_with  ?b  ?f  biolink:has_phenotype  ?b   => ?a  biolink:contraindicated_for  ?b",
             "Head Coverage": "0.004829824",
             "Std Confidence": "0.531120332",
             "PCA Confidence": "0.531120332",
@@ -3162,7 +3162,7 @@
                             "subject": "f",
                             "object": "$target",
                             "predicates": [
-                                "biolink:correlated_with"
+                                "biolink:positively_correlated_with"
                             ]
                         },
                         "edge_2": {
