@@ -552,7 +552,7 @@ async def add_provenance(message):
     each knowledge_graph edge and add an aggregated knowledge source of infores:robokop to it"""
     new_provenance = {"resource_id": "infores:robokop", "resource_role": "aggregator_knowledge_source",
                       "upstream_resource_ids": ["infores:automat-robokop"]}
-    for edge in message["message"]["knowledge_graph"]["edges"].values():
+    for edge in message["message"].get("knowledge_graph",{}).get("edges",{}).values():
         edge["sources"].append(new_provenance)
     return message
 
@@ -984,7 +984,7 @@ async def combine_messages(answer_qnode, original_query_graph, lookup_query_grap
     result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
     for rm in result_messages:
         if "auxiliary_graphs" in result["message"]:
-            result["message"]["auxiliary_graphs"].update(rm["message"]["auxiliary_graphs"])
+            result["message"]["auxiliary_graphs"].update(rm["message"].get("auxiliary_graphs", {}))
     # The result with the direct lookup needs to be handled specially.   It's the one with the lookup query graph
     lookup_results = []  # in case we don't have any
     for result_message in result_messages:
