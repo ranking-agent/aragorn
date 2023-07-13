@@ -225,7 +225,7 @@ async def post_with_callback(host_url, query, guid, params=None):
         # check the response status.
         if post_response.status_code != 200:
             # queue isn't needed for failed service call
-            logger.warning(f"Deleting unneeded queue for {guid}")
+            logger.warning(f"{guid} POST status: {post_response.status_code}. Deleting unneeded queue.")
             await delete_queue(guid)
             # if there is an error this will return a <requests.models.Response> type
             return post_response
@@ -337,6 +337,8 @@ async def check_for_messages(guid, num_queries, num_previously_received=0):
                         num_responses += 1
                         logger.info(f"{guid}: Strider returned {num_responses} out of {num_queries}.")
                         jr = process_message(message)
+                        with open(f"{guid}_{num_responses}.json","w") as outf:
+                            json.dump(jr,outf,indent=2)
                         if is_end_message(jr):
                             logger.info(f"{guid}: Received complete message from multistrider")
                             complete = True
@@ -467,7 +469,6 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params=Non
                 if len(response.json()):
                     #pass it through pydantic for validation and cleaning
                     ret_val = await to_jsonable_dict(PDResponse.parse_obj(response.json()).dict(exclude_none = True))
-
             except Exception as e:
                 status_code = 500
                 logger.exception(f"{guid}: ARAGORN Exception {e} translating json from post to {name}")
@@ -913,6 +914,10 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
+    with open('robokop_infer.txt', 'w') as logfile:
+        json.dump(input_message, logfile, indent=2)
+        logfile.write("------\n")
+        json.dump(messages, logfile, indent=2)
     lookup_query_graph = messages[0]["message"]["query_graph"]
     logger.info(f"{guid}: {len(messages)} to send to {automat_url}")
     result_messages = []
@@ -926,6 +931,7 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
 
         responses = await asyncio.gather(*tasks)
 
+    nr = 0
     for response in responses:
         if response.status_code == 200:
             #Validate and clean
@@ -934,6 +940,9 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
             num_results = len(rmessage["message"].get("results",[]))
             logger.info(f"Returned {num_results} results")
             if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
+                with (open(f"{guid}_r_{nr}.json", 'w')) as outf:
+                    json.dump(rmessage, outf, indent=2)
+                    nr += 1
                 result_messages.append(rmessage)
         else:
             logger.error(f"{guid}: {response.status_code} returned.")
@@ -1032,6 +1041,9 @@ async def omnicorp(message, params, guid) -> (dict, int):
     """
     url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")}omnicorp_overlay'
 
+    with open("to_corp.json","w") as f:
+        f.write(json.dumps(message,indent=2))
+
     rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
 
     # Omnicorp is not strictly necessary.  When we get something other than a 200,
@@ -1048,6 +1060,9 @@ async def score(message, params, guid) -> (dict, int):
     :param guid:
     :return:
     """
+    with open("to_score.json","w") as f:
+        f.write(json.dumps(message,indent=2))
+
     ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")
 
     score_url = f"{ranker_url}score"

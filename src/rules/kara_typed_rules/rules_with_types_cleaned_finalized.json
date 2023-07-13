@@ -4863,7 +4863,7 @@
             }
         },
         {
-            "Rule": "?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_biolink:affects  ?b",
+            "Rule": "?e  increased_activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_biolink:affects  ?b",
             "Head Coverage": "0.000698966",
             "Std Confidence": "0.192307692",
             "PCA Confidence": "0.3125",
@@ -4909,6 +4909,10 @@
                                         {
                                             "qualifier_type_id": "biolink:object_aspect_qualifier",
                                             "qualifier_value": "activity_or_abundance"
+                                        },
+                                        {
+                                            "qualifier_type_id": "biolink:object_direction_qualifier",
+                                            "qualifier_value": "increased"
                                         }
                                     ]
                                 }
@@ -7751,7 +7755,7 @@
             }
         },
         {
-            "Rule": "?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  decreased_activity_biolink:affects  ?b",
+            "Rule": "?e  decreased_activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  decreased_activity_biolink:affects  ?b",
             "Head Coverage": "0.000052801",
             "Std Confidence": "0.104395604",
             "PCA Confidence": "0.154471545",
@@ -7797,6 +7801,10 @@
                                         {
                                             "qualifier_type_id": "biolink:object_aspect_qualifier",
                                             "qualifier_value": "activity_or_abundance"
+                                        },
+                                        {
+                                            "qualifier_type_id": "biolink:object_direction_qualifier",
+                                            "qualifier_value": "decreased"
                                         }
                                     ]
                                 }
@@ -8832,7 +8840,7 @@
             }
         },
         {
-            "Rule": "?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
+            "Rule": "?e  increased_activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
             "Head Coverage": "0.000584971",
             "Std Confidence": "0.192307692",
             "PCA Confidence": "0.3125",
@@ -8878,6 +8886,10 @@
                                         {
                                             "qualifier_type_id": "biolink:object_aspect_qualifier",
                                             "qualifier_value": "activity_or_abundance"
+                                        },
+                                        {
+                                            "qualifier_type_id": "biolink:object_direction_qualifier",
+                                            "qualifier_value": "increased"
                                         }
                                     ]
                                 }
@@ -11779,7 +11791,7 @@
             }
         },
         {
-            "Rule": "?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  decreased_activity_or_abundance_biolink:affects  ?b",
+            "Rule": "?e  decreased_activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  decreased_activity_or_abundance_biolink:affects  ?b",
             "Head Coverage": "0.000051974",
             "Std Confidence": "0.104395604",
             "PCA Confidence": "0.154471545",
@@ -11825,6 +11837,10 @@
                                         {
                                             "qualifier_type_id": "biolink:object_aspect_qualifier",
                                             "qualifier_value": "activity_or_abundance"
+                                        },
+                                        {
+                                            "qualifier_type_id": "biolink:object_direction_qualifier",
+                                            "qualifier_value": "decreased"
                                         }
                                     ]
                                 }

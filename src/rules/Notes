@@ -9,5 +9,10 @@ The current rules have been created through a somewhat complicated process:
    * remove subclass rules
 5. By hand, I went into kara_typed_rules/rules_with_types_cleaned_finalized.json and changed "biolink:correlated_with"
      to "biolink:positively_correlated_with"
+6. For reasons unclear to me after all this, we still have a bunch of rules of this form:
+    ?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_biolink:affects  ?b
+    For these I go into hand and edit the rule to be
+    ?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_biolink:affects  ?b
+    Changing both the "Rule" and the edge in "template" by adding the correct qualifier
 
 This process is obviously roundabout and we are going to clarify it in the next round of rule minings.
