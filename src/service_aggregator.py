@@ -939,9 +939,9 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
             num_results = len(rmessage["message"].get("results",[]))
             logger.info(f"Returned {num_results} results")
             if num_results > 0 and num_results < 10000: #more than this number of results and you're into noise.
-                with (open(f"{guid}_r_{nr}.json", 'w')) as outf:
-                    json.dump(rmessage, outf, indent=2)
-                    nr += 1
+                #with (open(f"{guid}_r_{nr}.json", 'w')) as outf:
+                #    json.dump(rmessage, outf, indent=2)
+                #    nr += 1
                 result_messages.append(rmessage)
         else:
             logger.error(f"{guid}: {response.status_code} returned.")
