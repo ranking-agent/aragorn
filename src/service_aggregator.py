@@ -642,10 +642,10 @@ async def normalize_qgraph_ids(m):
         nnresult = nnresult.json()
         for qid, qnode in qnodes.items():
             if 'ids' in qnode and qnode['ids'] is not None:
-                new_ids = [ nnresult[i]["id"]["identifier"] for i in qnode["ids"]]
-                qnode["ids"] = new_ids
+                normalized_ids = [nnresult[i]["id"]["identifier"] if nnresult[i] else i for i in qnode["ids"]]
+                qnode["ids"] = normalized_ids
     else:
-        logger.error("Error reaching node normalizer: {nnresult.status_code}")
+        logger.error(f"Error reaching node normalizer: {nnresult.status_code}")
     return m
 
 
@@ -659,7 +659,6 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     # It's an infer, just look it up
     rokres = await robokop_infer(message, guid, question_qnode, answer_qnode)
     return rokres
-    # return await normalize(rokres,params,guid)
 
 def get_key(predicate, qualifiers):
     keydict = {'predicate': predicate}
@@ -947,13 +946,9 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
         else:
             logger.error(f"{guid}: {response.status_code} returned.")
     if len(result_messages) > 0:
-        #with open(f"{guid}_r_individual_answers.json", 'w') as outf:
-        #    json.dump(result_messages, outf, indent=2)
         # We have to stitch stuff together again
         mergedresults = await combine_messages(answer_qnode, input_message["message"]["query_graph"],
                                                lookup_query_graph, result_messages)
-        #with open(f"{guid}_r_merged.json", 'w') as outf:
-        #    json.dump(result_messages, outf, indent=2)
     else:
         mergedresults = {"message": {"knowledge_graph": {"nodes": {}, "edges": {}}, "results": []}}
     # The merged results will have some expanded query, we want the original query.
