@@ -14,5 +14,20 @@ The current rules have been created through a somewhat complicated process:
     For these I go into hand and edit the rule to be
     ?e  activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  increased_activity_biolink:affects  ?b
     Changing both the "Rule" and the edge in "template" by adding the correct qualifier
+7. Also hand removed several rules:
+x ?a  biolink:interacts_with  ?b  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_biolink:affects  ?b"
+x ?b  activity_or_abundance_biolink:affects  ?a  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_biolink:affects  ?b
+x ?b  biolink:affects_response_to  ?a  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_biolink:affects  ?b
+x ?a  decreased_activity_or_abundance_biolink:affects  ?b  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_biolink:affects  ?b
+x ?b  activity_or_abundance_biolink:affects  ?a  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_biolink:affects  ?b"
+x ?b  biolink:increases_response_to  ?a  ?a  increased_activity_biolink:affects  ?b   => ?a  decreased_activity_biolink:affects  ?b
+x ?a  biolink:interacts_with  ?b  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_or_abundance_biolink:affects  ?b
+x ?b  activity_or_abundance_biolink:affects  ?a  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_or_abundance_biolink:affects  ?b
+x ?b  biolink:affects_response_to  ?a  ?a  decreased_activity_or_abundance_biolink:affects  ?b   => ?a  increased_activity_or_abundance_biolink:affects  ?b
+x ?a  decreased_molecular_interaction_biolink:affects  ?b  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
+x ?b  activity_or_abundance_biolink:affects  ?a  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
+x ?b  biolink:affects_response_to  ?a  ?a  increased_activity_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
+"?b  biolink:increases_response_to  ?a  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
+
 
 This process is obviously roundabout and we are going to clarify it in the next round of rule minings.
