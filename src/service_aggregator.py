@@ -751,6 +751,10 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
         qnode_subject = answer
         qnode_object = query_graph["nodes"][qnode_object_id]["ids"][0]
     predicate = qedge["predicates"][0]
+    if "qualifier_constraints" in qedge:
+        qualifiers = qedge["qualifier_constraints"][0]["qualifier_set"]
+    else:
+        qualifiers = None
     # Create a new knowledge edge
     new_edge_id = str(uuid.uuid4())
     new_edge = {
@@ -766,6 +770,8 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
         # Aragorn is the primary ks because aragorn inferred the existence of this edge.
         "sources": [{"resource_id":"infores:aragorn", "resource_role":"primary_knowledge_source"}]
     }
+    if qualifiers is not None:
+        new_edge["qualifiers"] = qualifiers
     result_message["message"]["knowledge_graph"]["edges"][new_edge_id] = new_edge
     return new_edge_id
 
