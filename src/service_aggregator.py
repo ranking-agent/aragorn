@@ -774,7 +774,7 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer):
         qnode_subject = answer
         qnode_object = query_graph["nodes"][qnode_object_id]["ids"][0]
     predicate = qedge["predicates"][0]
-    if "qualifier_constraints" in qedge:
+    if "qualifier_constraints" in qedge and qedge["qualifier_constraints"] is not None and len(qedge["qualifier_constraints"]) > 0:
         qualifiers = qedge["qualifier_constraints"][0]["qualifier_set"]
     else:
         qualifiers = None
