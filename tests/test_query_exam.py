@@ -3,6 +3,7 @@ from src.service_aggregator import create_aux_graph, add_knowledge_edge, merge_r
 from reasoner_pydantic.results import Analysis, EdgeBinding, Result, NodeBinding
 from reasoner_pydantic.auxgraphs import AuxiliaryGraph
 from reasoner_pydantic.message import Response
+import json
 
 def create_result_graph():
     """Create a "treats" result graph with a query graph."""
@@ -19,6 +20,11 @@ def create_result(node_bindings: dict[str,str], edge_bindings: dict[str,str]) ->
     result = Result(node_bindings = {k:[NodeBinding(id=v)] for k,v in node_bindings.items()}, analyses = set([analysis]))
     return result
 
+def create_pretend_knowledge_edge(subject, object, predicate, infores):
+    """Create a pretend knowledge edge."""
+    ke = {"subject":subject, "object":object, "predicate":predicate, "sources":[{"resource_id":infores, "resource_role": "primary_knowledge_source"}]}
+    return ke
+
 def test_merge_answer_creative_only():
     """Test that merge_answer() puts all the aux graphs in the right places."""
     pydantic_result = create_result_graph()
@@ -28,6 +34,7 @@ def test_merge_answer_creative_only():
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
+
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
     merge_results_by_node(result_message,"output",[])
@@ -61,6 +68,9 @@ def test_merge_answer_lookup_only():
     qnode_ids = ["input", "output"]
     result1 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)
     result2 = create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:2"}).dict(exclude_none=True)
+    for n, ke_id in enumerate(["lookup:1", "lookup:2"]):
+        ke = create_pretend_knowledge_edge("MONDO:1234", answer, "biolink:treats", f"infores:i{n}")
+        result_message["message"]["knowledge_graph"]["edges"][ke_id] = ke
     lookup_results = [result1, result2]
     result_message["message"]["results"] = []
     merge_results_by_node(result_message,"output",lookup_results)
@@ -84,6 +94,9 @@ def test_merge_answer_creative_and_lookup():
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
     lookup = [create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)]
+    for n, ke_id in enumerate(["lookup:1"]):
+        ke = create_pretend_knowledge_edge("MONDO:1234", answer, "biolink:treats", f"infores:i{n}")
+        result_message["message"]["knowledge_graph"]["edges"][ke_id] = ke
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
     merge_results_by_node(result_message,"output",lookup)
