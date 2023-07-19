@@ -113,7 +113,6 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
     ret_val: int = 200
 
     logger.debug(f"{guid}: Receiving sub-service callback")
-    # logger.debug(f'{guid}: The sub-service response: {response.json()}')
 
     try:
         async with channel_pool.acquire() as channel:
