@@ -74,6 +74,9 @@ async def filter_kgraph_orphans(message,params,guid):
         for auxgraph in auxgraphs:
             aux_edges = message.get('message',{}).get('auxiliary_graphs',{}).get(auxgraph,{}).get('edges',[])
             for aux_edge in aux_edges:
+                if aux_edge not in message["message"]["knowledge_graph"]["edges"]:
+                    logger.warning(f"{guid}: aux_edge {aux_edge} not in knowledge_graph.edges")
+                    continue
                 edges.add(aux_edge)
                 nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["subject"])
                 nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["object"])
