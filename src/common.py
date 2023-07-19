@@ -149,11 +149,6 @@ async def asyncexecute(request, answer_coalesce_type, guid, logger, caller):
 
         query_result["status"] = "Success"
 
-        # Clean up: this should be cleaned up as the components move to 1.2, but for now, let's clean it up
-        for edge_id, edge_data in query_result["message"]["knowledge_graph"]["edges"].items():
-            if "relation" in edge_data:
-                del edge_data["relation"]
-
         # This is also bogus, not sure why it's not validating
         del query_result["workflow"]
 
