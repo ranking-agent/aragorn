@@ -15,7 +15,6 @@ from fastapi import Body, FastAPI, BackgroundTasks, Path
 from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query, status_query
 from src.default_queries import default_input_sync, default_input_async
-from src.util import get_channel_pool
 from src.otel_config import configure_otel
 
 # declare the FastAPI details
@@ -43,7 +42,7 @@ log_level = os.getenv("LOG_LEVEL", "DEBUG")
 config["handlers"]["console"]["level"] = log_level
 config["handlers"]["file"]["level"] = log_level
 config["loggers"]["src"]["level"] = log_level
-#config["loggers"]["aio_pika"]["level"] = log_level
+config["loggers"]["aio_pika"]["level"] = log_level
 
 # load the log config
 logging.config.dictConfig(config)
@@ -51,8 +50,10 @@ logging.config.dictConfig(config)
 # create a logger
 logger = logging.getLogger(__name__)
 
-# Get rabbitmq channel pool
-channel_pool = get_channel_pool()
+# Get rabbitmq connection
+q_username = os.environ.get("QUEUE_USER", "guest")
+q_password = os.environ.get("QUEUE_PW", "guest")
+q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
@@ -111,13 +112,16 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
     """
     # init the return html status code
     ret_val: int = 200
+    # init the rbtmq connection
+    connection = None
 
     logger.debug(f"{guid}: Receiving sub-service callback")
 
     try:
-        async with channel_pool.acquire() as channel:
+        connection = await aio_pika.connect_robust(f"amqp://{q_username}:{q_password}@{q_host}/")
+        async with connection:
+            channel = await connection.channel()
             await channel.get_queue(guid, ensure=True)
-
             # create a file path/name
             fname = "".join(random.choices(string.ascii_lowercase, k=12))
             file_name = f"{queue_file_dir}/{guid}-{fname}-async-data.json"
@@ -133,17 +137,15 @@ async def subservice_callback(response: PDResponse, guid: str) -> int:
                 logger.debug(f"{guid}: Callback message published to queue.")
             else:
                 logger.error(f"{guid}: Callback message publishing to queue failed, type: {type(publish_val)}")
-            # if isinstance(publish_val, spec.Basic.Ack):
-            #    logger.info(f'{guid}: Callback message published to queue.')
-            # else:
-            #    # set the html error code
-            #    ret_val = 422
-            #    logger.error(f'{guid}: Callback message publishing to queue failed, type: {type(publish_val)}')
 
     except Exception as e:
         logger.exception(f"Exception detected while handling sub-service callback using guid {guid}", e)
         # set the html status code
         ret_val = 500
+    finally:
+        # close rbtmq connection if it exists
+        if connection:
+            await connection.close()
 
     # return the response code
     return ret_val
