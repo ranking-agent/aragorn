@@ -252,7 +252,8 @@ async def collect_callback_responses(guid, num_queries):
     #accumulated_results = []
 
     # Don't spend any more time than this assembling messages
-    OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
+    #OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
+    OVERALL_TIMEOUT = timedelta(minutes=3)  # 3 minutes
 
     done = False
     start = dt.now()
