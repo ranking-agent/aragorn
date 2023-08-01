@@ -810,7 +810,7 @@ def get_edgeset(result):
             edgeset.update([e["id"] for e in edgelist])
     return frozenset(edgeset)
 
-def merge_answer(result_message, answer, results, qnode_ids, robokop):
+def merge_answer(result_message, answer, results, qnode_ids, robokop=False):
     """Given a set of results and the node identifiers of the original qgraph,
     create a single message.
     result_message has to contain the original query graph
@@ -908,7 +908,7 @@ def merge_answer(result_message, answer, results, qnode_ids, robokop):
 
 
 # TODO move into operations? Make a translator op out of this
-def merge_results_by_node(result_message, merge_qnode, lookup_results, robokop):
+def merge_results_by_node(result_message, merge_qnode, lookup_results, robokop=False):
     """This assumes a single result message, with a single merged KG.  The goal is to take all results that share a
     binding for merge_qnode and combine them into a single result.
     Assumes that the results are not scored."""
