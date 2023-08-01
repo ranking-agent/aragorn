@@ -169,7 +169,7 @@ def test_add_knowledge_edge():
     result_message = pydantic_message.to_dict()
     aux_graph_ids = ["ag1", "ag2"]
     answer = "PUBCHEM.COMPOUND:789"
-    add_knowledge_edge(result_message, aux_graph_ids, answer)
+    add_knowledge_edge(result_message, aux_graph_ids, answer, True)
     #Make sure that the edge was added, that its properties are correct
     assert len(result_message["message"]["knowledge_graph"]["edges"]) == 1
     for edge_id, edge in result_message["message"]["knowledge_graph"]["edges"].items():
