@@ -1,4 +1,5 @@
 """Literature co-occurrence support."""
+import aio_pika
 import json
 import logging
 import asyncio
@@ -10,7 +11,7 @@ from datetime import datetime as dt, timedelta
 from string import Template
 
 from functools import partial
-from src.util import create_log_entry, get_channel_pool
+from src.util import create_log_entry
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
 from src.process_db import add_item
 from datetime import datetime
@@ -26,9 +27,6 @@ DUMPTRUCK = False
 #from src.rules.rules import rules as AMIE_EXPANSIONS
 
 logger = logging.getLogger(__name__)
-
-# Get rabbitmq channel pool
-channel_pool = get_channel_pool()
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
@@ -280,25 +278,45 @@ async def collect_callback_responses(guid, num_queries):
 
     return responses
 
+async def get_pika_connection():
+    q_username = os.environ.get("QUEUE_USER", "guest")
+    q_password = os.environ.get("QUEUE_PW", "guest")
+    q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
+    connection = await aio_pika.connect_robust(host=q_host, login=q_username, password=q_password)
+    return connection
+
 
 async def create_queue(guid):
+    connection = None
     try:
-        async with channel_pool.acquire() as channel:
+        connection = await get_pika_connection()
+        async with connection:
+            channel = await connection.channel()
             # declare the queue using the guid as the key
             queue = await channel.declare_queue(guid)
     except Exception as e:
         logger.error(f"{guid}: Failed to create queue.")
         raise e
+    finally:
+        if connection:
+            await connection.close()
 
 
 async def delete_queue(guid):
+    connection = None
     try:
-        async with channel_pool.acquire() as channel:
-            # declare the queue using the guid as the key
+        connection = await get_pika_connection()
+        async with connection:
+            channel = await connection.channel()
+            # delete the queue using the guid as the key
             queue = await channel.queue_delete(guid)
     except Exception:
         logger.error(f"{guid}: Failed to delete queue.")
         # Deleting queue isn't essential, so we will continue
+    finally:
+        if connection:
+            await connection.close()
+
 
 def has_unique_nodes(result):
     """Given a result, return True if all nodes are unique, False otherwise"""
@@ -332,8 +350,11 @@ async def check_for_messages(guid, num_queries, num_previously_received=0):
     responses = []
     CONNECTION_TIMEOUT = 1 * 60  # 1 minutes
     num_responses = num_previously_received
+    connection = None
     try:
-        async with channel_pool.acquire() as channel:
+        connection = await get_pika_connection()
+        async with connection:
+            channel = await connection.channel()
             queue = await channel.get_queue(guid, ensure=True)
             # wait for the response.  Timeout after
             async with queue.iterator(timeout=CONNECTION_TIMEOUT) as queue_iter:
@@ -370,6 +391,9 @@ async def check_for_messages(guid, num_queries, num_previously_received=0):
     except Exception as e:
         logger.error(f"{guid}: Exception {e}. Returning {num_responses} results we have so far.")
         return responses, True
+    finally:
+        if connection:
+            await connection.close()
 
     return responses, complete
 
