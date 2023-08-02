@@ -12,6 +12,7 @@ from string import Template
 from functools import partial
 from src.util import create_log_entry, get_channel_pool
 from src.operations import sort_results_score, filter_results_top_n, filter_kgraph_orphans, filter_message_top_n
+from src.results_cache import ResultsCache
 from src.process_db import add_item
 from datetime import datetime
 from requests.models import Response
@@ -122,8 +123,9 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         del message["workflow"]
     else:
         if infer:
+            timeout_seconds = message.get("parameters", {}).get("timeout_seconds", 3 * 60)
             workflow_def = [
-                {"id": "lookup"},
+                {"id": "lookup", "parameters": {"timeout_seconds": timeout_seconds}},
                 {"id": "overlay_connect_knodes"},
                 {"id": "score"},
                 {"id": "filter_message_top_n", "parameters": {"max_results": 500}},
@@ -144,7 +146,23 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # Raise a 422 if we find one we don't actually know how to do.
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
+
+    results_cache = ResultsCache()
+    override_cache = message.get("parameters",{}).get("override_cache", False)
+    if infer:
+        # We're going to cache infer queries, and we need to do that even if we're overriding the cache
+        # because we need these values to post to the cache at the end.
+        input_id, predicate, qualifiers, source, source_input, target = get_infer_parameters(message)
+        if not override_cache:
+            results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller)
+            if results is not None:
+                logger.info(f"{guid}: Returning results cache lookup")
+                return results, 200
+            else:
+                logger.info(f"{guid}: Results cache miss")
+
     workflow = []
+
 
     for op in workflow_def:
         try:
@@ -157,6 +175,9 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # return the workflow def so that the caller can see what we did
     final_answer["workflow"] = workflow_def
 
+    if infer:
+        results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, final_answer)
+
     # return the answer
     return final_answer, status_code
 
@@ -167,7 +188,7 @@ def is_end_message(message):
     return False
 
 
-async def post_with_callback(host_url, query, guid, params=None):
+async def post_with_callback(host_url, query, guid, params):
     """
     Post an asynchronous message.
 
@@ -238,11 +259,11 @@ async def post_with_callback(host_url, query, guid, params=None):
         raise e
 
     # async wait for callbacks to come on queue
-    responses = await collect_callback_responses(guid, num_queries)
+    responses = await collect_callback_responses(guid, num_queries, params)
     return responses
 
 
-async def collect_callback_responses(guid, num_queries):
+async def collect_callback_responses(guid, num_queries, params={}):
     """Collect all callback responses.  No parsing"""
     # create the response object
     # response = Response()
@@ -253,7 +274,11 @@ async def collect_callback_responses(guid, num_queries):
 
     # Don't spend any more time than this assembling messages
     #OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
-    OVERALL_TIMEOUT = timedelta(minutes=3)  # 3 minutes
+    logger.info(f"{guid}: params: {params}")
+    if "timeout_seconds" in params:
+        OVERALL_TIMEOUT = timedelta(seconds=params["timeout_seconds"])
+    else:
+        OVERALL_TIMEOUT = timedelta(minutes=3)  # 3 minutes
 
     done = False
     start = dt.now()
@@ -405,7 +430,7 @@ async def to_jsonable_dict(obj):
     return pydantic.json.pydantic_encoder(obj)
 ####
 
-async def subservice_post(name, url, message, guid, asyncquery=False, params=None) -> (dict, int):
+async def subservice_post(name, url, message, guid, asyncquery=False, params={}) -> (dict, int):
     """
     launches a post request, returns the response.
     Assumes that the input and output are TRAPI.  This means that multistrider shouldn't go through here.`
@@ -684,7 +709,34 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     rokres = await robokop_infer(message, guid, question_qnode, answer_qnode)
     return rokres
 
-def get_key(predicate, qualifiers):
+def get_infer_parameters(input_message):
+    """Given an infer input message, return the parameters needed to run the infer.
+    input_id: the curie of the input node
+    predicate: the predicate of the inferred edge
+    qualifiers: the qualifiers of the inferred edge
+    source: the query node id of the source node
+    target: the query node id of the target node
+    source_input: True if the source node is the input node, False if the target node is the input node"""
+    for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
+        source = edge["subject"]
+        target = edge["object"]
+        predicate = edge["predicates"][0]
+        qc = edge.get("qualifier_constraints", [])
+        if len(qc) == 0:
+            qualifiers = {}
+        else:
+            qualifiers = {"qualifier_constraints": qc}
+    if ("ids" in input_message["message"]["query_graph"]["nodes"][source]) \
+            and (input_message["message"]["query_graph"]["nodes"][source]["ids"] is not None):
+        input_id = input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
+        source_input = True
+    else:
+        input_id = input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
+        source_input = False
+    #key = get_key(predicate, qualifiers)
+    return input_id, predicate, qualifiers, source, source_input, target
+
+def get_rule_key(predicate, qualifiers):
     keydict = {'predicate': predicate}
     keydict.update(qualifiers)
     return json.dumps(keydict,sort_keys=True)
@@ -692,23 +744,8 @@ def get_key(predicate, qualifiers):
 def expand_query(input_message, params, guid):
     #Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
     #          or the target has IDs, but not both. 4. The number of ids on the query node is 1.
-    for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
-        source = edge["subject"]
-        target = edge["object"]
-        predicate = edge["predicates"][0]
-        qc = edge.get("qualifier_constraints",[])
-        if len(qc) == 0:
-            qualifiers = {}
-        else:
-            qualifiers = { "qualifier_constraints": qc}
-    if ("ids" in input_message["message"]["query_graph"]["nodes"][source]) \
-            and (input_message["message"]["query_graph"]["nodes"][source]["ids"] is not None):
-        input_id= input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
-        source_input = True
-    else:
-        input_id= input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
-        source_input = False
-    key = get_key(predicate,qualifiers)
+    input_id, predicate, qualifiers, source, source_input, target = get_infer_parameters(input_message)
+    key = get_rule_key(predicate, qualifiers)
     #We want to run the non-inferred version of the query as well
     qg = deepcopy(input_message["message"]["query_graph"])
     for eid,edge in qg["edges"].items():
@@ -734,6 +771,9 @@ def expand_query(input_message, params, guid):
     return messages
 
 
+
+
+
 async def multi_strider(messages, params, guid):
     #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
@@ -742,7 +782,7 @@ async def multi_strider(messages, params, guid):
     #We don't want to do subservice_post, because that assumes TRAPI in and out.
     #it leads to confusion.
     #response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
-    responses = await post_with_callback(strider_url,messages,guid)
+    responses = await post_with_callback(strider_url,messages,guid,params)
 
     return responses
 
