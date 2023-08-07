@@ -234,17 +234,10 @@ async def post_with_callback(host_url, query, guid, params={}):
         # these requests should be very quick, if the external service is responsive, they should send back a quick
         # response and then we watch the queue. We give a short 1 min timeout.
         async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=60)) as client:
-            if params is None:
-                post_response = await client.post(
-                    host_url,
-                    json=query,
-                )
-            else:
-                post_response = await client.post(
-                    host_url,
-                    json=query,
-                    params=params,
-                )
+            post_response = await client.post(
+                host_url,
+                json=query,
+            )
         # check the response status.
         if post_response.status_code != 200:
             # queue isn't needed for failed service call
