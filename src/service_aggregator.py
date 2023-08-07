@@ -121,7 +121,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         del message["workflow"]
     else:
         if infer:
-            timeout_seconds = message.get("parameters", {}).get("timeout_seconds", 3 * 60)
+            timeout_seconds = (message.get("parameters") or {}).get("timeout_seconds")
+            timeout_seconds = timeout_seconds if type(timeout_seconds) is int else 3 * 60
             workflow_def = [
                 {"id": "lookup", "parameters": {"timeout_seconds": timeout_seconds}},
                 {"id": "overlay_connect_knodes"},
@@ -146,7 +147,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # Workflow will be a list of the functions, and the parameters if there are any
 
     results_cache = ResultsCache()
-    override_cache = message.get("parameters",{}).get("override_cache", False)
+    override_cache = (message.get("parameters") or {}).get("override_cache")
+    override_cache = override_cache if type(override_cache) is bool else False
     if infer:
         # We're going to cache infer queries, and we need to do that even if we're overriding the cache
         # because we need these values to post to the cache at the end.
@@ -164,7 +166,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     for op in workflow_def:
         try:
-            workflow.append((known_operations[op["id"]], op.get("parameters", {}), op["id"]))
+            workflow.append((known_operations[op["id"]], op.get("parameters") or {}, op["id"]))
         except KeyError:
             return f"Unknown Operation: {op}", 422
 
@@ -186,7 +188,7 @@ def is_end_message(message):
     return False
 
 
-async def post_with_callback(host_url, query, guid, params):
+async def post_with_callback(host_url, query, guid, params={}):
     """
     Post an asynchronous message.
 
@@ -273,10 +275,7 @@ async def collect_callback_responses(guid, num_queries, params={}):
     # Don't spend any more time than this assembling messages
     #OVERALL_TIMEOUT = timedelta(hours=1)  # 1 hour
     logger.info(f"{guid}: params: {params}")
-    if "timeout_seconds" in params:
-        OVERALL_TIMEOUT = timedelta(seconds=params["timeout_seconds"])
-    else:
-        OVERALL_TIMEOUT = timedelta(minutes=3)  # 3 minutes
+    OVERALL_TIMEOUT = timedelta(seconds=params.get("timeout_seconds") or 3 * 60)
 
     done = False
     start = dt.now()
