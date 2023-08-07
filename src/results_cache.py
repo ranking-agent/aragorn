@@ -18,20 +18,20 @@ class ResultsCache:
             password=redis_password,
         )
 
-    def get_query_key(self, input_id, predicate, qualifiers, source_input, caller):
-        keydict = {'predicate': predicate, 'source_input': source_input, 'input_id': input_id, 'caller': caller}
+    def get_query_key(self, input_id, predicate, qualifiers, source_input, caller, workflow):
+        keydict = {'predicate': predicate, 'source_input': source_input, 'input_id': input_id, 'caller': caller, 'workflow': workflow}
         keydict.update(qualifiers)
         return json.dumps(keydict, sort_keys=True)
 
-    def get_result(self, input_id, predicate, qualifiers, source_input, caller):
-        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller)
+    def get_result(self, input_id, predicate, qualifiers, source_input, caller, workflow):
+        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
         result = self.redis.get(key)
         if result is not None:
             result = json.loads(gzip.decompress(result))
         return result
 
 
-    def set_result(self, input_id, predicate, qualifiers, source_input, caller, final_answer):
-        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller)
-        
+    def set_result(self, input_id, predicate, qualifiers, source_input, caller, workflow, final_answer):
+        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
+
         self.redis.set(key, gzip.compress(json.dumps(final_answer).encode()))

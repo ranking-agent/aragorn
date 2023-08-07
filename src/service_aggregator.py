@@ -152,7 +152,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         # because we need these values to post to the cache at the end.
         input_id, predicate, qualifiers, source, source_input, target = get_infer_parameters(message)
         if not override_cache:
-            results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller)
+            results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller, workflow_def)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
                 return results, 200
@@ -174,7 +174,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     final_answer["workflow"] = workflow_def
 
     if infer:
-        results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, final_answer)
+        results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
 
     # return the answer
     return final_answer, status_code
