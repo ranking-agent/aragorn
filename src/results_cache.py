@@ -35,3 +35,6 @@ class ResultsCache:
         key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
 
         self.redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+    
+    def clear_cache(self):
+        self.redis.flushdb()
