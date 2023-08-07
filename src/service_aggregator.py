@@ -774,7 +774,7 @@ def expand_query(input_message, params, guid):
     qg = deepcopy(input_message["message"]["query_graph"])
     for eid,edge in qg["edges"].items():
         del edge["knowledge_type"]
-    messages = [{"message": {"query_graph":qg}}]
+    messages = [{"message": {"query_graph":qg}, "parameters": params}]
     #If we don't have any AMIE expansions, this will just generate the direct query
     for rule_def in AMIE_EXPANSIONS.get(key,[]):
         query_template = Template(json.dumps(rule_def["template"]))
@@ -788,7 +788,7 @@ def expand_query(input_message, params, guid):
             del query["query_graph"]["nodes"][target]["ids"]
         else:
             del query["query_graph"]["nodes"][source]["ids"]
-        message = {"message": query}
+        message = {"message": query, "parameters": params}
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
