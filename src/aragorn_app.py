@@ -11,11 +11,12 @@ import string
 from enum import Enum
 from reasoner_pydantic import Query as PDQuery, AsyncQuery as PDAsyncQuery, Response as PDResponse, AsyncQueryResponse, AsyncQueryStatusResponse
 from pydantic import BaseModel
-from fastapi import Body, FastAPI, BackgroundTasks, Path
+from fastapi import Body, FastAPI, BackgroundTasks, Path, HTTPException
 from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query, status_query
 from src.default_queries import default_input_sync, default_input_async
 from src.otel_config import configure_otel
+from src.results_cache import ResultsCache
 
 # declare the FastAPI details
 title = "ARAGORN"
@@ -54,6 +55,8 @@ logger = logging.getLogger(__name__)
 q_username = os.environ.get("QUEUE_USER", "guest")
 q_password = os.environ.get("QUEUE_PW", "guest")
 q_host = os.environ.get("QUEUE_HOST", "127.0.0.1")
+
+cache_password = os.environ.get("CACHE_PASSWORD", "supersecretpassword")
 
 # declare the directory where the async data files will exist
 queue_file_dir = "./queue-files"
@@ -179,6 +182,21 @@ async def status_query_handler(job_id: str = Path(
     )):
     """Checks the status of an asynchronous query operation."""
     return await status_query(job_id)
+
+
+class ClearCacheRequest(BaseModel):
+    pswd: str
+
+
+@ARAGORN_APP.post("/clear_cache", status_code=200, include_in_schema=False)
+def clear_redis_cache(request: ClearCacheRequest) -> dict:
+    """Clear the redis cache."""
+    if request.pswd == cache_password:
+        cache = ResultsCache()
+        cache.clear_cache()
+        return {"status": "success"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Password")
 
 
 ARAGORN_APP.openapi_schema = construct_open_api_schema(ARAGORN_APP, prefix="aragorn", description="ARAGORN: A fully-federated Translator ARA.")
