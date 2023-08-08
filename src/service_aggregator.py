@@ -121,10 +121,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         del message["workflow"]
     else:
         if infer:
-            timeout_seconds = (message.get("parameters") or {}).get("timeout_seconds")
-            timeout_seconds = timeout_seconds if type(timeout_seconds) is int else 3 * 60
             workflow_def = [
-                {"id": "lookup", "parameters": {"timeout_seconds": timeout_seconds}},
+                {"id": "lookup"},
                 {"id": "overlay_connect_knodes"},
                 {"id": "score"},
                 {"id": "filter_message_top_n", "parameters": {"max_results": 500}},
@@ -626,6 +624,8 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
     if not infer:
         return await strider(input_message, params, guid)
     # Now it's an infer query.
+    timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
+    params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
     messages = expand_query(input_message, params, guid)
     lookup_query_graph = messages[0]["message"]["query_graph"]
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
