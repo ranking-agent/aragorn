@@ -92,10 +92,10 @@ def match_results_to_query(results, query_message, query_source, query_target, q
     #Loop through the results and replace the source and target node ids with the input query node ids
     node_map = {results_source: query_source, results_target: query_target}
     for result in results["message"]["results"]:
-        for result_id, query_id in node_map:
-            result["node_bindings"][result_id] = result["node_bindings"].pop(query_id)
+        for result_id, query_id in node_map.items():
+            result["node_bindings"][query_id] = result["node_bindings"].pop(result_id)
         for analysis in result["analyses"]:
-            analysis["edge_bindings"][results_qedge_id] = analysis["edge_bindings"].pop(query_qedge_id)
+            analysis["edge_bindings"][query_qedge_id] = analysis["edge_bindings"].pop(results_qedge_id)
 
     return results
 
