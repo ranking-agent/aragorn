@@ -645,11 +645,12 @@ async def de_noneify(message):
 
 
 async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
+    timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
+    if timeout_seconds:
+        params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
     if not infer:
         return await strider(input_message, params, guid)
     # Now it's an infer query.
-    timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
-    params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
     messages = expand_query(input_message, params, guid)
     lookup_query_graph = messages[0]["message"]["query_graph"]
     nrules_per_batch = int(os.environ.get("MULTISTRIDER_BATCH_SIZE", 101))
@@ -709,7 +710,7 @@ async def strider(message, params, guid) -> (dict, int):
         strider_url += "asyncquery"
         asyncquery = True
 
-    response = await subservice_post("strider", strider_url, message, guid, asyncquery=asyncquery)
+    response = await subservice_post("strider", strider_url, message, guid, asyncquery=asyncquery, params=params)
 
     return response
 
@@ -791,7 +792,7 @@ def expand_query(input_message, params, guid):
     qg = deepcopy(input_message["message"]["query_graph"])
     for eid,edge in qg["edges"].items():
         del edge["knowledge_type"]
-    messages = [{"message": {"query_graph":qg}, "parameters": params}]
+    messages = [{"message": {"query_graph":qg}, "parameters": input_message.get("parameters") or {}}]
     #If we don't have any AMIE expansions, this will just generate the direct query
     for rule_def in AMIE_EXPANSIONS.get(key,[]):
         query_template = Template(json.dumps(rule_def["template"]))
@@ -805,7 +806,7 @@ def expand_query(input_message, params, guid):
             del query["query_graph"]["nodes"][target]["ids"]
         else:
             del query["query_graph"]["nodes"][source]["ids"]
-        message = {"message": query, "parameters": params}
+        message = {"message": query, "parameters": input_message.get("parameters") or {}}
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
