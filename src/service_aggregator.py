@@ -79,6 +79,27 @@ def examine_query(message):
     return infer, question_node, answer_node
 
 
+def match_results_to_query(results, query_message, query_source, query_target, query_qedge_id):
+    #Given a cached results and the input query, along the the query id for the source, target and edge
+    # rewrite the results to match the query.
+
+    #First, get the source, target, and qedge id's from the results
+    _, _, _, results_source, _, results_target, results_qedge_id = get_infer_parameters(results)
+
+    #Now replace the results query graph with the input query graph
+    results["message"]["query_graph"] = query_message["message"]["query_graph"]
+
+    #Loop through the results and replace the source and target node ids with the input query node ids
+    node_map = {results_source: query_source, results_target: query_target}
+    for result in results["message"]["results"]:
+        for result_id, query_id in node_map.items():
+            result["node_bindings"][query_id] = result["node_bindings"].pop(result_id)
+        for analysis in result["analyses"]:
+            analysis["edge_bindings"][query_qedge_id] = analysis["edge_bindings"].pop(results_qedge_id)
+
+    return results
+
+
 async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     """
     Performs a operation that calls numerous services including strider, aragorn-ranker and answer coalesce
@@ -150,11 +171,14 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     if infer:
         # We're going to cache infer queries, and we need to do that even if we're overriding the cache
         # because we need these values to post to the cache at the end.
-        input_id, predicate, qualifiers, source, source_input, target = get_infer_parameters(message)
+        input_id, predicate, qualifiers, source, source_input, target, qedge_id = get_infer_parameters(message)
         if not override_cache:
             results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller, workflow_def)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
+                # The results can't go verbatim.  While the essense of the query is the same as the cached result,
+                # the details may differ. In particular the names of the query nodes and edges may be different.
+                results = match_results_to_query(results, message, source, target, qedge_id)
                 return results, 200
             else:
                 logger.info(f"{guid}: Results cache miss")
@@ -736,6 +760,7 @@ def get_infer_parameters(input_message):
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
         source = edge["subject"]
         target = edge["object"]
+        query_edge = edge_id
         predicate = edge["predicates"][0]
         qc = edge.get("qualifier_constraints", [])
         if len(qc) == 0:
@@ -750,7 +775,7 @@ def get_infer_parameters(input_message):
         input_id = input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
         source_input = False
     #key = get_key(predicate, qualifiers)
-    return input_id, predicate, qualifiers, source, source_input, target
+    return input_id, predicate, qualifiers, source, source_input, target, query_edge
 
 def get_rule_key(predicate, qualifiers):
     keydict = {'predicate': predicate}
@@ -760,7 +785,7 @@ def get_rule_key(predicate, qualifiers):
 def expand_query(input_message, params, guid):
     #Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
     #          or the target has IDs, but not both. 4. The number of ids on the query node is 1.
-    input_id, predicate, qualifiers, source, source_input, target = get_infer_parameters(input_message)
+    input_id, predicate, qualifiers, source, source_input, target, qedge_id = get_infer_parameters(input_message)
     key = get_rule_key(predicate, qualifiers)
     #We want to run the non-inferred version of the query as well
     qg = deepcopy(input_message["message"]["query_graph"])
