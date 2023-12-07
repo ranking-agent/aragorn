@@ -35,6 +35,24 @@ class ResultsCache:
         key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
 
         self.redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+
+    def get_lookup_query_key(self, workflow, query_graph):
+        keydict = {'workflow': workflow, 'query_graph': query_graph}
+        return json.dumps(keydict, sort_keys=True)
+
+    def get_lookup_result(self, workflow, query_graph):
+        key = self.get_query_key(workflow, query_graph)
+        result = self.redis.get(key)
+        if result is not None:
+            result = json.loads(gzip.decompress(result))
+        return result
+
+
+    def set_lookup_result(self, workflow, query_graph, final_answer):
+        key = self.get_query_key(workflow, query_graph)
+
+        self.redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+
     
     def clear_cache(self):
         self.redis.flushdb()
