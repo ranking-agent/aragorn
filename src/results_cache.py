@@ -41,7 +41,7 @@ class ResultsCache:
         return json.dumps(keydict, sort_keys=True)
 
     def get_lookup_result(self, workflow, query_graph):
-        key = self.get_query_key(workflow, query_graph)
+        key = self.get_lookup_query_key(workflow, query_graph)
         result = self.redis.get(key)
         if result is not None:
             result = json.loads(gzip.decompress(result))
@@ -49,7 +49,7 @@ class ResultsCache:
 
 
     def set_lookup_result(self, workflow, query_graph, final_answer):
-        key = self.get_query_key(workflow, query_graph)
+        key = self.get_lookup_query_key(workflow, query_graph)
 
         self.redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
 
