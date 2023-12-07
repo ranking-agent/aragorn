@@ -187,7 +187,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         if not override_cache:
             try:
                 query_graph = message["query_graph"]
-            except:
+            except KeyError:
                 return f"No query graph", 422
             results = results_cache.get_lookup_result(workflow_def, query_graph)
             if results is not None:
