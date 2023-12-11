@@ -188,12 +188,23 @@ class ClearCacheRequest(BaseModel):
     pswd: str
 
 
-@ARAGORN_APP.post("/clear_cache", status_code=200, include_in_schema=False)
+@ARAGORN_APP.post("/clear_creative_cache", status_code=200, include_in_schema=False)
 def clear_redis_cache(request: ClearCacheRequest) -> dict:
     """Clear the redis cache."""
     if request.pswd == cache_password:
         cache = ResultsCache()
-        cache.clear_cache()
+        cache.clear_creative_cache()
+        return {"status": "success"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Password")
+
+
+@ARAGORN_APP.post("/clear_lookup_cache", status_code=200, include_in_schema=False)
+def clear_redis_cache(request: ClearCacheRequest) -> dict:
+    """Clear the redis cache."""
+    if request.pswd == cache_password:
+        cache = ResultsCache()
+        cache.clear_lookup_cache()
         return {"status": "success"}
     else:
         raise HTTPException(status_code=401, detail="Invalid Password")
