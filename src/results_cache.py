@@ -7,6 +7,7 @@ CACHE_HOST = os.environ.get("CACHE_HOST", "localhost")
 CACHE_PORT = os.environ.get("CACHE_PORT", "6379")
 CREATIVE_CACHE_DB = os.environ.get("CREATIVE_CACHE_DB", "0")
 LOOKUP_CACHE_DB = os.environ.get("LOOKUP_CACHE_DB", "1")
+CACHE_PASSWORD = os.environ.get("CACHE_PASSWORD", "")
 
 class ResultsCache:
     def __init__(
