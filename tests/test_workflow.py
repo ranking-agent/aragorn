@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+import redis
 from src.server import APP as APP
 from src import operations
 import os
@@ -7,11 +8,13 @@ import json
 from unittest.mock import patch
 from random import shuffle
 from src.process_db import init_db
+from tests.helpers.redisMock import redisMock
 
 client = TestClient(APP)
 jsondir = 'InputJson_1.2'
 
-def test_bad_ops():
+def test_bad_ops(monkeypatch):
+    monkeypatch.setattr(redis, "StrictRedis", redisMock)
     # get the location of the test file
     dir_path: str = os.path.dirname(os.path.realpath(__file__))
     test_filename = os.path.join(dir_path, jsondir, 'workflow_422.json')
@@ -25,8 +28,9 @@ def test_bad_ops():
     # was the request successful
     assert(response.status_code == 422)
 
-def test_lookup_only():
+def test_lookup_only(monkeypatch):
     """This has a workflow with a single op (lookup).  So the result should not have scores"""
+    monkeypatch.setattr(redis, "StrictRedis", redisMock)
     init_db()
     dir_path: str = os.path.dirname(os.path.realpath(__file__))
     test_filename = os.path.join(dir_path, jsondir, 'workflow_200.json')

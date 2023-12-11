@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+import redis
 from src.server import APP
 import os
 import json
@@ -7,6 +8,7 @@ from datetime import datetime as dt, timedelta
 from time import sleep
 from unittest.mock import patch
 from src.process_db import init_db
+from tests.helpers.redisMock import redisMock
 
 client = TestClient(APP)
 
@@ -46,7 +48,8 @@ def xtest_async(mock_callback):
     assert mock_callback.called
 
 
-def test_aragorn_wf():
+def test_aragorn_wf(monkeypatch):
+    monkeypatch.setattr(redis, "StrictRedis", redisMock)
     init_db()
     workflow_A1("aragorn")
 
@@ -296,7 +299,8 @@ def x_test_standup_2():
 
     assert found
 
-def test_null_results():
+def test_null_results(monkeypatch):
+    monkeypatch.setattr(redis, "StrictRedis", redisMock)
     init_db()
     #make sure that aragorn can handle cases where results is null (as opposed to missing)
     query= {
