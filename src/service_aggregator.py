@@ -165,6 +165,10 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
 
+    try:
+        query_graph = message["message"]["query_graph"]
+    except KeyError:
+        return f"No query graph", 422
     results_cache = ResultsCache()
     override_cache = (message.get("parameters") or {}).get("override_cache")
     override_cache = override_cache if type(override_cache) is bool else False
@@ -185,10 +189,6 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
                 logger.info(f"{guid}: Results cache miss")
     else:
         if not override_cache:
-            try:
-                query_graph = message["message"]["query_graph"]
-            except KeyError:
-                return f"No query graph", 422
             results = results_cache.get_lookup_result(workflow_def, query_graph)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
@@ -210,8 +210,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     if infer:
         results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
-    else: 
-        query_graph = message["query_graph"]
+    else:
         results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
     # return the answer
