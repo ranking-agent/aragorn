@@ -34,6 +34,11 @@ def test_merge_answer_creative_only():
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
+    #create kedges neccessary for parsing
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:1"] = create_pretend_knowledge_edge("MONDO:1234", "curie:3", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:2"] = create_pretend_knowledge_edge("curie:3", answer, "biolink:treats", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:4"] = create_pretend_knowledge_edge("MONDO:1234", "curie:8", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:8"] = create_pretend_knowledge_edge("curie:8", answer, "biolink:treats", "infores:kp1")
 
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
@@ -92,6 +97,11 @@ def test_merge_answer_creative_and_lookup():
     qnode_ids = ["input", "output"]
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
+    #create kedges neccessary for parsing
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:1"] = create_pretend_knowledge_edge("MONDO:1234", "curie:3", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:2"] = create_pretend_knowledge_edge("curie:3", answer, "biolink:treats", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:4"] = create_pretend_knowledge_edge("MONDO:1234", "curie:8", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:8"] = create_pretend_knowledge_edge("curie:8", answer, "biolink:treats", "infores:kp1")
     results = [result1, result2]
     lookup = [create_result({"input":"MONDO:1234", "output":answer}, {"e":"lookup:1"}).dict(exclude_none=True)]
     for n, ke_id in enumerate(["lookup:1"]):

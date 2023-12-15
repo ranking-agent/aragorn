@@ -210,7 +210,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     if infer:
         results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
-    else:
+    elif {"id": "lookup"} in workflow_def or override_cache:
         results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
     # return the answer
