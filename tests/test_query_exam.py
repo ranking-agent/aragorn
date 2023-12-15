@@ -34,6 +34,10 @@ def test_merge_answer_creative_only():
     result1 = create_result({"input":"MONDO:1234", "output":answer, "node2": "curie:3"}, {"g":"KEDGE:1", "f":"KEDGE:2"}).to_dict()
     result2 = create_result({"input":"MONDO:1234", "output":answer, "nodeX": "curie:8"}, {"q":"KEDGE:4", "z":"KEDGE:8"}).to_dict()
     results = [result1, result2]
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:1"] = create_pretend_knowledge_edge("MONDO:1234", "MONDO:4567", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:2"] = create_pretend_knowledge_edge("MONDO:4567", answer, "biolink:treats", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:1"] = create_pretend_knowledge_edge("MONDO:1234", "MONDO:7890", "biolink:related_to", "infores:kp1")
+    result_message["message"]["knowledge_graph"]["edges"]["KEDGE:1"] = create_pretend_knowledge_edge("MONDO:7890", answer, "biolink:treats", "infores:kp1")
 
     #In reality the results will be in the message and we want to be sure that they get cleared out.
     result_message["message"]["results"] = results
