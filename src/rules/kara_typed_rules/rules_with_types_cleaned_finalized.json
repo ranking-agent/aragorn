@@ -4065,7 +4065,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:BiologicalEntity"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -4662,7 +4662,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:NamedThing"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -5117,59 +5117,6 @@
             }
         },
         {
-            "Rule": "?f  biolink:affects_response_to  ?a  ?b  biolink:contributes_to  ?f   => ?a  increased_activity_biolink:affects  ?b",
-            "Head Coverage": "0.000219675",
-            "Std Confidence": "0.072847682",
-            "PCA Confidence": "0.089430894",
-            "Positive Examples": "11",
-            "Body size": "151",
-            "PCA Body size": "123",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$source",
-                            "predicates": [
-                                "biolink:affects_response_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?b  biolink:biomarker_for  ?f  ?a  biolink:interacts_with  ?f   => ?a  increased_activity_biolink:affects  ?b",
             "Head Coverage": "0.000718936",
             "Std Confidence": "0.061538462",
@@ -5453,73 +5400,6 @@
                                         {
                                             "qualifier_type_id": "biolink:object_direction_qualifier",
                                             "qualifier_value": "decreased"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "Rule": "?f  biolink:contributes_to  ?b  ?a  increased_activity_or_abundance_biolink:affects  ?f   => ?a  increased_activity_biolink:affects  ?b",
-            "Head Coverage": "0.030754483",
-            "Std Confidence": "0.048176187",
-            "PCA Confidence": "0.060255106",
-            "Positive Examples": "1540",
-            "Body size": "31966",
-            "PCA Body size": "25558",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$target",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$source",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:affects"
-                            ],
-                            "qualifier_constraints": [
-                                {
-                                    "qualifier_set": [
-                                        {
-                                            "qualifier_type_id": "biolink:object_aspect_qualifier",
-                                            "qualifier_value": "activity_or_abundance"
-                                        },
-                                        {
-                                            "qualifier_type_id": "biolink:object_direction_qualifier",
-                                            "qualifier_value": "increased"
                                         }
                                     ]
                                 }
@@ -6157,7 +6037,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:BiologicalEntity"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -6907,59 +6787,6 @@
             }
         },
         {
-            "Rule": "?a  biolink:binds  ?f  ?b  biolink:contributes_to  ?f   => ?a  decreased_activity_biolink:affects  ?b",
-            "Head Coverage": "0.000072254",
-            "Std Confidence": "0.302325581",
-            "PCA Confidence": "0.65",
-            "Positive Examples": "26",
-            "Body size": "86",
-            "PCA Body size": "40",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "$source",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:binds"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?a  biolink:binds  ?b   => ?a  decreased_activity_biolink:affects  ?b",
             "Head Coverage": "0.010549016",
             "Std Confidence": "0.242633429",
@@ -7296,59 +7123,6 @@
             }
         },
         {
-            "Rule": "?f  biolink:affects_response_to  ?a  ?b  biolink:contributes_to  ?f   => ?a  decreased_activity_biolink:affects  ?b",
-            "Head Coverage": "0.000047243",
-            "Std Confidence": "0.112582781",
-            "PCA Confidence": "0.129770992",
-            "Positive Examples": "17",
-            "Body size": "151",
-            "PCA Body size": "131",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$source",
-                            "predicates": [
-                                "biolink:affects_response_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?e  decreased_activity_or_abundance_biolink:affects  ?b  ?e  biolink:similar_to  ?a   => ?a  decreased_activity_biolink:affects  ?b",
             "Head Coverage": "0.000052801",
             "Std Confidence": "0.104395604",
@@ -7514,7 +7288,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:NamedThing"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -7648,7 +7422,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:BiologicalEntity"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -8621,126 +8395,6 @@
             }
         },
         {
-            "Rule": "?f  biolink:affects_response_to  ?a  ?b  biolink:contributes_to  ?f   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
-            "Head Coverage": "0.000284129",
-            "Std Confidence": "0.112582781",
-            "PCA Confidence": "0.137096774",
-            "Positive Examples": "17",
-            "Body size": "151",
-            "PCA Body size": "124",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$source",
-                            "predicates": [
-                                "biolink:affects_response_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "Rule": "?e  biolink:contributes_to  ?a  ?e  increased_synthesis_biolink:affects  ?b   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
-            "Head Coverage": "0.000350983",
-            "Std Confidence": "0.109947644",
-            "PCA Confidence": "1",
-            "Positive Examples": "21",
-            "Body size": "191",
-            "PCA Body size": "21",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "e": {
-                            "categories": [
-                                "biolink:NamedThing"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "e",
-                            "object": "$source",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "e",
-                            "object": "$target",
-                            "predicates": [
-                                "biolink:affects"
-                            ],
-                            "qualifier_constraints": [
-                                {
-                                    "qualifier_set": [
-                                        {
-                                            "qualifier_type_id": "biolink:object_aspect_qualifier",
-                                            "qualifier_value": "synthesis"
-                                        },
-                                        {
-                                            "qualifier_type_id": "biolink:object_direction_qualifier",
-                                            "qualifier_value": "increased"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?b  decreased_metabolic_processing_biolink:affects  ?a   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
             "Head Coverage": "0.000233989",
             "Std Confidence": "0.104477612",
@@ -9206,73 +8860,6 @@
             }
         },
         {
-            "Rule": "?f  biolink:contributes_to  ?b  ?a  increased_activity_or_abundance_biolink:affects  ?f   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
-            "Head Coverage": "0.02971654",
-            "Std Confidence": "0.055621598",
-            "PCA Confidence": "0.055621598",
-            "Positive Examples": "1778",
-            "Body size": "31966",
-            "PCA Body size": "31966",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$target",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$source",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:affects"
-                            ],
-                            "qualifier_constraints": [
-                                {
-                                    "qualifier_set": [
-                                        {
-                                            "qualifier_type_id": "biolink:object_aspect_qualifier",
-                                            "qualifier_value": "activity_or_abundance"
-                                        },
-                                        {
-                                            "qualifier_type_id": "biolink:object_direction_qualifier",
-                                            "qualifier_value": "increased"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?a  biolink:similar_to  ?f  ?f  decreased_molecular_interaction_biolink:affects  ?b   => ?a  increased_activity_or_abundance_biolink:affects  ?b",
             "Head Coverage": "0.001370504",
             "Std Confidence": "0.050399508",
@@ -9560,7 +9147,7 @@
                         },
                         "f": {
                             "categories": [
-                                "biolink:BiologicalEntity"
+                                "biolink:DiseaseOrPhenotypicFeature"
                             ]
                         }
                     },
@@ -10365,59 +9952,6 @@
             }
         },
         {
-            "Rule": "?a  biolink:binds  ?f  ?b  biolink:contributes_to  ?f   => ?a  decreased_activity_or_abundance_biolink:affects  ?b",
-            "Head Coverage": "0.000071122",
-            "Std Confidence": "0.302325581",
-            "PCA Confidence": "0.65",
-            "Positive Examples": "26",
-            "Body size": "86",
-            "PCA Body size": "40",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "$source",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:binds"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
             "Rule": "?b  biolink:affects_response_to  ?a  ?a  biolink:interacts_with  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b",
             "Head Coverage": "0.000054709",
             "Std Confidence": "0.277777778",
@@ -10857,59 +10391,6 @@
                             "object": "f",
                             "predicates": [
                                 "biolink:directly_physically_interacts_with"
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "Rule": "?f  biolink:affects_response_to  ?a  ?b  biolink:contributes_to  ?f   => ?a  decreased_activity_or_abundance_biolink:affects  ?b",
-            "Head Coverage": "0.000054709",
-            "Std Confidence": "0.132450331",
-            "PCA Confidence": "0.151515152",
-            "Positive Examples": "20",
-            "Body size": "151",
-            "PCA Body size": "132",
-            "Functional variable": "?a",
-            "template": {
-                "query_graph": {
-                    "nodes": {
-                        "$source": {
-                            "ids": [
-                                "$source_id"
-                            ],
-                            "categories": [
-                                "biolink:ChemicalEntity"
-                            ]
-                        },
-                        "$target": {
-                            "ids": [
-                                "$target_id"
-                            ],
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        },
-                        "f": {
-                            "categories": [
-                                "biolink:Gene"
-                            ]
-                        }
-                    },
-                    "edges": {
-                        "edge_0": {
-                            "subject": "f",
-                            "object": "$source",
-                            "predicates": [
-                                "biolink:affects_response_to"
-                            ]
-                        },
-                        "edge_1": {
-                            "subject": "$target",
-                            "object": "f",
-                            "predicates": [
-                                "biolink:contributes_to"
                             ]
                         }
                     }
