@@ -29,5 +29,7 @@ x ?b  activity_or_abundance_biolink:affects  ?a  ?a  increased_activity_or_abund
 x ?b  biolink:affects_response_to  ?a  ?a  increased_activity_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
 "?b  biolink:increases_response_to  ?a  ?a  increased_activity_or_abundance_biolink:affects  ?b   => ?a  decreased_activity_or_abundance_biolink:affects  ?b
 
+Subsequently removed several rules or modified the node types where "contributes_to" was involved in chemical-gene rules.
+
 
 This process is obviously roundabout and we are going to clarify it in the next round of rule minings.
