@@ -888,6 +888,16 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer, robokop):
             {
                 "attribute_type_id": "biolink:support_graphs",
                 "value": aux_graph_ids
+            },
+            {
+                "attribute_type_id": "biolink:agent_type",
+                "value": "computational_model",
+                "attribute_source": source
+            },
+            {
+                "attribute_type_id": "biolink:knowledge_level",
+                "value": "prediction",
+                "attribute_source": source
             }
         ],
         # Aragorn is the primary ks because aragorn inferred the existence of this edge.
