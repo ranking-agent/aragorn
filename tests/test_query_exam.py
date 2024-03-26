@@ -190,6 +190,16 @@ def test_add_knowledge_edge():
             {
                 "attribute_type_id": "biolink:support_graphs",
                 "value": aux_graph_ids
+            },
+            {
+                'attribute_source': 'infores:robokop',
+                'attribute_type_id': 'biolink:agent_type',
+                'value': 'computational_model'
+            },
+            {
+                'attribute_source': 'infores:robokop',
+                'attribute_type_id': 'biolink:knowledge_level',
+                'value': 'prediction'
             }
         ]
     #Does it validate?
