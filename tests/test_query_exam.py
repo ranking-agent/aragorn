@@ -10,19 +10,19 @@ def create_result_graph():
     query_graph = {"nodes": {"input": {"ids": ["MONDO:1234"]}, "output": {"categories": ["biolink:ChemicalEntity"]}},
         "edges": {"e": {"subject": "output", "object": "input", "predicates": ["biolink:treats"]}}}
     result_message = {"query_graph": query_graph, "knowledge_graph": {"nodes":{}, "edges":{}}, "auxiliary_graphs": set(), "results": []}
-    pydantic_message = Response(**{"message":result_message})
+    pydantic_message = Response(**{"message":result_message, "logs": []})
     return pydantic_message
 
 def create_result(node_bindings: dict[str,str], edge_bindings: dict[str,str]) -> Result:
     """Pretend that we've had a creative mode query, and then broken it into rules.  THose rules run as individual
     queries in strider or robokop, and this is a result."""
-    analysis = Analysis(edge_bindings = {k:[EdgeBinding(id=v)] for k,v in edge_bindings.items()},resource_id="infores:KP")
-    result = Result(node_bindings = {k:[NodeBinding(id=v)] for k,v in node_bindings.items()}, analyses = set([analysis]))
+    analysis = Analysis(edge_bindings = {k:[EdgeBinding(id=v, attributes=[])] for k,v in edge_bindings.items()},resource_id="infores:KP")
+    result = Result(node_bindings = {k:[NodeBinding(id=v, attributes=[])] for k,v in node_bindings.items()}, analyses = set([analysis]))
     return result
 
 def create_pretend_knowledge_edge(subject, object, predicate, infores):
     """Create a pretend knowledge edge."""
-    ke = {"subject":subject, "object":object, "predicate":predicate, "sources":[{"resource_id":infores, "resource_role": "primary_knowledge_source"}]}
+    ke = {"subject":subject, "object":object, "predicate":predicate, "sources":[{"resource_id":infores, "resource_role": "primary_knowledge_source"}], "attributes": []}
     return ke
 
 def test_merge_answer_creative_only():
@@ -85,7 +85,7 @@ def test_merge_answer_lookup_only():
     assert len(result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]) == 1
     # e is the name of the query edge defined in create_result_graph()
     assert "e" in result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]
-    assert result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"] == [{"id":"lookup:1"}, {"id":"lookup:2"}]
+    assert result_message["message"]["results"][0]["analyses"][0]["edge_bindings"]["e"] == [{"id":"lookup:1", "attributes": []}, {"id":"lookup:2", "attributes": []}]
     assert "auxiliary_graphs" not in result_message
     Response.parse_obj(result_message)
 
@@ -130,7 +130,7 @@ def create_3hop_query () -> Response:
                                 "edge_1": { "subject": "i", "object": "e", "predicates": [ "biolink:has_input" ] },
                                 "edge_2": { "subject": "e", "object": "disease", "predicates": [ "biolink:treats" ] } } }
     result_message = {"query_graph": query_graph, "knowledge_graph": {"nodes": {}, "edges": {}}, "auxiliary_graphs": set(), "results": []}
-    pydantic_message = Response(**{"message": result_message})
+    pydantic_message = Response(**{"message": result_message, "logs": []})
     return pydantic_message
 
 
@@ -162,8 +162,8 @@ async def test_filter_repeats():
 
 def test_create_aux_graph():
     """Given an analysis object with multiple edge bindings, test that create_aux_graph() returns a valid aux graph."""
-    eb1 = EdgeBinding(id = 'eb1')
-    eb2 = EdgeBinding(id = 'eb2')
+    eb1 = EdgeBinding(id = 'eb1', attributes=[])
+    eb2 = EdgeBinding(id = 'eb2', attributes=[])
     analysis = Analysis(resource_id = "example.com", edge_bindings = {"qedge1":[eb1], "qedge2":[eb2]})
     agid, aux_graph = create_aux_graph(analysis.to_dict())
     assert len(agid) == 36

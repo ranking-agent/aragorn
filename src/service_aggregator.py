@@ -170,7 +170,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     except KeyError:
         return f"No query graph", 422
     results_cache = ResultsCache()
-    override_cache = (message.get("parameters") or {}).get("override_cache")
+    override_cache = message.get("bypass_cache", False)
     override_cache = override_cache if type(override_cache) is bool else False
     results = None
     if infer:
@@ -380,6 +380,21 @@ def has_unique_nodes(result):
         seen.add(knode_ids)
     return True
 
+async def filter_promiscuous_results(response,guid):
+    """We have some rules like A<-treats-B-part_of->C<-part_of-D.   This is saying B treats A, and D is like
+    B (because they are both part of C).  This isn't the worst rule in the world, we find it statistically
+    useful.  But, there are Cs that contain lllllooooootttttssss of stuff, and it creates a lot of bad results.
+    Not only are they bad, but they are basically the same in terms of score, so we create a lot of ties.
+    We are taking some approaches to fixing this in ranking, but really the results are just terrible, let's
+    get rid of them, but distinguish cases where the rule is doing something interesting from when it is not.
+    And note that "part_of" is not the only rule that follows this similarity-style pattern.   The difference is
+    basically how many times C occurs.
+    What we'd really like to do is not use promiscuous nodes in the C spot (or other places really).  But we
+    don't have a promiscuity score for the nodes, and can't really get one. """
+    # Hopefully we have the query graph at this point?  I know we were loosing them at some point...
+    print(response["message"]["query_graph"])
+    print(len(response["message"]["results"]))
+
 async def filter_repeated_nodes(response,guid):
     """We have some rules that include e.g. 2 chemicals.   We don't want responses in which those two
     are the same.   If you have A-B-A-C then what shows up in the ui is B-A-C which makes no sense."""
@@ -390,6 +405,8 @@ async def filter_repeated_nodes(response,guid):
     response["message"]["results"] = results
     if len(results) != original_result_count:
         await filter_kgraph_orphans(response,{},guid)
+
+
 
 async def check_for_messages(guid, num_queries, num_previously_received=0):
     """Check for messages on the queue.  Return a list of responses.  This does not care if these
@@ -690,6 +707,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
             if "knowledge_graph" not in rmessage["message"] or "results" not in rmessage["message"]:
                 continue
             await filter_repeated_nodes(rmessage, guid)
+            #await filter_promiscuous_results(rmessage, guid)
             result_messages.append(rmessage)
     logger.info(f"{guid}: strider complete")
     #Clean out the repeat node stuff
@@ -712,7 +730,7 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 async def strider(message, params, guid) -> (dict, int):
     # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.5/")
     #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
@@ -756,7 +774,7 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     # For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
-        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.4/")
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.5/")
         return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
 
     # It's an infer, just look it up
@@ -831,7 +849,7 @@ def expand_query(input_message, params, guid):
 
 async def multi_strider(messages, params, guid):
     #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.5/")
 
     strider_url += "multiquery"
     #We don't want to do subservice_post, because that assumes TRAPI in and out.
@@ -847,7 +865,7 @@ def create_aux_graph(analysis):
     Look through the analysis edge bindings, get all the knowledge edges, and put them in an aux graph.
     Give it a random uuid as an id."""
     aux_graph_id = str(uuid.uuid4())
-    aux_graph = { "edges": [] }
+    aux_graph = { "edges": [] , "attributes": []}
     for edge_id, edgelist in analysis["edge_bindings"].items():
         for edge in edgelist:
             aux_graph["edges"].append(edge["id"])
@@ -997,7 +1015,7 @@ def merge_answer(result_message, answer, results, qnode_ids, robokop=False):
         source = "infores:aragorn"
     analysis = {
         "resource_id": source,
-        "edge_bindings": {qedge_id:[ { "id":kid } for kid in knowledge_edge_ids ] }
+        "edge_bindings": {qedge_id:[ { "id":kid, "attributes": [] } for kid in knowledge_edge_ids ] }
                 }
     mergedresult["analyses"].append(analysis)
 
@@ -1052,7 +1070,7 @@ async def make_one_request(client, automat_url, message, sem):
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.4/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.5/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
@@ -1182,7 +1200,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
         with open("to_omni.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.5/")}omnicorp_overlay'
 
     rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
 
@@ -1205,7 +1223,7 @@ async def score(message, params, guid) -> (dict, int):
         with open("to_score.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.5/")
 
     score_url = f"{ranker_url}score"
     return await subservice_post("score", score_url, message, guid)

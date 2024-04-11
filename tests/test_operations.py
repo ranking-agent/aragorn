@@ -8,13 +8,13 @@ def create_message():
         "nodes": {"input": {"ids": ["MONDO:1234"]}, "output": {"categories": ["biolink:ChemicalEntity"]}},
         "edges": {"e": {"subject": "output", "object": "input", "predicates": ["biolink:treats"]}}}
     result_message = {"query_graph": query_graph,
-        "knowledge_graph": {"nodes": {"MONDO:1234":{"categories":["biolink:Disease"]}}, "edges": {}},
+        "knowledge_graph": {"nodes": {"MONDO:1234":{"categories":["biolink:Disease"], "attributes": []}}, "edges": {}},
         "auxiliary_graphs": {}, "results": []}
     return result_message
 
 def add_new_node(message, new_nodes):
     newnode_id = f"node_{len(message['knowledge_graph']['nodes'])}"
-    node = {"categories": ["biolink:NamedThing"]}
+    node = {"categories": ["biolink:NamedThing"], "attributes": []}
     message["knowledge_graph"]["nodes"][newnode_id] = node
     new_nodes.add(newnode_id)
     return newnode_id
@@ -22,14 +22,15 @@ def add_new_node(message, new_nodes):
 def add_new_edge(message, new_edges, subject, object):
     new_edge_id = f"edge_{len(message['knowledge_graph']['edges'])}"
     new_edge = {"subject": subject, "object": object, "predicate": "biolink:blahblah",
-                "sources": [{"resource_id": "infores:madeup", "resource_role":"primary_knowledge_source"}]}
+                "sources": [{"resource_id": "infores:madeup", "resource_role":"primary_knowledge_source"}],
+                "attributes": []}
     message["knowledge_graph"]["edges"][new_edge_id] = new_edge
     new_edges.add(new_edge_id)
     return new_edge_id
 
 def add_new_auxgraph(message, new_auxgraphs, edge1_id, edge2_id):
     new_auxgraph_id = f"auxgraph_{len(message['auxiliary_graphs'])}"
-    new_auxgraph = {"edges": [edge1_id, edge2_id]}
+    new_auxgraph = {"edges": [edge1_id, edge2_id], "attributes": []}
     message["auxiliary_graphs"][new_auxgraph_id] = new_auxgraph
     return new_auxgraph_id
 
@@ -56,12 +57,12 @@ def add_result(message, scores=[0.5]):
     new_auxgraphs = set()
     #Add the result with a new answer node
     newnode_id = add_new_node(message, new_nodes)
-    result = {"node_bindings": {"input":[{"id":DISEASE}], "output": [{"id": newnode_id}]}, "analyses": []}
+    result = {"node_bindings": {"input":[{"id":DISEASE, "attributes": []}], "output": [{"id": newnode_id, "attributes":[]} ]}, "analyses": []}
     message["results"].append(result)
     for score in scores:
         #Make an analysis, add an edge_binding to a new creative edge
         new_edge_id = add_new_edge(message, new_edges, newnode_id, DISEASE)
-        analysis = {"edge_bindings": {"e": [{"id": new_edge_id}]}, "score": score, "resource_id": "infores:madeup"}
+        analysis = {"edge_bindings": {"e": [{"id": new_edge_id, "attributes": []}]}, "score": score, "resource_id": "infores:madeup"}
         #Add a support graph to the creative edge
         new_auxgraph_id = add_two_hop(message, new_edges, new_nodes, new_auxgraphs,  DISEASE, newnode_id)
         add_support_graph_to_edge(message, new_auxgraph_id, new_edge_id)
@@ -86,7 +87,7 @@ async def test_deorphaning():
     #Now remove the first result
     message["results"] = message["results"][1:]
     #remove orphans
-    response = {"message": message}
+    response = {"message": message, "logs": []}
     pdresponse = Response(**response)
     await filter_kgraph_orphans(response,{}, "")
     #Make sure that the nodes and edges from the first result are gone
