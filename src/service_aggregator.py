@@ -785,7 +785,7 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 async def strider(message, params, guid, bypass_cache) -> (dict, int):
     # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.5/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
     #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
@@ -803,7 +803,7 @@ async def strider(message, params, guid, bypass_cache) -> (dict, int):
 
 
 async def normalize_qgraph_ids(m):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_nodes'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")}get_normalized_nodes'
     qnodes = m["message"]["query_graph"]["nodes"]
     qnode_ids = set()
     for qid, qnode in qnodes.items():
@@ -905,7 +905,7 @@ def expand_query(input_message, params, guid):
 
 async def multi_strider(messages, params, guid, bypass_cache):
     #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.5/")
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     strider_url += "multiquery"
     #We don't want to do subservice_post, because that assumes TRAPI in and out.
@@ -1228,7 +1228,7 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/coalesce/")}{coalesce_type}'
     # url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
