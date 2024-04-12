@@ -185,7 +185,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         # We're going to cache infer queries, and we need to do that even if we're overriding the cache
         # because we need these values to post to the cache at the end.
         input_id, predicate, qualifiers, source, source_input, target, qedge_id = get_infer_parameters(message)
-        if not read_from_cache:
+        if read_from_cache:
             results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller, workflow_def)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
@@ -196,7 +196,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             else:
                 logger.info(f"{guid}: Results cache miss")
     else:
-        if not read_from_cache:
+        if read_from_cache:
             results = results_cache.get_lookup_result(workflow_def, query_graph)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
