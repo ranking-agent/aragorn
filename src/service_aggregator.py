@@ -121,7 +121,6 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
 
     #we grab this stuff here so we can get it into lookup
     bypass_cache = message.get("bypass_cache", False)
-    bypass_cache = bypass_cache if type(bypass_cache) is bool else False
     overwrite_cache = (message.get("parameters") or {}).get("overwrite_cache", False)
     overwrite_cache = overwrite_cache if type(overwrite_cache) is bool else False
 
@@ -174,7 +173,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
 
-    read_from_cache = bypass_cache or overwrite_cache
+    read_from_cache = not (bypass_cache or overwrite_cache)
 
     try:
         query_graph = message["message"]["query_graph"]
@@ -217,10 +216,12 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # return the workflow def so that the caller can see what we did
     final_answer["workflow"] = workflow_def
 
-    if overwrite_cache:
+    # If we got here, we recalculated (otherwise we would have returned already).
+    # so we want to write to the cache if bypass cache is false or overwrite_cache is true
+    if overwrite_cache or (not bypass_cache):
         if infer:
             results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
-        elif {"id": "lookup"} in workflow_def or bypass_cache:
+        elif {"id": "lookup"} in workflow_def:
             results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
     # return the answer
@@ -784,9 +785,7 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 
 async def strider(message, params, guid, bypass_cache) -> (dict, int):
-    # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
 
     # select the type of query post. "test" will come from the tester
     if "test" in message:
@@ -830,7 +829,7 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     # For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
-        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.5/")
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/")
         return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
 
     # It's an infer, just look it up
@@ -904,7 +903,6 @@ def expand_query(input_message, params, guid):
 
 
 async def multi_strider(messages, params, guid, bypass_cache):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     strider_url += "multiquery"
@@ -1126,7 +1124,7 @@ async def make_one_request(client, automat_url, message, sem):
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.5/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
@@ -1229,7 +1227,6 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     :return:
     """
     url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/coalesce/")}{coalesce_type}'
-    # url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
@@ -1258,7 +1255,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
         with open("to_omni.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.5/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/")}omnicorp_overlay'
 
     rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
 
@@ -1281,7 +1278,7 @@ async def score(message, params, guid) -> (dict, int):
         with open("to_score.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.5/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/")
 
     score_url = f"{ranker_url}score"
     return await subservice_post("score", score_url, message, guid)
