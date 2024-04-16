@@ -1,4 +1,6 @@
 """Literature co-occurrence support."""
+from itertools import combinations
+
 import aio_pika
 import json
 import logging
@@ -116,12 +118,18 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
         print(e)
         return None, 500
 
+
+    #we grab this stuff here so we can get it into lookup
+    bypass_cache = message.get("bypass_cache", False)
+    overwrite_cache = (message.get("parameters") or {}).get("overwrite_cache", False)
+    overwrite_cache = overwrite_cache if type(overwrite_cache) is bool else False
+
     # A map from operations advertised in our x-trapi to functions
     # This is to functions rather than e.g. service urls because we may combine multiple calls into one op.
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
     known_operations = {
-        "lookup": partial(lookup, caller=caller, infer=infer, answer_qnode=answer_qnode, question_qnode=question_qnode),
+        "lookup": partial(lookup, caller=caller, infer=infer, answer_qnode=answer_qnode, question_qnode=question_qnode, bypass_cache=bypass_cache),
         "enrich_results": partial(answercoalesce, coalesce_type=coalesce_type),
         "overlay_connect_knodes": omnicorp,
         "score": score,
@@ -165,19 +173,19 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
 
+    read_from_cache = not (bypass_cache or overwrite_cache)
+
     try:
         query_graph = message["message"]["query_graph"]
     except KeyError:
         return f"No query graph", 422
     results_cache = ResultsCache()
-    override_cache = (message.get("parameters") or {}).get("override_cache")
-    override_cache = override_cache if type(override_cache) is bool else False
     results = None
     if infer:
         # We're going to cache infer queries, and we need to do that even if we're overriding the cache
         # because we need these values to post to the cache at the end.
         input_id, predicate, qualifiers, source, source_input, target, qedge_id = get_infer_parameters(message)
-        if not override_cache:
+        if read_from_cache:
             results = results_cache.get_result(input_id, predicate, qualifiers, source_input, caller, workflow_def)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
@@ -188,7 +196,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             else:
                 logger.info(f"{guid}: Results cache miss")
     else:
-        if not override_cache:
+        if read_from_cache:
             results = results_cache.get_lookup_result(workflow_def, query_graph)
             if results is not None:
                 logger.info(f"{guid}: Returning results cache lookup")
@@ -208,10 +216,13 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # return the workflow def so that the caller can see what we did
     final_answer["workflow"] = workflow_def
 
-    if infer:
-        results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
-    elif {"id": "lookup"} in workflow_def or override_cache:
-        results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
+    # If we got here, we recalculated (otherwise we would have returned already).
+    # so we want to write to the cache if bypass cache is false or overwrite_cache is true
+    if overwrite_cache or (not bypass_cache):
+        if infer:
+            results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
+        elif {"id": "lookup"} in workflow_def:
+            results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
     # return the answer
     return final_answer, status_code
@@ -223,7 +234,7 @@ def is_end_message(message):
     return False
 
 
-async def post_with_callback(host_url, query, guid, params={}):
+async def post_with_callback(host_url, query, guid, params={}, bypass_cache=False):
     """
     Post an asynchronous message.
 
@@ -254,9 +265,11 @@ async def post_with_callback(host_url, query, guid, params={}):
         # make sure there is a place for the trapi log messages
         if "logs" not in query:
             query["logs"] = []
+        query["bypass_cache"] = bypass_cache
     else:
         for qname, individual_query in query.items():
             individual_query["callback"] = callback_url
+            individual_query["bypass_cache"] = bypass_cache
             if "logs" not in individual_query:
                 individual_query["logs"] = []
         num_queries = len(query)
@@ -380,6 +393,64 @@ def has_unique_nodes(result):
         seen.add(knode_ids)
     return True
 
+async def filter_promiscuous_results(response,guid):
+    """We have some rules like A<-treats-B-part_of->C<-part_of-D.   This is saying B treats A, and D is like
+    B (because they are both part of C).  This isn't the worst rule in the world, we find it statistically
+    useful.  But, there are Cs that contain lllllooooootttttssss of stuff, and it creates a lot of bad results.
+    Not only are they bad, but they are basically the same in terms of score, so we create a lot of ties.
+    We are taking some approaches to fixing this in ranking, but really the results are just terrible, let's
+    get rid of them, but distinguish cases where the rule is doing something interesting from when it is not.
+    And note that "part_of" is not the only rule that follows this similarity-style pattern.   The difference is
+    basically how many times C occurs.
+    What we'd really like to do is not use promiscuous nodes in the C spot (or other places really).  But we
+    don't have a promiscuity score for the nodes, and can't really get one. """
+    #First, we need to know if we have too many results, and if it's the right kind of query
+    MAX_C = 10
+    if len(response["message"]["results"]) < MAX_C:
+        return
+    prom_qnodes = get_promiscuous_qnodes(response)
+    #This is a dictionary from bound knodes to the index of their result
+    prom_counter = defaultdict(list)
+    #There should only be one such node
+    for qnode in prom_qnodes:
+        #How many distinct results have the same bozo in this spot?
+        for result_i, result in enumerate(response["message"]["results"]):
+            for binding in result["node_bindings"][qnode]:
+                knode = binding["id"]
+                prom_counter[knode].append(result_i)
+        # If there's too many results with the same knode in one of these spots,then they gotta go.
+        for knode, mapped_results in prom_counter.items():
+            if len(mapped_results) > MAX_C:
+                for index in reversed(mapped_results):
+                    del response["message"]["results"][index]
+
+
+async def get_promiscuous_qnodes(response):
+    """We have some rules like A<-treats-B-part_of->C<-part_of-D.  Figure out if this qgraph is like that and return
+    C if it is"""
+    qgraph = response["message"]["query_graph"]
+    if len(qgraph["edges"]) < 3:
+        return []
+    #for this to be a problem, we need 2 edges that share a subject or an object, and have the same predicates and qualifiers.
+    subjects = defaultdict(list)
+    objects = defaultdict(list)
+    for qedge_id, qedge in qgraph["edges"].items():
+        subjects[qedge["subject"]].append(qedge_id)
+        objects[qedge["object"]].append(qedge_id)
+    center_nodes=[]
+    for nodelist in (subjects,objects):
+        for node, edges in nodelist.items():
+            if len(edges) < 2:
+                continue
+            for eid1,eid2 in combinations(edges, 2):
+                e1 = qgraph["edges"][eid1]
+                e2 = qgraph["edges"][eid2]
+                if e1["predicates"] == e2["predicates"]:
+                    if e1.get("qualifiers",[]) == e2.get("qualifiers",[]):
+                        center_nodes.append(node)
+    return center_nodes
+
+
 async def filter_repeated_nodes(response,guid):
     """We have some rules that include e.g. 2 chemicals.   We don't want responses in which those two
     are the same.   If you have A-B-A-C then what shows up in the ui is B-A-C which makes no sense."""
@@ -390,6 +461,8 @@ async def filter_repeated_nodes(response,guid):
     response["message"]["results"] = results
     if len(results) != original_result_count:
         await filter_kgraph_orphans(response,{},guid)
+
+
 
 async def check_for_messages(guid, num_queries, num_previously_received=0):
     """Check for messages on the queue.  Return a list of responses.  This does not care if these
@@ -610,7 +683,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params={})
     return ret_val, status_code
 
 
-async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qnode=None, question_qnode=None) -> (dict, int):
+async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qnode=None, question_qnode=None, bypass_cache=False) -> (dict, int):
     """
     Performs lookup, parameterized by ARAGORN/ROBOKOP and whether the query is an infer type query
 
@@ -622,7 +695,7 @@ async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qn
     """
 
     if caller == "ARAGORN":
-        return await aragorn_lookup(message, params, guid, infer, answer_qnode)
+        return await aragorn_lookup(message, params, guid, infer, answer_qnode, bypass_cache)
     elif caller == "ROBOKOP":
         robo_results, robo_status = await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
         return await add_provenance(robo_results), robo_status
@@ -657,12 +730,12 @@ async def de_noneify(message):
             await de_noneify(item)
 
 
-async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
+async def aragorn_lookup(input_message, params, guid, infer, answer_qnode, bypass_cache):
     timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
     if timeout_seconds:
         params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
     if not infer:
-        return await strider(input_message, params, guid)
+        return await strider(input_message, params, guid, bypass_cache)
     # Now it's an infer query.
     messages = expand_query(input_message, params, guid)
     lookup_query_graph = messages[0]["message"]["query_graph"]
@@ -679,7 +752,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
             num += 1
             message[f"query_{num}"] = q
         logger.info(f"Sending {len(message)} messages to strider")
-        batch_result_messages = await multi_strider(message, params, guid)
+        batch_result_messages = await multi_strider(message, params, guid, bypass_cache)
         num_batches_returned += 1
         logger.info(f"{guid}: {num_batches_returned} batches returned")
         for result in batch_result_messages:
@@ -690,6 +763,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode):
             if "knowledge_graph" not in rmessage["message"] or "results" not in rmessage["message"]:
                 continue
             await filter_repeated_nodes(rmessage, guid)
+            #await filter_promiscuous_results(rmessage, guid)
             result_messages.append(rmessage)
     logger.info(f"{guid}: strider complete")
     #Clean out the repeat node stuff
@@ -710,10 +784,8 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
     return merged_results, 200
 
 
-async def strider(message, params, guid) -> (dict, int):
-    # strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider.transltr.io/1.3/")
+async def strider(message, params, guid, bypass_cache) -> (dict, int):
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     # select the type of query post. "test" will come from the tester
     if "test" in message:
@@ -723,13 +795,14 @@ async def strider(message, params, guid) -> (dict, int):
         strider_url += "asyncquery"
         asyncquery = True
 
+    message["bypass_cache"] = bypass_cache
     response = await subservice_post("strider", strider_url, message, guid, asyncquery=asyncquery, params=params)
 
     return response
 
 
 async def normalize_qgraph_ids(m):
-    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/1.3/")}get_normalized_nodes'
+    url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")}get_normalized_nodes'
     qnodes = m["message"]["query_graph"]["nodes"]
     qnode_ids = set()
     for qid, qnode in qnodes.items():
@@ -756,7 +829,7 @@ async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qn
     # For robokop, gotta normalize
     message = await normalize_qgraph_ids(message)
     if not infer:
-        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/1.4/")
+        kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/")
         return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
 
     # It's an infer, just look it up
@@ -829,15 +902,14 @@ def expand_query(input_message, params, guid):
 
 
 
-async def multi_strider(messages, params, guid):
-    #strider_url = os.environ.get("STRIDER_URL", "https://strider-dev.apps.renci.org/1.3/")
-    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/1.4/")
+async def multi_strider(messages, params, guid, bypass_cache):
+    strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     strider_url += "multiquery"
     #We don't want to do subservice_post, because that assumes TRAPI in and out.
     #it leads to confusion.
     #response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
-    responses = await post_with_callback(strider_url,messages,guid,params)
+    responses = await post_with_callback(strider_url,messages,guid,params,bypass_cache)
 
     return responses
 
@@ -847,7 +919,7 @@ def create_aux_graph(analysis):
     Look through the analysis edge bindings, get all the knowledge edges, and put them in an aux graph.
     Give it a random uuid as an id."""
     aux_graph_id = str(uuid.uuid4())
-    aux_graph = { "edges": [] }
+    aux_graph = { "edges": [] , "attributes": []}
     for edge_id, edgelist in analysis["edge_bindings"].items():
         for edge in edgelist:
             aux_graph["edges"].append(edge["id"])
@@ -997,7 +1069,7 @@ def merge_answer(result_message, answer, results, qnode_ids, robokop=False):
         source = "infores:aragorn"
     analysis = {
         "resource_id": source,
-        "edge_bindings": {qedge_id:[ { "id":kid } for kid in knowledge_edge_ids ] }
+        "edge_bindings": {qedge_id:[ { "id":kid, "attributes": [] } for kid in knowledge_edge_ids ] }
                 }
     mergedresult["analyses"].append(analysis)
 
@@ -1052,7 +1124,7 @@ async def make_one_request(client, automat_url, message, sem):
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
-    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/1.4/")
+    automat_url = os.environ.get("ROBOKOPKG_URL", "https://automat.transltr.io/robokopkg/")
     max_conns = os.environ.get("MAX_CONNECTIONS", 5)
     nrules = int(os.environ.get("MAXIMUM_ROBOKOPKG_RULES", 101))
     messages = expand_query(input_message, {}, guid)
@@ -1126,7 +1198,9 @@ async def combine_messages(answer_qnode, original_query_graph, lookup_query_grap
         "message": {"query_graph": {"nodes": {}, "edges": {}},
                     "knowledge_graph": {"nodes": {}, "edges": {}},
                     "results": [],
-                    "auxiliary_graphs": {}}}).dict(exclude_none=True)
+                    "auxiliary_graphs": {},
+                    "logs": []},
+        "logs": [] }).dict(exclude_none=True)
     result["message"]["query_graph"] = original_query_graph
     result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
     for rm in result_messages:
@@ -1152,8 +1226,7 @@ async def answercoalesce(message, params, guid, coalesce_type="all") -> (dict, i
     :param coalesce_type:
     :return:
     """
-    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/1.3/coalesce/")}{coalesce_type}'
-    # url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answer-coalesce.transltr.io/1.3/coalesce/")}{coalesce_type}'
+    url = f'{os.environ.get("ANSWER_COALESCE_URL", "https://answercoalesce.renci.org/coalesce/")}{coalesce_type}'
 
     # With the current answercoalesce, we make the result list longer, and frequently much longer.  If
     # we've already got 10s of thousands of results, let's skip this step...
@@ -1182,7 +1255,7 @@ async def omnicorp(message, params, guid) -> (dict, int):
         with open("to_omni.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")}omnicorp_overlay'
+    url = f'{os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/")}omnicorp_overlay'
 
     rval, omni_status =  await subservice_post("omnicorp", url, message, guid)
 
@@ -1205,7 +1278,7 @@ async def score(message, params, guid) -> (dict, int):
         with open("to_score.json","w") as outf:
             json.dump(message, outf, indent=2)
 
-    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/1.4/")
+    ranker_url = os.environ.get("RANKER_URL", "https://aragorn-ranker.renci.org/")
 
     score_url = f"{ranker_url}score"
     return await subservice_post("score", score_url, message, guid)
