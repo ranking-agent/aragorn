@@ -1195,11 +1195,12 @@ async def combine_messages(answer_qnode, original_query_graph, lookup_query_grap
         pydantic_kgraph.update(KnowledgeGraph.parse_obj(rm["message"]["knowledge_graph"]))
     # Construct the final result message, currently empty
     result = PDResponse(**{
-        "message": {"query_graph": {"nodes": {}, "edges": {}},
-                    "knowledge_graph": {"nodes": {}, "edges": {}},
-                    "results": [],
-                    "auxiliary_graphs": {},
-                    "logs": []},
+        "message": {
+            "query_graph": {"nodes": {}, "edges": {}},
+            "knowledge_graph": {"nodes": {}, "edges": {}},
+            "results": [],
+            "auxiliary_graphs": {},
+        },
         "logs": [] }).dict(exclude_none=True)
     result["message"]["query_graph"] = original_query_graph
     result["message"]["knowledge_graph"] = pydantic_kgraph.dict()
