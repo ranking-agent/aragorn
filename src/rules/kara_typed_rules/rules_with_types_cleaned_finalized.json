@@ -1,7 +1,7 @@
 {
     "{\"predicate\": \"biolink:treats\"}": [
         {
-            "Rule": "?g  biolink:affects_response_to  ?a  ?a  biolink:ameliorates  ?b  ?g  biolink:genetic_association  ?b   => ?a  biolink:treats  ?b",
+            "Rule": "?g  biolink:affects_response_to  ?a  ?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?g  biolink:genetic_association  ?b   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.056505642",
             "Std Confidence": "0.981623277",
             "PCA Confidence": "0.981999234",
@@ -46,7 +46,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_2": {
@@ -61,7 +61,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:ameliorates  ?b  ?a  biolink:similar_to  ?h   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:treats_or_applied_or_studied_to_treat  ?b  ?a  biolink:similar_to  ?h   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.060296192",
             "Std Confidence": "0.975053457",
             "PCA Confidence": "0.97574893",
@@ -99,14 +99,14 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
                             "subject": "h",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_2": {
@@ -121,7 +121,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:genetic_association  ?b  ?a  biolink:interacts_with  ?h   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:genetic_association  ?b  ?a  biolink:interacts_with  ?h   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.026071051",
             "Std Confidence": "0.97446458",
             "PCA Confidence": "0.976072607",
@@ -159,7 +159,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -181,7 +181,7 @@
             }
         },
         {
-            "Rule": "?g  activity_or_abundance_biolink:affects  ?a  ?a  biolink:ameliorates  ?b  ?g  biolink:genetic_association  ?b   => ?a  biolink:treats  ?b",
+            "Rule": "?g  activity_or_abundance_biolink:affects  ?a  ?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?g  biolink:genetic_association  ?b   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.032043371",
             "Std Confidence": "0.973878098",
             "PCA Confidence": "0.974530831",
@@ -236,7 +236,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_2": {
@@ -251,7 +251,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:genetic_association  ?b  ?a  increased_secretion_biolink:affects  ?h   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:genetic_association  ?b  ?a  increased_secretion_biolink:affects  ?h   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.029553068",
             "Std Confidence": "0.973856209",
             "PCA Confidence": "0.973856209",
@@ -289,7 +289,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -325,7 +325,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?a  biolink:ameliorates  ?h  ?h  biolink:has_phenotype  ?b   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?a  biolink:treats_or_applied_or_studied_to_treat  ?h  ?h  biolink:has_phenotype  ?b   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.082047779",
             "Std Confidence": "0.973333333",
             "PCA Confidence": "0.977165354",
@@ -363,14 +363,14 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
                             "subject": "$source",
                             "object": "h",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_2": {
@@ -385,7 +385,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:genetic_association  ?b  ?a  decreased_transport_biolink:affects  ?h   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:genetic_association  ?b  ?a  decreased_transport_biolink:affects  ?h   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.038191996",
             "Std Confidence": "0.969239374",
             "PCA Confidence": "0.969239374",
@@ -423,7 +423,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -459,7 +459,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:genetic_association  ?b  ?a  decreased_molecular_interaction_biolink:affects  ?h   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:genetic_association  ?b  ?a  decreased_molecular_interaction_biolink:affects  ?h   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.025982898",
             "Std Confidence": "0.968775678",
             "PCA Confidence": "0.971169687",
@@ -497,7 +497,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -533,7 +533,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  biolink:has_input  ?a  ?i  biolink:has_input  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  biolink:has_input  ?a  ?i  biolink:has_input  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.082907264",
             "Std Confidence": "0.963133641",
             "PCA Confidence": "0.966349859",
@@ -576,7 +576,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -598,7 +598,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  biolink:has_output  ?a  ?i  biolink:has_output  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  biolink:has_output  ?a  ?i  biolink:has_output  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.036495063",
             "Std Confidence": "0.857586743",
             "PCA Confidence": "0.917960089",
@@ -641,7 +641,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -663,7 +663,7 @@
             }
         },
         {
-            "Rule": "?i  biolink:ameliorates  ?b  ?a  biolink:has_part  ?f  ?i  biolink:has_part  ?f   => ?a  biolink:treats  ?b",
+            "Rule": "?i  biolink:treats_or_applied_or_studied_to_treat  ?b  ?a  biolink:has_part  ?f  ?i  biolink:has_part  ?f   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.036715444",
             "Std Confidence": "0.726559093",
             "PCA Confidence": "0.919426049",
@@ -706,7 +706,7 @@
                             "subject": "i",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -728,7 +728,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  biolink:has_part  ?a  ?i  biolink:has_part  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  biolink:has_part  ?a  ?i  biolink:has_part  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.090400212",
             "Std Confidence": "0.623688612",
             "PCA Confidence": "0.72345679",
@@ -771,7 +771,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -793,7 +793,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?f  ?f  biolink:has_phenotype  ?b  ?b  biolink:has_phenotype  ?f   => ?a  biolink:treats  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?f  ?f  biolink:has_phenotype  ?b  ?b  biolink:has_phenotype  ?f   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.041233251",
             "Std Confidence": "0.588735053",
             "PCA Confidence": "0.591527031",
@@ -831,7 +831,7 @@
                             "subject": "$source",
                             "object": "f",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -946,7 +946,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  decreased_metabolic_processing_biolink:affects  ?a  ?i  decreased_metabolic_processing_biolink:affects  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  decreased_metabolic_processing_biolink:affects  ?a  ?i  decreased_metabolic_processing_biolink:affects  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.035525388",
             "Std Confidence": "0.286221591",
             "PCA Confidence": "0.302552553",
@@ -989,7 +989,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -1039,7 +1039,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  decreased_transport_biolink:affects  ?a  ?i  decreased_transport_biolink:affects  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  decreased_transport_biolink:affects  ?a  ?i  decreased_transport_biolink:affects  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.044627116",
             "Std Confidence": "0.270432692",
             "PCA Confidence": "0.395817045",
@@ -1082,7 +1082,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -1185,7 +1185,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  increased_abundance_biolink:affects  ?e  ?i  increased_activity_or_abundance_biolink:affects  ?a   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  increased_abundance_biolink:affects  ?e  ?i  increased_activity_or_abundance_biolink:affects  ?a   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.028847849",
             "Std Confidence": "0.202287127",
             "PCA Confidence": "0.374642244",
@@ -1228,7 +1228,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -1278,7 +1278,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  increased_secretion_biolink:affects  ?a  ?i  increased_secretion_biolink:affects  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  increased_secretion_biolink:affects  ?a  ?i  increased_secretion_biolink:affects  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.036296721",
             "Std Confidence": "0.182351639",
             "PCA Confidence": "0.24234844",
@@ -1321,7 +1321,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -1464,7 +1464,7 @@
             }
         },
         {
-            "Rule": "?e  biolink:ameliorates  ?b  ?i  increased_abundance_biolink:affects  ?a  ?i  increased_activity_or_abundance_biolink:affects  ?e   => ?a  biolink:treats  ?b",
+            "Rule": "?e  biolink:treats_or_applied_or_studied_to_treat  ?b  ?i  increased_abundance_biolink:affects  ?a  ?i  increased_activity_or_abundance_biolink:affects  ?e   => ?a  biolink:treats  ?b",
             "Head Coverage": "0.02803244",
             "Std Confidence": "0.131486459",
             "PCA Confidence": "0.31260752",
@@ -1507,7 +1507,7 @@
                             "subject": "e",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
@@ -3057,7 +3057,7 @@
             }
         },
         {
-            "Rule": "?a  biolink:ameliorates  ?b  ?h  biolink:associated_with  ?b  ?a  biolink:contraindicated_for  ?h   => ?a  biolink:contraindicated_for  ?b",
+            "Rule": "?a  biolink:treats_or_applied_or_studied_to_treat  ?b  ?h  biolink:associated_with  ?b  ?a  biolink:contraindicated_for  ?h   => ?a  biolink:contraindicated_for  ?b",
             "Head Coverage": "0.000830126",
             "Std Confidence": "0.536585366",
             "PCA Confidence": "0.536585366",
@@ -3095,7 +3095,7 @@
                             "subject": "$source",
                             "object": "$target",
                             "predicates": [
-                                "biolink:ameliorates"
+                                "biolink:treats_or_applied_or_studied_to_treat"
                             ]
                         },
                         "edge_1": {
