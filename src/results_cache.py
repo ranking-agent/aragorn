@@ -2,6 +2,7 @@ import os
 import redis
 import json
 import gzip
+from fastapi import HTTPException, status
 
 CACHE_HOST = os.environ.get("CACHE_HOST", "localhost")
 CACHE_PORT = os.environ.get("CACHE_PORT", "6379")
@@ -39,16 +40,25 @@ class ResultsCache:
 
     def get_result(self, input_id, predicate, qualifiers, source_input, caller, workflow):
         key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
-        result = self.creative_redis.get(key)
-        if result is not None:
-            result = json.loads(gzip.decompress(result))
+        try:
+            result = self.creative_redis.get(key)
+            if result is not None:
+                result = json.loads(gzip.decompress(result))
+        except Exception:
+            # failed to get result from cache
+            result = None
+            pass
         return result
 
 
     def set_result(self, input_id, predicate, qualifiers, source_input, caller, workflow, final_answer):
         key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
 
-        self.creative_redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+        try:
+            self.creative_redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+        except Exception:
+            # failed to save result to cache
+            pass
 
     def get_lookup_query_key(self, workflow, query_graph):
         keydict = {'workflow': workflow, 'query_graph': query_graph}
@@ -56,16 +66,25 @@ class ResultsCache:
 
     def get_lookup_result(self, workflow, query_graph):
         key = self.get_lookup_query_key(workflow, query_graph)
-        result = self.lookup_redis.get(key)
-        if result is not None:
-            result = json.loads(gzip.decompress(result))
+        try:
+            result = self.lookup_redis.get(key)
+            if result is not None:
+                result = json.loads(gzip.decompress(result))
+        except Exception:
+            # failed to get lookup result
+            result = None
+            pass
         return result
 
 
     def set_lookup_result(self, workflow, query_graph, final_answer):
         key = self.get_lookup_query_key(workflow, query_graph)
 
-        self.lookup_redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+        try:
+            self.lookup_redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
+        except Exception:
+            # failed to save lookup result
+            pass
 
     
     def clear_creative_cache(self):
@@ -73,3 +92,9 @@ class ResultsCache:
 
     def clear_lookup_cache(self):
         self.lookup_redis.flushdb()
+
+    def ping_cache(self):
+        try:
+            self.creative_redis.ping()
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)

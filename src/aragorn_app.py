@@ -210,4 +210,12 @@ def clear_redis_cache(request: ClearCacheRequest) -> dict:
         raise HTTPException(status_code=401, detail="Invalid Password")
 
 
+@ARAGORN_APP.post("/cache_ready", status_code=200, include_in_schema=False)
+def ping_cache() -> dict:
+    """Ping the redis cache."""
+    cache = ResultsCache()
+    cache.ping_cache()
+    return 200
+
+
 ARAGORN_APP.openapi_schema = construct_open_api_schema(ARAGORN_APP, prefix="aragorn", description="ARAGORN: A fully-federated Translator ARA.")
