@@ -68,8 +68,13 @@ async def filter_kgraph_orphans(message,params,guid):
         # 4. Nodes and Support graphs from edges in 2
         for edge in edges:
             edge_obj = message.get('message',{}).get('knowledge_graph',{}).get('edges',{}).get(edge)
-            if edge is not None:
-                nodes.update([edge_obj["subject"], edge_obj["object"]])
+            if edge_obj is not None:
+                edge_subject = edge_obj.get("subject")
+                if edge_subject is not None:
+                    nodes.add(edge_subject)
+                edge_object = edge_obj.get("object")
+                if edge_object is not None:
+                    nodes.add(edge_object)
             for attribute in message.get('message',{}).get('knowledge_graph',{}).get('edges',{}).get(edge,{}).get('attributes',{}):
                 if attribute.get('attribute_type_id',None) == 'biolink:support_graphs':
                     auxgraphs.update(attribute.get('value',[]))
