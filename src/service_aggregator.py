@@ -761,7 +761,7 @@ async def aragorn_lookup(input_message, params, guid, infer, answer_qnode, bypas
             if "knowledge_graph" not in rmessage["message"] or "results" not in rmessage["message"]:
                 continue
             await filter_repeated_nodes(rmessage, guid)
-            #await filter_promiscuous_results(rmessage, guid)
+            await filter_promiscuous_results(rmessage, guid)
             result_messages.append(rmessage)
     logger.info(f"{guid}: strider complete")
     #Clean out the repeat node stuff
