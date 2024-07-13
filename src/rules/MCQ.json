@@ -1,0 +1,100 @@
+{
+    "{\"mcq\": true, \"predicate\": \"biolink:genetically_associated_with\"}": [
+        {
+            "Rule": "?a phenotype of ?b is genetically associated with ?c => ?a genetically associated with ?c",
+            "template": {
+                "query_graph": {
+                    "nodes": {
+                        "$source": {
+                            "ids": [
+                                "$source_id"
+                            ],
+                            "categories": [
+                                "biolink:PhenotypicFeature"
+                            ],
+                            "set_interpretation": "MANY"
+                        },
+                        "$target": {
+                            "ids": [
+                                "$target_id"
+                            ],
+                            "categories": [
+                                "biolink:Gene"
+                            ]
+                        },
+                        "b": {
+                            "categories": [
+                                "biolink:Disease"
+                            ],
+                            "set_interpretation": "MANY"
+                        }
+                    },
+                    "edges": {
+                        "edge_0": {
+                            "subject": "g",
+                            "object": "$source",
+                            "predicates": [
+                                "biolink:has_phenotype"
+                            ]
+                        },
+                        "edge_1": {
+                            "subject": "g",
+                            "object": "$target",
+                            "predicates": [
+                                "biolink:genetically_associated_with"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "Rule": "?a contributed to by ?b affects ?c => ?a genetically associated with ?c",
+            "template": {
+                "query_graph": {
+                    "nodes": {
+                        "$source": {
+                            "ids": [
+                                "$source_id"
+                            ],
+                            "categories": [
+                                "biolink:PhenotypicFeature"
+                            ],
+                            "set_interpretation": "MANY"
+                        },
+                        "$target": {
+                            "ids": [
+                                "$target_id"
+                            ],
+                            "categories": [
+                                "biolink:Gene"
+                            ]
+                        },
+                        "b": {
+                            "categories": [
+                                "biolink:ChemicalEntity"
+                            ],
+                            "set_interpretation": "MANY"
+                        }
+                    },
+                    "edges": {
+                        "edge_0": {
+                            "subject": "g",
+                            "object": "$source",
+                            "predicates": [
+                                "biolink:contributes_to"
+                            ]
+                        },
+                        "edge_1": {
+                            "subject": "g",
+                            "object": "$target",
+                            "predicates": [
+                                "biolink:affects"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
