@@ -194,6 +194,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
             else:
                 logger.info(f"{guid}: Results cache miss")
     else:
+        mcq = False
+        member_ids = []
         if read_from_cache:
             results = results_cache.get_lookup_result(workflow_def, query_graph)
             if results is not None:
@@ -218,7 +220,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # so we want to write to the cache if bypass cache is false or overwrite_cache is true
     if overwrite_cache or (not bypass_cache):
         if infer:
-            results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
+            results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, mcq, member_ids, final_answer)
         elif {"id": "lookup"} in workflow_def:
             results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
