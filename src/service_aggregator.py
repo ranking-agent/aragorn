@@ -218,7 +218,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # so we want to write to the cache if bypass cache is false or overwrite_cache is true
     if overwrite_cache or (not bypass_cache):
         if infer:
-            results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, final_answer)
+            results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, mcq, member_ids, final_answer)
         elif {"id": "lookup"} in workflow_def:
             results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
@@ -406,21 +406,37 @@ async def filter_promiscuous_results(response,guid):
     MAX_C = 10
     if len(response["message"]["results"]) < MAX_C:
         return
-    prom_qnodes = get_promiscuous_qnodes(response)
+    prom_qnodes = await get_promiscuous_qnodes(response)
     #This is a dictionary from bound knodes to the index of their result
-    prom_counter = defaultdict(list)
     #There should only be one such node
     for qnode in prom_qnodes:
-        #How many distinct results have the same bozo in this spot?
+        # It's possible that there are multiple knodes that could be filtered.  But when we filter out the first one
+        # then the indices of the rest will change.  So we need to do this one at a time.
+        await remove_promiscuous_knodes(MAX_C, qnode, response)
+
+
+async def remove_promiscuous_knodes(MAX_C, qnode, response):
+    still_going = True
+    while still_going:
+        still_going = False
+        # How many distinct results have the same bozo in this spot?
+        prom_counter = defaultdict(list)
         for result_i, result in enumerate(response["message"]["results"]):
             for binding in result["node_bindings"][qnode]:
                 knode = binding["id"]
                 prom_counter[knode].append(result_i)
-        # If there's too many results with the same knode in one of these spots,then they gotta go.
+        # now figure out the most common knode
+        max_knode = None
+        max_count = 0
         for knode, mapped_results in prom_counter.items():
-            if len(mapped_results) > MAX_C:
-                for index in reversed(mapped_results):
-                    del response["message"]["results"][index]
+            if len(mapped_results) > max_count:
+                max_knode = knode
+                max_count = len(mapped_results)
+        if max_count > MAX_C:
+            still_going = True
+            mapped_results = prom_counter[max_knode]
+            for index in reversed(mapped_results):
+                del response["message"]["results"][index]
 
 
 async def get_promiscuous_qnodes(response):
