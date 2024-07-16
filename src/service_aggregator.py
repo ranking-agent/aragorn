@@ -854,19 +854,21 @@ def get_infer_parameters(input_message):
             qualifiers = {}
         else:
             qualifiers = {"qualifier_constraints": qc}
-    if ("ids" in input_message["message"]["query_graph"]["nodes"][source]) \
-            and (input_message["message"]["query_graph"]["nodes"][source]["ids"] is not None):
-        input_id = input_message["message"]["query_graph"]["nodes"][source]["ids"][0]
-        member_ids = input_message["message"]["query_graph"]["nodes"][source].get("member_ids",[])
+    mcq = False
+    snode = input_message["message"]["query_graph"]["nodes"][source]
+    tnode = input_message["message"]["query_graph"]["nodes"][target]
+    if ("ids" in snode) and (snode["ids"] is not None):
+        input_id = snode["ids"][0]
+        member_ids = snode.get("member_ids",[])
+        if "set_interpretation" in snode and snode["set_interpretation"] == "MANY":
+            mcq = True
         source_input = True
     else:
-        input_id = input_message["message"]["query_graph"]["nodes"][target]["ids"][0]
-        member_ids = input_message["message"]["query_graph"]["nodes"][target].get("member_ids",[])
+        input_id = tnode["ids"][0]
+        member_ids = tnode.get("member_ids",[])
+        if "set_interpretation" in tnode and tnode["set_interpretation"] == "MANY":
+            mcq = True
         source_input = False
-    mcq = False
-    if ("set_interpretation" in input_message["message"]["query_graph"] and
-            input_message["message"]["query_graph"]["set_interpretation"] == "MANY"):
-        mcq = True
     #key = get_key(predicate, qualifiers)
     return input_id, predicate, qualifiers, source, source_input, target, query_edge, mcq, member_ids
 
