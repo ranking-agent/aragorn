@@ -33,13 +33,18 @@ class ResultsCache:
             password=redis_password,
         )
 
-    def get_query_key(self, input_id, predicate, qualifiers, source_input, caller, workflow):
+    def get_query_key(self, input_id, predicate, qualifiers, source_input, caller, workflow, mcq, member_ids):
         keydict = {'predicate': predicate, 'source_input': source_input, 'input_id': input_id, 'caller': caller, 'workflow': workflow}
         keydict.update(qualifiers)
+        if mcq:
+            #because we already have a bunch of keys without mcq, we only want to add these if we are doing the new mcq.
+            member_ids.sort()
+            keydict['mcq'] = True
+            keydict['member_ids'] = member_ids
         return json.dumps(keydict, sort_keys=True)
 
-    def get_result(self, input_id, predicate, qualifiers, source_input, caller, workflow):
-        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
+    def get_result(self, input_id, predicate, qualifiers, source_input, caller, workflow, mcq, member_ids):
+        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow, mcq, member_ids)
         try:
             result = self.creative_redis.get(key)
             if result is not None:
@@ -51,8 +56,8 @@ class ResultsCache:
         return result
 
 
-    def set_result(self, input_id, predicate, qualifiers, source_input, caller, workflow, final_answer):
-        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow)
+    def set_result(self, input_id, predicate, qualifiers, source_input, caller, workflow, mcq, member_ids, final_answer):
+        key = self.get_query_key(input_id, predicate, qualifiers, source_input, caller, workflow, mcq, member_ids)
 
         try:
             self.creative_redis.set(key, gzip.compress(json.dumps(final_answer).encode()))
