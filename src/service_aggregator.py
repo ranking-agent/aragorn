@@ -931,6 +931,8 @@ def expand_query(input_message, params, guid):
         else:
             del query["query_graph"]["nodes"][source]["ids"]
         message = {"message": query, "parameters": input_message.get("parameters") or {}}
+        if mcq:
+            message["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
