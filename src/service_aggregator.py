@@ -414,11 +414,17 @@ async def filter_promiscuous_results(response,guid):
     for qnode in prom_qnodes:
         # It's possible that there are multiple knodes that could be filtered.  But when we filter out the first one
         # then the indices of the rest will change.  So we need to do this one at a time.
-        await remove_promiscuous_knodes(MAX_C, qnode, response)
+        await remove_promiscuous_knode_results(MAX_C, qnode, response)
 
 
-async def remove_promiscuous_knodes(MAX_C, qnode, response):
+async def remove_promiscuous_knode_results(MAX_C, qnode, response):
+    """Given a response and a qnode, look at all the results and count how many of the results have the
+    same knode bound to that qnode.   If that number is greater than MAX_C, remove those results."""
     still_going = True
+    #This is written as a loop with the idea that once we've removed one promiscuous node, it might require
+    # recalculating everything since the results change.  In retrospect, that might not be true because we are
+    # specifiying the qnode.  I'm still think it's possible (but perhaps unlikely) if there are multiple knodes
+    # bound to the same qnode.
     while still_going:
         still_going = False
         # How many distinct results have the same bozo in this spot?
@@ -430,14 +436,17 @@ async def remove_promiscuous_knodes(MAX_C, qnode, response):
         # now figure out the most common knode
         max_knode = None
         max_count = 0
-        for knode, mapped_results in prom_counter.items():
-            if len(mapped_results) > max_count:
+        for knode, mapped_result_indices in prom_counter.items():
+            if len(mapped_result_indices) > max_count:
                 max_knode = knode
-                max_count = len(mapped_results)
+                max_count = len(mapped_result_indices)
+        # Now remove all the results with that knode (if it occurs in more than MAX_C results)
         if max_count > MAX_C:
             still_going = True
-            mapped_results = prom_counter[max_knode]
-            for index in reversed(mapped_results):
+            #These are the indices of the results that we want to remove
+            mapped_result_indices = prom_counter[max_knode]
+            #Remove them from right to left, otherwise the indices change on you
+            for index in reversed(mapped_result_indices):
                 del response["message"]["results"][index]
 
 
