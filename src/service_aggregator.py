@@ -718,7 +718,7 @@ async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qn
     :param caller:
     :return:
     """
-
+    message = await normalize_qgraph_ids(message)
     if caller == "ARAGORN":
         return await aragorn_lookup(message, params, guid, infer, answer_qnode, bypass_cache)
     elif caller == "ROBOKOP":
@@ -833,7 +833,7 @@ async def normalize_qgraph_ids(m):
     for qid, qnode in qnodes.items():
         if ("ids" in qnode) and (qnode["ids"] is not None):
             qnode_ids.update(qnode["ids"])
-    nnp = { "curies": list(qnode_ids), "conflate": True }
+    nnp = { "curies": list(qnode_ids), "conflate": True, "drug_chemical_conflate": True }
     async with httpx.AsyncClient(timeout=httpx.Timeout(timeout=120)) as client:
         nnresult = await client.post(
             url,
@@ -851,8 +851,6 @@ async def normalize_qgraph_ids(m):
 
 
 async def robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode) -> (dict, int):
-    # For robokop, gotta normalize
-    message = await normalize_qgraph_ids(message)
     if not infer:
         kg_url = os.environ.get("ROBOKOPKG_URL", "https://automat.renci.org/robokopkg/")
         return await subservice_post("robokopkg", f"{kg_url}query", message, guid)
