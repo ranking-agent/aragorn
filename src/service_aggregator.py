@@ -926,9 +926,17 @@ def expand_query(input_message, params, guid):
         query = json.loads(qs)
         if source_input:
             del query["query_graph"]["nodes"][target]["ids"]
+            query["query_graph"]["nodes"][target].pop("member_ids", None)
+            if mcq:
+                query["query_graph"]["nodes"][source]["member_ids"] = member_ids
         else:
             del query["query_graph"]["nodes"][source]["ids"]
+            query["query_graph"]["nodes"][source].pop("member_ids", None)
+            if mcq:
+                query["query_graph"]["nodes"][target]["member_ids"] = member_ids
         message = {"message": query, "parameters": input_message.get("parameters") or {}}
+        if mcq:
+            message["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
         if "log_level" in input_message:
             message["log_level"] = input_message["log_level"]
         messages.append(message)
