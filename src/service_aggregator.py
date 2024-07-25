@@ -928,10 +928,10 @@ def expand_query(input_message, params, guid):
         query = json.loads(qs)
         if source_input:
             del query["query_graph"]["nodes"][target]["ids"]
-            del query["query_graph"]["nodes"][target]["member_ids"]
+            query["query_graph"]["nodes"][target].pop("member_ids", None)
         else:
             del query["query_graph"]["nodes"][source]["ids"]
-            del query["query_graph"]["nodes"][target]["member_ids"]
+            query["query_graph"]["nodes"][source].pop("member_ids", None)
         message = {"message": query, "parameters": input_message.get("parameters") or {}}
         if mcq:
             message["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
