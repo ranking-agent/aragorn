@@ -922,16 +922,20 @@ def expand_query(input_message, params, guid):
         query_template = Template(json.dumps(rule_def["template"]))
         #need to do a bit of surgery depending on what the input is.
         if source_input:
-            qs = query_template.substitute(source=source,target=target,source_id = input_id, target_id='',source_member_ids=member_ids,target_member_ids='')
+            qs = query_template.substitute(source=source,target=target,source_id = input_id, target_id='')
         else:
-            qs = query_template.substitute(source=source, target=target, target_id=input_id, source_id='',source_member_ids='',target_member_ids=member_ids)
+            qs = query_template.substitute(source=source, target=target, target_id=input_id, source_id='')
         query = json.loads(qs)
         if source_input:
             del query["query_graph"]["nodes"][target]["ids"]
             query["query_graph"]["nodes"][target].pop("member_ids", None)
+            if mcq:
+                query["query_graph"]["nodes"][source]["member_ids"] = member_ids
         else:
             del query["query_graph"]["nodes"][source]["ids"]
             query["query_graph"]["nodes"][source].pop("member_ids", None)
+            if mcq:
+                query["query_graph"]["nodes"][target]["member_ids"] = member_ids
         message = {"message": query, "parameters": input_message.get("parameters") or {}}
         if mcq:
             message["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
