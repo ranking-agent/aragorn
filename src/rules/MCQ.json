@@ -9,6 +9,9 @@
                             "ids": [
                                 "$source_id"
                             ],
+                            "member_ids": [
+                                "$source_member_ids"
+                            ],
                             "categories": [
                                 "biolink:PhenotypicFeature"
                             ],
@@ -17,6 +20,9 @@
                         "$target": {
                             "ids": [
                                 "$target_id"
+                            ],
+                            "member_ids": [
+                                "$target_member_ids"
                             ],
                             "categories": [
                                 "biolink:Gene"
@@ -57,6 +63,9 @@
                             "ids": [
                                 "$source_id"
                             ],
+                            "member_ids": [
+                                "$source_member_ids"
+                            ],
                             "categories": [
                                 "biolink:PhenotypicFeature"
                             ],
@@ -65,6 +74,9 @@
                         "$target": {
                             "ids": [
                                 "$target_id"
+                            ],
+                            "member_ids": [
+                                "$target_member_ids"
                             ],
                             "categories": [
                                 "biolink:Gene"
