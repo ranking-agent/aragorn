@@ -770,8 +770,8 @@
                             ]
                         },
                         "edge_1": {
-                            "subject": "i",
-                            "object": "$source",
+                            "object": "i",
+                            "subject": "$source",
                             "predicates": [
                                 "biolink:affects"
                             ],
@@ -791,8 +791,8 @@
                             ]
                         },
                         "edge_2": {
-                            "subject": "i",
-                            "object": "e",
+                            "subject": "e",
+                            "object": "i",
                             "predicates": [
                                 "biolink:affects"
                             ],
@@ -1288,8 +1288,8 @@
                             ]
                         },
                         "edge_1": {
-                            "subject": "i",
-                            "object": "$source",
+                            "object": "i",
+                            "subject": "$source",
                             "predicates": [
                                 "biolink:affects"
                             ],
@@ -1309,8 +1309,8 @@
                             ]
                         },
                         "edge_2": {
-                            "subject": "i",
-                            "object": "e",
+                            "subject": "e",
+                            "object": "i",
                             "predicates": [
                                 "biolink:affects"
                             ],
