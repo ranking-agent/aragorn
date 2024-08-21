@@ -31,14 +31,15 @@
                     },
                     "edges": {
                         "edge_0": {
-                            "subject": "g",
+                            "subject": "b",
                             "object": "$source",
                             "predicates": [
-                                "biolink:has_phenotype"
+                                "biolink:has_phenotype",
+                                "biolink:correlated_with"
                             ]
                         },
                         "edge_1": {
-                            "subject": "g",
+                            "subject": "b",
                             "object": "$target",
                             "predicates": [
                                 "biolink:genetically_associated_with"
@@ -79,14 +80,14 @@
                     },
                     "edges": {
                         "edge_0": {
-                            "subject": "g",
+                            "subject": "b",
                             "object": "$source",
                             "predicates": [
                                 "biolink:contributes_to"
                             ]
                         },
                         "edge_1": {
-                            "subject": "g",
+                            "subject": "b",
                             "object": "$target",
                             "predicates": [
                                 "biolink:affects"
