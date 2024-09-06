@@ -12,7 +12,7 @@ from reasoner_pydantic import Message
 from src.pathfinder.get_cooccurrence import get_the_curies, get_the_pmids
 
 # this should be an environment variable
-node_norm_url = "https://nodenormalization-sri.renci.org"
+node_norm_url = os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")
 strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 num_intermediate_hops = 3
 TOTAL_PUBS = 27840000
