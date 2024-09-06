@@ -23,6 +23,7 @@ from requests.exceptions import ConnectionError
 from asyncio.exceptions import TimeoutError
 from reasoner_pydantic import Query, KnowledgeGraph, QueryGraph
 from reasoner_pydantic import Response as PDResponse
+from src.shadowfax import shadowfax
 import uuid
 
 DUMPTRUCK = False
@@ -47,6 +48,8 @@ def examine_query(message):
     # queries that are any shape with all lookup edges
     # OR
     # A 1-hop infer query.
+    # OR
+    # Pathfinder query
     try:
         # this can still fail if the input looks like e.g.:
         #  "query_graph": None
@@ -57,13 +60,14 @@ def examine_query(message):
     for edge_id in qedges:
         if qedges.get(edge_id, {}).get("knowledge_type", "lookup") == "inferred":
             n_infer_edges += 1
-    if n_infer_edges > 1:
+    pathfinder = n_infer_edges == 3
+    if n_infer_edges > 1 and n_infer_edges and not pathfinder:
         raise Exception("Only a single infer edge is supported", 400)
     if (n_infer_edges > 0) and (n_infer_edges < len(qedges)):
         raise Exception("Mixed infer and lookup queries not supported", 400)
     infer = n_infer_edges == 1
     if not infer:
-        return infer, None, None
+        return infer, None, None, pathfinder
     qnodes = message.get("message", {}).get("query_graph", {}).get("nodes", {})
     question_node = None
     answer_node = None
@@ -76,7 +80,7 @@ def examine_query(message):
         raise Exception("Both nodes of creative edge pinned", 400)
     if question_node is None:
         raise Exception("No nodes of creative edge pinned", 400)
-    return infer, question_node, answer_node
+    return infer, question_node, answer_node, pathfinder
 
 
 def match_results_to_query(results, query_message, query_source, query_target, query_qedge_id):
@@ -111,7 +115,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     """
 
     try:
-        infer, question_qnode, answer_qnode = examine_query(message)
+        infer, question_qnode, answer_qnode, pathfinder = examine_query(message)
     except Exception as e:
         print(e)
         return None, 500
@@ -127,7 +131,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     #  e.g. our score operation will include both weighting and scoring for now.
     # Also gives us a place to handle function specific logic
     known_operations = {
-        "lookup": partial(lookup, caller=caller, infer=infer, answer_qnode=answer_qnode, question_qnode=question_qnode, bypass_cache=bypass_cache),
+        "lookup": partial(lookup, caller=caller, infer=infer, pathfinder=pathfinder, answer_qnode=answer_qnode, question_qnode=question_qnode, bypass_cache=bypass_cache),
         "enrich_results": partial(answercoalesce, coalesce_type=coalesce_type),
         "overlay_connect_knodes": omnicorp,
         "score": score,
@@ -154,6 +158,13 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
                 {"id": "score"},
                 {"id": "filter_message_top_n", "parameters": {"max_results": 500}},
             ]
+        elif pathfinder: 
+            workflow_def = [
+                {"id": "lookup"},
+                {"id": "overlay_connect_knodes"},
+                {"id": "score"},
+                {"id": "filter_message_top_n", "parameters": {"max_results": 500}}
+            ]
         else:
             # TODO: if this is robokop, need to normalize.
             workflow_def = [
@@ -171,7 +182,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     # We told the world what we can do!
     # Workflow will be a list of the functions, and the parameters if there are any
 
-    read_from_cache = not (bypass_cache or overwrite_cache)
+    read_from_cache = not (bypass_cache or overwrite_cache) and not pathfinder
 
     try:
         query_graph = message["message"]["query_graph"]
@@ -221,7 +232,8 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
     if overwrite_cache or (not bypass_cache):
         if infer:
             results_cache.set_result(input_id, predicate, qualifiers, source_input, caller, workflow_def, mcq, member_ids, final_answer)
-        elif {"id": "lookup"} in workflow_def:
+        elif {"id": "lookup"} in workflow_def and not pathfinder:
+            # We won't cache pathfinder results for now
             results_cache.set_lookup_result(workflow_def, query_graph, final_answer)
 
     # return the answer
@@ -708,7 +720,7 @@ async def subservice_post(name, url, message, guid, asyncquery=False, params={})
     return ret_val, status_code
 
 
-async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qnode=None, question_qnode=None, bypass_cache=False) -> (dict, int):
+async def lookup(message, params, guid, infer=False, pathfinder=False, caller="ARAGORN", answer_qnode=None, question_qnode=None, bypass_cache=False) -> (dict, int):
     """
     Performs lookup, parameterized by ARAGORN/ROBOKOP and whether the query is an infer type query
 
@@ -720,7 +732,7 @@ async def lookup(message, params, guid, infer=False, caller="ARAGORN", answer_qn
     """
     message = await normalize_qgraph_ids(message)
     if caller == "ARAGORN":
-        return await aragorn_lookup(message, params, guid, infer, answer_qnode, bypass_cache)
+        return await aragorn_lookup(message, params, guid, infer, pathfinder, answer_qnode, bypass_cache)
     elif caller == "ROBOKOP":
         robo_results, robo_status = await robokop_lookup(message, params, guid, infer, question_qnode, answer_qnode)
         return await add_provenance(robo_results), robo_status
@@ -755,10 +767,12 @@ async def de_noneify(message):
             await de_noneify(item)
 
 
-async def aragorn_lookup(input_message, params, guid, infer, answer_qnode, bypass_cache):
+async def aragorn_lookup(input_message, params, guid, infer, pathfinder, answer_qnode, bypass_cache):
     timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
     if timeout_seconds:
         params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
+    if pathfinder:
+        return await shadowfax(input_message, guid, logger)
     if not infer:
         return await strider(input_message, params, guid, bypass_cache)
     # Now it's an infer query.
