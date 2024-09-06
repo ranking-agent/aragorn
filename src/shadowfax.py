@@ -199,6 +199,7 @@ async def shadowfax(message, guid, logger):
         num_paths += 1
         for curie in path:
             if curie not in [source_node, target_node] and curie in curie_info.keys():
+                # Handles constraints
                 if unpinned_node_category in curie_info[curie]["categories"]:
                     curie_path_mapping[curie].append(path)
     logger.debug(f"{guid}: Found {num_paths} paths.")
