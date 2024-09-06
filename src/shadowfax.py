@@ -30,6 +30,24 @@ async def generate_from_strider(message):
     return lookup_response.get("message", {})
 
 
+async def get_normalized_curies(curies, guid, logger):
+    async with httpx.AsyncClient(timeout=900) as client:
+        try:
+            normalizer_response = await client.post(
+                url=node_norm_url + "get_normalized_nodes",
+                json={
+                    "curies": list(curies),
+                    "conflate": True,
+                    "description": False,
+                    "drug_chemical_conflate": True
+                }
+            )
+            normalizer_response.raise_for_status()
+            return normalizer_response.json()
+        except:
+            logger.info(f"{guid}: Failed to get a response from node norm")
+
+
 async def shadowfax(message, guid, logger):
     qgraph = message["message"]["query_graph"]
     pinned_node_ids = []
@@ -39,25 +57,11 @@ async def shadowfax(message, guid, logger):
         else:
             unpinned_node_category = node.get("categories", ["biolink:NamedThing"])[0]
     if len(pinned_node_ids) != 2:
-        logger.info(f"{guid}: Pathfinder queries requrie two pinned nodes.")
+        logger.info(f"{guid}: Pathfinder queries require two pinned nodes.")
         return message, 500
+    
+    normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
 
-    async with httpx.AsyncClient(timeout=900) as client:
-        try:
-            normalized_pinned_ids = await client.post(
-                url=node_norm_url + "get_normalized_nodes",
-                json={
-                    "curies": list(pinned_node_ids),
-                    "conflate": True,
-                    "description": False,
-                    "drug_chemical_conflate": True
-                }
-            )
-            normalized_pinned_ids.raise_for_status()
-            normalized_pinned_ids = normalized_pinned_ids.json()
-        except:
-            logger.info(f"{guid}: Failed to get a response from node norm")
-            return message, 500
     source_node = normalized_pinned_ids.get(pinned_node_ids[0], {"id": {"identifier": pinned_node_ids[0]}})["id"]["identifier"]
     source_category = normalized_pinned_ids.get(pinned_node_ids[0], {"type": ["biolink:NamedThing"]})["type"][0]
     source_equivalent_ids = [i["identifier"] for i in normalized_pinned_ids.get(pinned_node_ids[0], {"equivalent_identifiers": []})["equivalent_identifiers"]]
@@ -83,23 +87,8 @@ async def shadowfax(message, guid, logger):
         logger.info(f"{guid}: No curies found.")
         return message, 200
     
-    async with httpx.AsyncClient(timeout=900) as client:
-        try:
-            normmalizer_input = {
-                "curies": list(curies),
-                "conflate": True,
-                "description": False,
-                "drug_chemical_conflate": True
-            }
-            normalizer_response = await client.post(
-                url=node_norm_url + "get_normalized_nodes",
-                json=normmalizer_input
-            )
-            normalizer_response.raise_for_status()
-            normalizer_response = normalizer_response.json()
-        except:
-            logger.info(f"{guid}: Failed to get a response from node norm")
-            return message, 500
+    normalizer_response = await get_normalized_curies(list(curies), guid, logger)
+
     curie_info = defaultdict(dict)
     for curie, normalizer_info in normalizer_response.items():
         if normalizer_info:
@@ -178,9 +167,9 @@ async def shadowfax(message, guid, logger):
     for lookup_message in lookup_messages:
         # Build graph from results to avoid subclass loops
         # Results do not concatenate when they have different qnode ids
-        lookup_message_object = Message.parse_obj(lookup_message)
-        merged_lookup_message.update(lookup_message_object)
-        lookup_results.extend(lookup_message_object.dict().get("results", []))
+        lookup_message_obj = Message.parse_obj(lookup_message)
+        merged_lookup_message.update(lookup_message_obj)
+        lookup_results.extend(lookup_message_obj.dict().get("results") or [])
     merged_lookup_message_dict = merged_lookup_message.dict()
     lookup_knowledge_graph = merged_lookup_message_dict.get("knowledge_graph", {"nodes": {}, "edges": {}})
     lookup_aux_graphs = merged_lookup_message_dict.get("auxiliary_graphs", {})
@@ -300,7 +289,7 @@ async def shadowfax(message, guid, logger):
             "predicate": "biolink:related_to",
             "sources": [
                 {
-                    "resource_id": "infores:shadowfax",
+                    "resource_id": "infores:aragorn",
                     "resource_role": "primary_knowledge_source",
                 }
             ],
@@ -308,6 +297,16 @@ async def shadowfax(message, guid, logger):
                 {
                     "attribute_type_id": "biolink:support_graphs",
                     "value": aux_edges_keys
+                },
+                {
+                    "attribute_type_id": "biolink:agent_type",
+                    "value": "computational_model",
+                    "attribute_source": "infores:aragorn"
+                },
+                {
+                    "attribute_type_id": "biolink:knowledge_level",
+                    "value": "prediction",
+                    "attribute_source": "infores:aragorn"
                 }
             ]
         }
@@ -317,7 +316,7 @@ async def shadowfax(message, guid, logger):
             "predicate": "biolink:related_to",
             "sources": [
                 {
-                    "resource_id": "infores:shadowfax",
+                    "resource_id": "infores:aragorn",
                     "resource_role": "primary_knowledge_source",
                 }
             ],
@@ -325,6 +324,16 @@ async def shadowfax(message, guid, logger):
                 {
                     "attribute_type_id": "biolink:support_graphs",
                     "value": before_curie_edges_keys
+                },
+                {
+                    "attribute_type_id": "biolink:agent_type",
+                    "value": "computational_model",
+                    "attribute_source": "infores:aragorn"
+                },
+                {
+                    "attribute_type_id": "biolink:knowledge_level",
+                    "value": "prediction",
+                    "attribute_source": "infores:aragorn"
                 }
             ]
         }
@@ -334,7 +343,7 @@ async def shadowfax(message, guid, logger):
             "predicate": "biolink:related_to",
             "sources": [
                 {
-                    "resource_id": "infores:shadowfax",
+                    "resource_id": "infores:aragorn",
                     "resource_role": "primary_knowledge_source",
                 }
             ],
@@ -342,6 +351,16 @@ async def shadowfax(message, guid, logger):
                 {
                     "attribute_type_id": "biolink:support_graphs",
                     "value": after_curie_edges_keys
+                },
+                {
+                    "attribute_type_id": "biolink:agent_type",
+                    "value": "computational_model",
+                    "attribute_source": "infores:aragorn"
+                },
+                {
+                    "attribute_type_id": "biolink:knowledge_level",
+                    "value": "prediction",
+                    "attribute_source": "infores:aragorn"
                 }
             ]
         }
