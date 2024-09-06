@@ -43,17 +43,21 @@ async def shadowfax(message, guid, logger):
         return message, 500
 
     async with httpx.AsyncClient(timeout=900) as client:
-        normalized_pinned_ids = await client.post(
-            url=node_norm_url + "get_normalized_nodes",
-            json={
-                "curies": list(pinned_node_ids),
-                "conflate": True,
-                "description": False,
-                "drug_chemical_conflate": True
-            }
-        )
-        normalized_pinned_ids.raise_for_status()
-        normalized_pinned_ids = normalized_pinned_ids.json()
+        try:
+            normalized_pinned_ids = await client.post(
+                url=node_norm_url + "get_normalized_nodes",
+                json={
+                    "curies": list(pinned_node_ids),
+                    "conflate": True,
+                    "description": False,
+                    "drug_chemical_conflate": True
+                }
+            )
+            normalized_pinned_ids.raise_for_status()
+            normalized_pinned_ids = normalized_pinned_ids.json()
+        except:
+            logger.info(f"{guid}: Failed to get a response from node norm")
+            return message, 500
     source_node = normalized_pinned_ids.get(pinned_node_ids[0], {"id": {"identifier": pinned_node_ids[0]}})["id"]["identifier"]
     source_category = normalized_pinned_ids.get(pinned_node_ids[0], {"type": ["biolink:NamedThing"]})["type"][0]
     source_equivalent_ids = [i["identifier"] for i in normalized_pinned_ids.get(pinned_node_ids[0], {"equivalent_identifiers": []})["equivalent_identifiers"]]
@@ -80,18 +84,22 @@ async def shadowfax(message, guid, logger):
         return message, 200
     
     async with httpx.AsyncClient(timeout=900) as client:
-        normmalizer_input = {
-            "curies": list(curies),
-            "conflate": True,
-            "description": False,
-            "drug_chemical_conflate": True
-        }
-        normalizer_response = await client.post(
-            url=node_norm_url + "get_normalized_nodes",
-            json=normmalizer_input
-        )
-        normalizer_response.raise_for_status()
-        normalizer_response = normalizer_response.json()
+        try:
+            normmalizer_input = {
+                "curies": list(curies),
+                "conflate": True,
+                "description": False,
+                "drug_chemical_conflate": True
+            }
+            normalizer_response = await client.post(
+                url=node_norm_url + "get_normalized_nodes",
+                json=normmalizer_input
+            )
+            normalizer_response.raise_for_status()
+            normalizer_response = normalizer_response.json()
+        except:
+            logger.info(f"{guid}: Failed to get a response from node norm")
+            return message, 500
     curie_info = defaultdict(dict)
     for curie, normalizer_info in normalizer_response.items():
         if normalizer_info:
