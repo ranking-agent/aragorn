@@ -20,7 +20,7 @@ async def generate_from_strider(message):
     try:
         async with httpx.AsyncClient(timeout=3600) as client:
             lookup_response = await client.post(
-                url=strider_url,
+                url=strider_url + "query",
                 json=message,
             )
             lookup_response.raise_for_status()
@@ -44,7 +44,7 @@ async def shadowfax(message, guid, logger):
 
     async with httpx.AsyncClient(timeout=900) as client:
         normalized_pinned_ids = await client.post(
-            url=node_norm_url + "/get_normalized_nodes",
+            url=node_norm_url + "get_normalized_nodes",
             json={
                 "curies": list(pinned_node_ids),
                 "conflate": True,
@@ -87,7 +87,7 @@ async def shadowfax(message, guid, logger):
             "drug_chemical_conflate": True
         }
         normalizer_response = await client.post(
-            url=node_norm_url + "/get_normalized_nodes",
+            url=node_norm_url + "get_normalized_nodes",
             json=normmalizer_input
         )
         normalizer_response.raise_for_status()
@@ -157,11 +157,13 @@ async def shadowfax(message, guid, logger):
             }
             strider_multiquery.append(m)
     lookup_messages = []
+    logger.debug(f"{guid}: Sending {len(strider_multiquery)} requests to strider.")
     # We will want to use multistrider here eventually
     for lookup_message in await asyncio.gather(*[generate_from_strider(lookup_query) for lookup_query in strider_multiquery]):
         if lookup_message:
             lookup_message["query_graph"] = {"nodes": {}, "edges": {}}
             lookup_messages.append(lookup_message)
+    logger.debug(f"{guid}: Received {len(lookup_messages)} responses from strider.")
 
     merged_lookup_message = Message.parse_obj(lookup_messages[0])
     lookup_results = []
