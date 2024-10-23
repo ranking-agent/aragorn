@@ -949,6 +949,7 @@ def expand_query(input_message, params, guid):
             if mcq:
                 query["query_graph"]["nodes"][target]["member_ids"] = member_ids
         message = {"message": query, "parameters": input_message.get("parameters") or {}}
+        message["parameters"]["rule"] = {"rule_key": key, "rule_name": rule_def["Rule"]}
         if mcq:
             message["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
         if "log_level" in input_message:
@@ -972,7 +973,7 @@ async def multi_strider(messages, params, guid, bypass_cache):
     return responses
 
 
-def create_aux_graph(analysis):
+def create_aux_graph(analysis, rule_info):
     """Given an analysis, create an auxiliary graph.
     Look through the analysis edge bindings, get all the knowledge edges, and put them in an aux graph.
     Give it a random uuid as an id."""
@@ -981,6 +982,36 @@ def create_aux_graph(analysis):
     for edge_id, edgelist in analysis["edge_bindings"].items():
         for edge in edgelist:
             aux_graph["edges"].append(edge["id"])
+    for rule_def in AMIE_EXPANSIONS.get(rule_info.get("rule_key", ""),[]):
+        if rule_def["Rule"] == rule_def.get("rule_name", ""):
+            aux_graph["attributes"].append(
+                {
+                    "attribute_type_id": "biolink:has_numeric_value",
+                    "value": rule_def["Head Coverage"],
+                    "value_type_id": "EDAM:data_1669",
+                    "original_attribute_name": "head coverage",
+                    "attribute_source": "infores:aragorn",
+                }
+            )
+            aux_graph["attributes"].append(
+                {
+                    "attribute_type_id": "biolink:has_numeric_value",
+                    "value": rule_def["PCA Confidence"],
+                    "value_type_id": "EDAM:data_1669",
+                    "original_attribute_name": "head coverage",
+                    "attribute_source": "infores:aragorn",
+                }
+            )
+            aux_graph["attributes"].append(
+                {
+                    "attribute_type_id": "biolink:has_numeric_value",
+                    "value": rule_def["Std Confidence"],
+                    "value_type_id": "EDAM:data_1669",
+                    "original_attribute_name": "head coverage",
+                    "attribute_source": "infores:aragorn",
+                }
+            )
+
     return aux_graph_id, aux_graph
 
 
@@ -1105,8 +1136,9 @@ def merge_answer(result_message, answer, results, qnode_ids, robokop=False):
     if "auxiliary_graphs" not in result_message["message"] or result_message["message"]["auxiliary_graphs"] is None:
         result_message["message"]["auxiliary_graphs"] = {}
     for result in results["creative"]:
+        rule_info = result.get("rule_info", {"rule_key": "", "rule_name": ""})
         for analysis in result["analyses"]:
-            aux_graph_id, aux_graph = create_aux_graph(analysis)
+            aux_graph_id, aux_graph = create_aux_graph(analysis, rule_info)
             result_message["message"]["auxiliary_graphs"][aux_graph_id] = aux_graph
             aux_graph_ids.append(aux_graph_id)
 
@@ -1271,7 +1303,9 @@ async def combine_messages(answer_qnode, original_query_graph, lookup_query_grap
         if queries_equivalent(result_message["message"]["query_graph"],lookup_query_graph):
             lookup_results = result_message["message"]["results"]
         else:
-            result["message"]["results"].extend(result_message["message"]["results"])
+            for res in result_message["message"]["results"]:
+                res["rule_info"] = result_message["parameters"]["rule"]
+                result["message"]["results"].append(res)
     mergedresults = merge_results_by_node(result, answer_qnode, lookup_results, robokop)
     return mergedresults
 
