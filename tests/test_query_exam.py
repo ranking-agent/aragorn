@@ -165,7 +165,7 @@ def test_create_aux_graph():
     eb1 = EdgeBinding(id = 'eb1', attributes=[])
     eb2 = EdgeBinding(id = 'eb2', attributes=[])
     analysis = Analysis(resource_id = "example.com", edge_bindings = {"qedge1":[eb1], "qedge2":[eb2]})
-    agid, aux_graph = create_aux_graph(analysis.to_dict())
+    agid, aux_graph = create_aux_graph(analysis.to_dict(), {})
     assert len(agid) == 36
     assert aux_graph["edges"] == ["eb1", "eb2"]
     #Make sure that we can parse the aux graph
