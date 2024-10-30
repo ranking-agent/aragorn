@@ -973,7 +973,7 @@ async def multi_strider(messages, params, guid, bypass_cache):
     return responses
 
 
-def create_aux_graph(analysis, rule_info):
+def create_aux_graph(analysis, rule_info={}):
     """Given an analysis, create an auxiliary graph.
     Look through the analysis edge bindings, get all the knowledge edges, and put them in an aux graph.
     Give it a random uuid as an id."""
@@ -983,7 +983,7 @@ def create_aux_graph(analysis, rule_info):
         for edge in edgelist:
             aux_graph["edges"].append(edge["id"])
     for rule_def in AMIE_EXPANSIONS.get(rule_info.get("rule_key", ""),[]):
-        if rule_def["Rule"] == rule_def.get("rule_name", ""):
+        if rule_def["Rule"] == rule_info.get("rule_name", ""):
             aux_graph["attributes"].append(
                 {
                     "attribute_type_id": "biolink:has_numeric_value",
