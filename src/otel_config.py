@@ -19,7 +19,7 @@ def configure_otel(service_name, APP):
         # these supresses such warnings.
         logging.captureWarnings(capture=True)
         warnings.filterwarnings("ignore",category=ResourceWarning)
-        jaeger_host = os.environ.get('JAEGER_HOST', 'jaeger-otel-collector')
+        jaeger_host = os.environ.get('JAEGER_HOST', 'http://localhost/').rstrip('/')
         jaeger_port = int(os.environ.get('JAEGER_PORT', '4317'))
         jaeger_endpoint = f'{jaeger_host}:{jaeger_port}'
         otlp_exporter = OTLPSpanExporter(endpoint=jaeger_endpoint)
