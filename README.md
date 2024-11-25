@@ -8,13 +8,14 @@ A tool to query Knowledge Providers (KPs) and synthesize highly ranked answers r
 * Bridges the precision mismatch between data specificity in KPs and more abstract levels of user queries.
 * Generalizes answer ranking.
 * Normalizes data to use preferred and equivalent identifiers.  
+* Uses mined rules to perform inference and provide predicted answers for certain queries.
+* Provides a way to run pathfinder queries, using literature co-occurrence to find multi-hop paths between any two nodes.
 
 The ARAGORN tool relies on a number of external services to perform a standardized ranking of a user-specified question.
 
  - Strider - Accepts a query and provides knowledge-provider querying, answer generation and ranking.
- - Answer Coalesce - Accepts a query containing Strider answers and returns answers that have been coalesced by property, graph and/or ontology analysis.
  - Node normalization - A Translator SRI service that provides the preferred CURIE and equivalent identifiers for data in the query.
- - ARAGORN Ranker - Accepts a query and provides Omnicorp overlays, score and weight-correctness rankings of coalesced answers.
+ - ARAGORN Ranker - Accepts a query and provides Omnicorp overlays and scores of answers.
 
 ## Demonstration
 

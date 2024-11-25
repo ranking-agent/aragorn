@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 import copy
+import json
 import uuid
 import hashlib
 import os
@@ -17,6 +18,7 @@ num_intermediate_hops = 3
 TOTAL_PUBS = 27840000
 
 async def generate_from_strider(message):
+    """Generates knowledge graphs from strider."""
     try:
         async with httpx.AsyncClient(timeout=3600) as client:
             lookup_response = await client.post(
@@ -31,6 +33,8 @@ async def generate_from_strider(message):
 
 
 async def get_normalized_curies(curies, guid, logger):
+    """Gives us normalized curies that we can look up in our database, assuming
+    the database is also properly normalized."""
     async with httpx.AsyncClient(timeout=900) as client:
         try:
             normalizer_response = await client.post(
@@ -49,6 +53,9 @@ async def get_normalized_curies(curies, guid, logger):
 
 
 async def shadowfax(message, guid, logger):
+    """Processes pathfinder queries. This is done by using literature co-occurrence
+    to find nodes that occur in publications with our input nodes, then finding
+    paths that connect our input nodes through these intermediate nodes."""
     qgraph = message["message"]["query_graph"]
     pinned_node_ids = []
     for node in qgraph["nodes"].values():
@@ -69,13 +76,15 @@ async def shadowfax(message, guid, logger):
     target_equivalent_ids = [i["identifier"] for i in normalized_pinned_ids.get(pinned_node_ids[1], {"equivalent_identifiers": []})["equivalent_identifiers"]]
     target_category = normalized_pinned_ids.get(pinned_node_ids[1], {"type": ["biolink:NamedThing"]})["type"][0]
 
+    # Find shared publications between input nodes
     source_pubs = len(get_the_pmids([source_node]))
     target_pubs = len(get_the_pmids([target_node]))
     pairwise_pubs = get_the_pmids([source_node, target_node])
     if source_pubs == 0 or target_pubs == 0 or len(pairwise_pubs) == 0:
         logger.info(f"{guid}: No publications found.")
         return message, 200
-
+    
+    # Find other nodes from those shared publications
     curies = set()
     for pub in pairwise_pubs:
         curie_list = get_the_curies(pub)
@@ -105,6 +114,7 @@ async def shadowfax(message, guid, logger):
                                                     )
                                                  / 10000))
     
+    # Find the nodes with most significant co-occurrence
     pruned_curies = []
     while len(pruned_curies) < 50 and len(pruned_curies) < len(curies):
         max_cov = 0
@@ -174,6 +184,7 @@ async def shadowfax(message, guid, logger):
     lookup_knowledge_graph = merged_lookup_message_dict.get("knowledge_graph", {"nodes": {}, "edges": {}})
     lookup_aux_graphs = merged_lookup_message_dict.get("auxiliary_graphs", {})
 
+    # Build a large kg and find paths
     kg = networkx.Graph()
     kg.add_nodes_from([source_node, target_node])
     for lookup_result in lookup_results:
@@ -199,8 +210,8 @@ async def shadowfax(message, guid, logger):
                 # Handles constraints
                 if unpinned_node_category in curie_info[curie]["categories"]:
                     curie_path_mapping[curie].append(path)
-    logger.debug(f"{guid}: Found {num_paths} paths.")
 
+    # Build knowledge graph from paths
     results = []
     aux_graphs = {}
     knowledge_graph = {"nodes": copy.deepcopy(lookup_knowledge_graph["nodes"]), "edges": {}}
@@ -220,6 +231,8 @@ async def shadowfax(message, guid, logger):
                 after_edge_key = edge_key
         else:
             main_edge_key = edge_key
+    
+    # Builds results from paths according to structure
     for curie, curie_paths in curie_path_mapping.items():
         aux_edges_list = []
         before_curie_edges_list = []
@@ -247,8 +260,10 @@ async def shadowfax(message, guid, logger):
                         if kedge_key not in aux_edges:
                             aux_edges.append(kedge_key)
                         if before_curie and kedge_key not in before_curie_edges:
+                            # these edges come before the intermediate node
                             before_curie_edges.append(kedge_key)
                         elif kedge_key not in after_curie_edges:
+                            # these edges come after the intermediate node
                             after_curie_edges.append(kedge_key)
             aux_edges_list.append(aux_edges)
             before_curie_edges_list.append(before_curie_edges)

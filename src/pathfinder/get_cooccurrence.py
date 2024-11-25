@@ -13,6 +13,7 @@ CURIES_DB = os.environ.get("CURIES_DB", 2)
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
 def get_the_pmids(curies: List[str]):
+    """Returns a list of pmids for papers that mention all curies in list"""
     r = redis.Redis(
         host=REDIS_HOST,
         port=REDIS_PORT,
@@ -31,6 +32,7 @@ def get_the_pmids(curies: List[str]):
     return answer
 
 def get_the_curies(pmid: str):
+    """Returns a list of all curies in the paper corresponding to the pmid."""
     r = redis.Redis(
         host=REDIS_HOST,
         port=REDIS_PORT,

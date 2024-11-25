@@ -771,6 +771,7 @@ async def aragorn_lookup(input_message, params, guid, infer, pathfinder, answer_
     timeout_seconds = (input_message.get("parameters") or {}).get("timeout_seconds")
     if timeout_seconds:
         params["timeout_seconds"] = timeout_seconds if type(timeout_seconds) is int else 3 * 60
+    # If pathfinder, run shadowfax
     if pathfinder:
         return await shadowfax(input_message, guid, logger)
     if not infer:
@@ -824,6 +825,7 @@ def merge_results_by_node_op(message, params, guid) -> (dict, int):
 
 
 async def strider(message, params, guid, bypass_cache) -> (dict, int):
+    """Runs a single strider query."""
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     # select the type of query post. "test" will come from the tester
@@ -841,6 +843,7 @@ async def strider(message, params, guid, bypass_cache) -> (dict, int):
 
 
 async def normalize_qgraph_ids(m):
+    """Normalizes qgraph so ids are the ones referred to by node norm."""
     url = f'{os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")}get_normalized_nodes'
     qnodes = m["message"]["query_graph"]["nodes"]
     qnode_ids = set()
@@ -880,7 +883,9 @@ def get_infer_parameters(input_message):
     qualifiers: the qualifiers of the inferred edge
     source: the query node id of the source node
     target: the query node id of the target node
-    source_input: True if the source node is the input node, False if the target node is the input node"""
+    source_input: True if the source node is the input node, False if the target node is the input node
+    mcq: True if this is a set input query, false otherwise
+    member_ids: The members of the set"""
     for edge_id, edge in input_message["message"]["query_graph"]["edges"].items():
         source = edge["subject"]
         target = edge["object"]
@@ -917,22 +922,23 @@ def get_rule_key(predicate, qualifiers, mcq):
     return json.dumps(keydict,sort_keys=True)
 
 def expand_query(input_message, params, guid):
-    #Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
+    """Expands query based on rules"""
+    # Contract: 1. there is a single edge in the query graph 2. The edge is marked inferred.   3. Either the source
     #          or the target has IDs, but not both. 4. The number of ids on the query node is 1.
     input_id, predicate, qualifiers, source, source_input, target, qedge_id, mcq, member_ids = get_infer_parameters(input_message)
     key = get_rule_key(predicate, qualifiers, mcq)
-    #We want to run the non-inferred version of the query as well
+    # We want to run the non-inferred version of the query as well
     qg = deepcopy(input_message["message"]["query_graph"])
     for eid,edge in qg["edges"].items():
         del edge["knowledge_type"]
     messages = [{"message": {"query_graph":qg}, "parameters": input_message.get("parameters") or {}}]
-    #If it's an MCQ, then we also copy the KG which has the member_of edges
+    # If it's an MCQ, then we also copy the KG which has the member_of edges
     if mcq:
         messages[0]["message"]["knowledge_graph"] = deepcopy(input_message["message"]["knowledge_graph"])
-    #If we don't have any AMIE expansions, this will just generate the direct query
+    # If we don't have any AMIE expansions, this will just generate the direct query
     for rule_def in AMIE_EXPANSIONS.get(key,[]):
         query_template = Template(json.dumps(rule_def["template"]))
-        #need to do a bit of surgery depending on what the input is.
+        # need to do a bit of surgery depending on what the input is.
         if source_input:
             qs = query_template.substitute(source=source,target=target,source_id = input_id, target_id='')
         else:
@@ -961,12 +967,13 @@ def expand_query(input_message, params, guid):
 
 
 async def multi_strider(messages, params, guid, bypass_cache):
+    """Runs multi strider"""
     strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 
     strider_url += "multiquery"
-    #We don't want to do subservice_post, because that assumes TRAPI in and out.
-    #it leads to confusion.
-    #response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
+    # We don't want to do subservice_post, because that assumes TRAPI in and out.
+    # it leads to confusion.
+    # response, status_code = await subservice_post("strider", strider_url, messages, guid, asyncquery=True)
     responses = await post_with_callback(strider_url,messages,guid,params,bypass_cache)
 
     return responses
@@ -988,9 +995,9 @@ def add_knowledge_edge(result_message, aux_graph_ids, answer, robokop):
     """Create a new knowledge edge in the result message, with the aux graph ids as support."""
     # Find the subject, object, and predicate of the original query
     query_graph = result_message["message"]["query_graph"]
-    #get the first key and value from the edges
+    # get the first key and value from the edges
     qedge_id, qedge = next(iter(query_graph["edges"].items()))
-    #For the nodes, if there is an id, then use it in the knowledge edge. If there is not, then use the answer
+    # For the nodes, if there is an id, then use it in the knowledge edge. If there is not, then use the answer
     qnode_subject_id = qedge["subject"]
     qnode_object_id = qedge["object"]
     if "ids" in query_graph["nodes"][qnode_subject_id] and query_graph["nodes"][qnode_subject_id]["ids"] is not None:
