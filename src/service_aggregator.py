@@ -1184,9 +1184,20 @@ def group_results_by_qnode(merge_qnode, result_message, lookup_results):
     return grouped_results
 
 
-async def make_one_request(client, automat_url, message, sem):
-    async with sem:
-        r = await client.post(f"{automat_url}query", json=message)
+async def make_one_request(client, automat_url, message, sem, retries=1):
+    try:
+        async with sem:
+            r = await client.post(f"{automat_url}query", json=message)
+    except httpx.NetworkError as e:
+        if retries <= 3:
+            await asyncio.sleep(retries * 2)
+            r = make_one_request(client, automat_url, message, sem, retries=retries + 1)
+        else:
+            logger.error(f"NetworkError occurred while calling {automat_url}: {e}")
+            r = None
+    except httpx.TimeoutException as t:
+        logger.error(f"TimeoutException occurred while calling {automat_url}: {t}")
+        r = None
     return r
 
 async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
@@ -1213,7 +1224,10 @@ async def robokop_infer(input_message, guid, question_qnode, answer_qnode):
 
     nr = 0
     for response in responses:
-        if response.status_code == 200:
+        if response is None:
+            # httpx error occurred for this specific call, there is no Response object
+            pass
+        elif response.status_code == 200:
             #Validate and clean
             rmessage = PDResponse(**response.json()).dict(exclude_none=True)
             await filter_repeated_nodes(rmessage,guid)
