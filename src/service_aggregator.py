@@ -730,7 +730,8 @@ async def lookup(message, params, guid, infer=False, pathfinder=False, caller="A
     :param caller:
     :return:
     """
-    message = await normalize_qgraph_ids(message)
+    # For this goofy branch where we are calling a non-normalized RTX graph, we want to skip normalization
+    #message = await normalize_qgraph_ids(message)
     if caller == "ARAGORN":
         return await aragorn_lookup(message, params, guid, infer, pathfinder, answer_qnode, bypass_cache)
     elif caller == "ROBOKOP":
