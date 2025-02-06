@@ -1,0 +1,19 @@
+{
+  "treats":
+  {
+    "edge_definition": { "predicate":  "biolink:treats" },
+    "AMIE_inputs": [
+      {
+        "input_file": "KG2_rules_notest.txt",
+        "min_positive_example": 500,
+        "min_std_confidence": 0.01,
+        "max_negative_examples": 9000,
+        "excluded_predicates": ["biolink:related_to", "biolink:associated_with"]
+      }
+    ],
+    "source": "biolink:ChemicalEntity",
+    "target": "biolink:DiseaseOrPhenotypicFeature",
+    "sort": "Score",
+    "keep": 100
+  }
+}

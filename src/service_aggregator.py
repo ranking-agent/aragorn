@@ -35,8 +35,9 @@ queue_file_dir = "./queue-files"
 
 #Load in the AMIE rules.
 thisdir = os.path.dirname(__file__)
-rulefiles = [os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned_finalized.json")]
-rulefiles.append( os.path.join(thisdir, "rules", "MCQ.json"))
+#rulefiles = [os.path.join(thisdir,"rules","kara_typed_rules","rules_with_types_cleaned_finalized.json")]
+#rulefiles.append( os.path.join(thisdir, "rules", "MCQ.json"))
+rulefiles = [os.path.join(thisdir,"rules","rules_KG2.json")]
 AMIE_EXPANSIONS = {}
 for rulefile in rulefiles:
     with open(rulefile,'r') as inf:

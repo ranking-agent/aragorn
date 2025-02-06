@@ -8,6 +8,8 @@ def add_node(t,node):
     t['query_graph']['nodes'][node] = {'categories': ['biolink:NamedThing']}
 
 def add_edge(trapi,subject,object,predicate,n,qpredmap):
+    if predicate.startswith("<"):
+        predicate = predicate[1:-1]
     if predicate.startswith('biolink:'):
         trapi['query_graph']['edges'][f'edge_{n}'] = {'subject': subject, 'object': object, 'predicates':[predicate]}
     else:
@@ -104,6 +106,7 @@ def parse_rulefile(source, rule_conf, qmap):
     try:
         with open(floc,"r") as inf:
             line = inf.readline()
+            print(line)
             while not line.startswith('Rule\t'):
                 line = inf.readline()
             header = line.strip().split('\t')
@@ -139,6 +142,7 @@ def create_rule(rulename, rule_config, qmap):
     key = generate_key(rule_config)
     rules = []
     for source in rule_config['AMIE_inputs']:
+        print(source)
         rules += parse_rulefile(source, rule_config, qmap)
     sort_rules(rules, rule_config)
     rules = chop_rules(rules, rule_config)
@@ -158,15 +162,17 @@ def read_qmap():
     return qmap
 
 def go():
-    with open('rule_config.json','r') as inf:
+    with open('rule_config_kg2.json','r') as inf:
         config = json.load(inf)
+    print("read qmap")
     qmap = read_qmap()
     all_rules = {}
     for rulename, rule_config in config.items():
+        print(rulename)
         key,rules = create_rule(rulename, rule_config, qmap)
         if len(rules) > 0:
             all_rules[key] = rules
-    with open('rules.json','w') as outf:
+    with open('rules_KG2.json','w') as outf:
         json.dump(all_rules,outf,indent=4)
 
 if __name__ == '__main__':
