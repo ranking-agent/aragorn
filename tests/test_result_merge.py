@@ -53,37 +53,15 @@ def test_query_examination_pathfinder():
                             "MONDO:0004979"
                         ],
                         "name": "asthma"
-                    },
-                    "un": {
-                        "categories": [
-                            "biolink:NamedThing"
-                        ]
                     }
                 },
-                "edges": {
-                    "e0": {
+                "paths": {
+                    "p0": {
                         "subject": "n0",
                         "object": "n1",
                         "predicates": [
                             "biolink:related_to"
                         ],
-                        "knowledge_type": "inferred"
-                    },
-                    "e1": {
-                        "subject": "n0",
-                        "object": "un",
-                        "predicates": [
-                            "biolink:related_to"
-                        ],
-                        "knowledge_type": "inferred"
-                    },
-                    "e2": {
-                        "subject": "n1",
-                        "object": "un",
-                        "predicates": [
-                            "biolink:related_to"
-                        ],
-                        "knowledge_type": "inferred"
                     }
                 }
             },
