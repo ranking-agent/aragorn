@@ -174,7 +174,7 @@ async def entry(message, guid, coalesce_type, caller) -> (dict, int):
                 {"id": "lookup"},
                 # {"id": "overlay_connect_knodes"},
                 # {"id": "score"},
-                # {"id": "filter_kgraph_orphans"}
+                {"id": "filter_kgraph_orphans"}
             ]
         else:
             # TODO: if this is robokop, need to normalize.
