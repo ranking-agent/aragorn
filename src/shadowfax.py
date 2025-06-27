@@ -60,10 +60,28 @@ async def shadowfax(message, guid, logger):
     for node in qgraph["nodes"].values():
         if node.get("ids", None) is not None:
             pinned_node_ids.append(node["ids"][0])
-        else:
-            unpinned_node_category = node.get("categories", ["biolink:NamedThing"])[0]
     if len(pinned_node_ids) != 2:
         logger.info(f"{guid}: Pathfinder queries require two pinned nodes.")
+        return message, 500
+    
+    intermediate_categories = []
+    if qgraph.get("paths", None) is not None:
+        path_key = next(iter(qgraph["paths"].keys()))
+        qpath = qgraph["paths"][path_key]
+        if qpath.get("constraints", None):
+            constraints = qpath["constraints"]
+            if len(constraints) > 1:
+                logger.info(f"{guid}: Pathfinder queries do not support multiple constraints.")
+                return message, 500
+            if len(intermediate_categories) > 1:
+                logger.info(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
+                return message, 500
+            if len(constraints) > 0:
+                intermediate_categories = constraints[0].get("intermediate_categories", None) or []
+        else:
+            intermediate_categories = ["biolink:NamedThing"]
+    else:
+        logger.info(f"{guid}: Pathfinder queries require paths.")
         return message, 500
     
     normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
@@ -201,17 +219,19 @@ async def shadowfax(message, guid, logger):
 
     paths = networkx.all_simple_paths(kg, source_node, target_node, 4)
     num_paths = 0
-    curie_path_mapping = defaultdict(list)
+    result_paths = []
     for path in paths:
         num_paths += 1
+        fits_constraint = False
         for curie in path:
             if curie not in [source_node, target_node] and curie in curie_info.keys():
-                # Handles constraints
-                if unpinned_node_category in curie_info[curie]["categories"]:
-                    curie_path_mapping[curie].append(path)
+                # Handles constraints, behavior may change depending decision handling multiple constraints
+                if intermediate_categories[0] in curie_info[curie]["categories"]:
+                    fits_constraint = True
+        if fits_constraint:
+            result_paths.append(path)
 
     # Build knowledge graph from paths
-    results = []
     aux_graphs = {}
     knowledge_graph = {"nodes": copy.deepcopy(lookup_knowledge_graph["nodes"]), "edges": {}}
     for node_key, node in qgraph["nodes"].items():
@@ -220,217 +240,73 @@ async def shadowfax(message, guid, logger):
                 source_node_key = node_key
             elif pinned_node_ids[1] in node["ids"]:
                 target_node_key = node_key
-        else:
-            unpinned_node_key = node_key
-    for edge_key, edge in qgraph["edges"].items():
-        if unpinned_node_key == edge["subject"] or unpinned_node_key == edge["object"]:
-            if source_node_key == edge["subject"] or source_node_key == edge["object"]:
-                before_edge_key = edge_key
-            elif target_node_key == edge["subject"] or target_node_key == edge["object"]:
-                after_edge_key = edge_key
-        else:
-            main_edge_key = edge_key
+            else:
+                logger.info(f"{guid}: Additional node in pathfinder query.")
+                return message, 500
+
+    result = {
+        "node_bindings": {
+            source_node_key: [
+                {
+                    "id": source_node,
+                    "attributes": []
+                }
+            ],
+            target_node_key: [
+                {
+                    "id": target_node,
+                    "attributes": []
+                }
+            ]
+        },
+        "analyses": []
+    }
     
     # Builds results from paths according to structure
-    for curie, curie_paths in curie_path_mapping.items():
-        aux_edges_list = []
-        before_curie_edges_list = []
-        after_curie_edges_list = []
-        for path in curie_paths:
-            aux_edges = []
-            before_curie_edges = []
-            after_curie_edges = []
-            before_curie = True
-            for i, node in enumerate(path[:-1]):
-                next_node = path[i+1]
-                if node == curie:
-                    before_curie = False
-                for kedge_key in kg[node][next_node]["keys"]:
-                    edge = lookup_knowledge_graph["edges"][kedge_key]
-                    if (node in edge["subject"] or node in edge["object"]) and (next_node in edge["subject"] or next_node in edge["object"]):
-                        knowledge_graph["edges"][kedge_key] = edge
-                        # Handles support graphs from subclassing
-                        for attribute in edge["attributes"]:
-                            if attribute.get("attribute_type_id") == "biolink:support_graphs":
-                                for support_graph in attribute.get("value", []):
-                                    aux_graphs[support_graph] = lookup_aux_graphs[support_graph]
-                                    for support_edge in lookup_aux_graphs[support_graph].get("edges", []):
-                                        knowledge_graph["edges"][support_edge] = lookup_knowledge_graph["edges"][support_edge]
-                        if kedge_key not in aux_edges:
-                            aux_edges.append(kedge_key)
-                        if before_curie and kedge_key not in before_curie_edges:
-                            # these edges come before the intermediate node
-                            before_curie_edges.append(kedge_key)
-                        elif kedge_key not in after_curie_edges:
-                            # these edges come after the intermediate node
-                            after_curie_edges.append(kedge_key)
-            aux_edges_list.append(aux_edges)
-            before_curie_edges_list.append(before_curie_edges)
-            after_curie_edges_list.append(after_curie_edges)
+    for path in result_paths:
+        aux_edges = []
         aux_edges_keys = []
-        before_curie_edges_keys = []
-        after_curie_edges_keys = []
-        for aux_edges in aux_edges_list:
-            sha256 = hashlib.sha256()
-            for x in set(aux_edges):
-                sha256.update(bytes(x, encoding="utf-8"))
-            aux_edges_key = sha256.hexdigest()
-            if aux_edges_key not in aux_edges_keys:
-                aux_graphs[aux_edges_key] = {"edges": list(aux_edges), "attributes": []}
-                aux_edges_keys.append(aux_edges_key)
-        for before_curie_edges in before_curie_edges_list:
-            sha256 = hashlib.sha256()
-            for x in set(before_curie_edges):
-                sha256.update(bytes(x, encoding="utf-8"))
-            before_curie_edges_key = sha256.hexdigest()
-            if before_curie_edges_key not in before_curie_edges_keys:
-                aux_graphs[before_curie_edges_key] = {"edges": list(before_curie_edges), "attributes": []}
-                before_curie_edges_keys.append(before_curie_edges_key)
-        for after_curie_edges in after_curie_edges_list:
-            sha256 = hashlib.sha256()
-            for x in set(after_curie_edges):
-                sha256.update(bytes(x, encoding="utf-8"))
-            after_curie_edges_key = sha256.hexdigest()
-            if after_curie_edges_key not in after_curie_edges_keys:
-                aux_graphs[after_curie_edges_key] = {"edges": list(after_curie_edges), "attributes": []}
-                after_curie_edges_keys.append(after_curie_edges_key)
-        main_edge = uuid.uuid1().hex
-        before_edge = uuid.uuid1().hex
-        after_edge = uuid.uuid1().hex
-        knowledge_graph["edges"][main_edge] = {
-            "subject": source_node,
-            "object": target_node,
-            "predicate": "biolink:related_to",
-            "sources": [
-                {
-                    "resource_id": "infores:aragorn",
-                    "resource_role": "primary_knowledge_source",
-                }
-            ],
-            "attributes": [
-                {
-                    "attribute_type_id": "biolink:support_graphs",
-                    "value": aux_edges_keys
-                },
-                {
-                    "attribute_type_id": "biolink:agent_type",
-                    "value": "computational_model",
-                    "attribute_source": "infores:aragorn"
-                },
-                {
-                    "attribute_type_id": "biolink:knowledge_level",
-                    "value": "prediction",
-                    "attribute_source": "infores:aragorn"
-                }
-            ]
-        }
-        knowledge_graph["edges"][before_edge] = {
-            "subject": source_node,
-            "object": curie,
-            "predicate": "biolink:related_to",
-            "sources": [
-                {
-                    "resource_id": "infores:aragorn",
-                    "resource_role": "primary_knowledge_source",
-                }
-            ],
-            "attributes": [
-                {
-                    "attribute_type_id": "biolink:support_graphs",
-                    "value": before_curie_edges_keys
-                },
-                {
-                    "attribute_type_id": "biolink:agent_type",
-                    "value": "computational_model",
-                    "attribute_source": "infores:aragorn"
-                },
-                {
-                    "attribute_type_id": "biolink:knowledge_level",
-                    "value": "prediction",
-                    "attribute_source": "infores:aragorn"
-                }
-            ]
-        }
-        knowledge_graph["edges"][after_edge] = {
-            "subject": curie,
-            "object": target_node,
-            "predicate": "biolink:related_to",
-            "sources": [
-                {
-                    "resource_id": "infores:aragorn",
-                    "resource_role": "primary_knowledge_source",
-                }
-            ],
-            "attributes": [
-                {
-                    "attribute_type_id": "biolink:support_graphs",
-                    "value": after_curie_edges_keys
-                },
-                {
-                    "attribute_type_id": "biolink:agent_type",
-                    "value": "computational_model",
-                    "attribute_source": "infores:aragorn"
-                },
-                {
-                    "attribute_type_id": "biolink:knowledge_level",
-                    "value": "prediction",
-                    "attribute_source": "infores:aragorn"
-                }
-            ]
-        }
-        result = {
-            "node_bindings": {
-                source_node_key: [
+        for i, node in enumerate(path[:-1]):
+            next_node = path[i+1]
+            for kedge_key in kg[node][next_node]["keys"]:
+                edge = lookup_knowledge_graph["edges"][kedge_key]
+                if (node in edge["subject"] or node in edge["object"]) and (next_node in edge["subject"] or next_node in edge["object"]):
+                    knowledge_graph["edges"][kedge_key] = edge
+                    # Handles support graphs from subclassing
+                    for attribute in edge["attributes"]:
+                        if attribute.get("attribute_type_id") == "biolink:support_graphs":
+                            for support_graph in attribute.get("value", []):
+                                aux_graphs[support_graph] = lookup_aux_graphs[support_graph]
+                                for support_edge in lookup_aux_graphs[support_graph].get("edges", []):
+                                    knowledge_graph["edges"][support_edge] = lookup_knowledge_graph["edges"][support_edge]
+                    if kedge_key not in aux_edges:
+                        aux_edges.append(kedge_key)
+        sha256 = hashlib.sha256()
+        for x in set(aux_edges):
+            sha256.update(bytes(x, encoding="utf-8"))
+        aux_graph_key = sha256.hexdigest()
+        if aux_graph_key not in aux_edges_keys:
+            aux_graphs[aux_graph_key] = {"edges": list(aux_edges), "attributes": []}
+            aux_edges_keys.append(aux_graph_key)
+        
+        analysis = {
+            "resource_id": "infores:aragorn",
+            "path_bindings": {
+                path_key: [
                     {
-                        "id": source_node,
+                        "id": aux_graph_key,
                         "attributes": []
                     }
                 ],
-                unpinned_node_key: [
-                    {
-                        "id": curie,
-                        "attributes": []
-                    }
-                ],
-                target_node_key: [
-                    {
-                        "id": target_node,
-                        "attributes": []
-                    }
-                ]
-            },
-            "analyses": [
-                {
-                    "resource_id": "infores:aragorn",
-                    "edge_bindings": {
-                        main_edge_key: [
-                            {
-                                "id": main_edge,
-                                "attributes": []
-                            }
-                        ],
-                        before_edge_key: [
-                            {
-                                "id": before_edge,
-                                "attributes": []
-                            }
-                        ],
-                        after_edge_key: [
-                            {
-                                "id": after_edge,
-                                "attributes": []
-                            }
-                        ]
-                    }
-                }
-            ]
+            }
         }
-        results.append(result)
+        result["analyses"].append(analysis)
+        
     result_message = {
         "message": {
             "query_graph": message["message"]["query_graph"],
             "knowledge_graph": knowledge_graph,
-            "results": results,
+            "results": [result],
             "auxiliary_graphs": aux_graphs
         }
     }
