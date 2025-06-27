@@ -83,8 +83,7 @@ async def shadowfax(message, guid, logger):
     
     normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
     if normalized_pinned_ids is None:
-        logger.error(f"{guid}: Failed to get a good response from Node Normalizer")
-        return message, 500
+        normalized_pinned_ids = {}
 
     source_node = normalized_pinned_ids.get(pinned_node_ids[0], {"id": {"identifier": pinned_node_ids[0]}})["id"]["identifier"]
     source_category = normalized_pinned_ids.get(pinned_node_ids[0], {"type": ["biolink:NamedThing"]})["type"][0]
