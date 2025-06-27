@@ -55,11 +55,13 @@ async def filter_kgraph_orphans(message,params,guid):
         for result in results:
             for qnode,knodes in result.get('node_bindings',{}).items():
                 nodes.update([ k['id'] for k in knodes ])
-        #2. Result.Analysis edge bindings
+        #2. Result.Analysis edge bindings and path bindings
         for result in results:
             for analysis in result.get('analyses',[]):
                 for qedge, kedges in analysis.get('edge_bindings', {}).items():
                     edges.update([k['id'] for k in kedges])
+                for qpath, aux_graphs in analysis.get('path_bindings', {}).items():
+                    auxgraphs.update(a["id"] for a in aux_graphs)
         #3. Result.Analysis support graphs
         for result in results:
             for analysis in result.get('analyses',[]):
