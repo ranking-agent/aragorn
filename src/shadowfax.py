@@ -61,28 +61,25 @@ async def shadowfax(message, guid, logger):
         if node.get("ids", None) is not None:
             pinned_node_ids.append(node["ids"][0])
     if len(pinned_node_ids) != 2:
-        logger.info(f"{guid}: Pathfinder queries require two pinned nodes.")
+        logger.error(f"{guid}: Pathfinder queries require two pinned nodes.")
         return message, 500
     
     intermediate_categories = []
     if qgraph.get("paths", None) is not None:
         path_key = next(iter(qgraph["paths"].keys()))
         qpath = qgraph["paths"][path_key]
-        if qpath.get("constraints", None):
+        if qpath.get("constraints", None) is not None:
             constraints = qpath["constraints"]
             if len(constraints) > 1:
-                logger.info(f"{guid}: Pathfinder queries do not support multiple constraints.")
-                return message, 500
-            if len(intermediate_categories) > 1:
-                logger.info(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
+                logger.error(f"{guid}: Pathfinder queries do not support multiple constraints.")
                 return message, 500
             if len(constraints) > 0:
                 intermediate_categories = constraints[0].get("intermediate_categories", None) or []
+            if len(intermediate_categories) > 1:
+                logger.error(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
+                return message, 500
         else:
             intermediate_categories = ["biolink:NamedThing"]
-    else:
-        logger.info(f"{guid}: Pathfinder queries require paths.")
-        return message, 500
     
     normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
 
@@ -241,7 +238,7 @@ async def shadowfax(message, guid, logger):
             elif pinned_node_ids[1] in node["ids"]:
                 target_node_key = node_key
             else:
-                logger.info(f"{guid}: Additional node in pathfinder query.")
+                logger.error(f"{guid}: Additional node in pathfinder query.")
                 return message, 500
 
     result = {
