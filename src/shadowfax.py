@@ -66,23 +66,25 @@ async def shadowfax(message, guid, logger):
     pinned_node_ids = list(pinned_node_ids_set)
     
     intermediate_categories = []
-    if qgraph.get("paths", None) is not None:
-        path_key = next(iter(qgraph["paths"].keys()))
-        qpath = qgraph["paths"][path_key]
-        if qpath.get("constraints", None) is not None:
-            constraints = qpath["constraints"]
-            if len(constraints) > 1:
-                logger.error(f"{guid}: Pathfinder queries do not support multiple constraints.")
-                return message, 500
-            if len(constraints) > 0:
-                intermediate_categories = constraints[0].get("intermediate_categories", None) or []
-            if len(intermediate_categories) > 1:
-                logger.error(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
-                return message, 500
-        else:
-            intermediate_categories = ["biolink:NamedThing"]
+    path_key = next(iter(qgraph["paths"].keys()))
+    qpath = qgraph["paths"][path_key]
+    if qpath.get("constraints", None) is not None:
+        constraints = qpath["constraints"]
+        if len(constraints) > 1:
+            logger.error(f"{guid}: Pathfinder queries do not support multiple constraints.")
+            return message, 500
+        if len(constraints) > 0:
+            intermediate_categories = constraints[0].get("intermediate_categories", None) or []
+        if len(intermediate_categories) > 1:
+            logger.error(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
+            return message, 500
+    else:
+        intermediate_categories = ["biolink:NamedThing"]
     
     normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
+    if normalized_pinned_ids is None:
+        logger.error(f"{guid}: Failed to get a good response from Node Normalizer")
+        return message, 500
 
     source_node = normalized_pinned_ids.get(pinned_node_ids[0], {"id": {"identifier": pinned_node_ids[0]}})["id"]["identifier"]
     source_category = normalized_pinned_ids.get(pinned_node_ids[0], {"type": ["biolink:NamedThing"]})["type"][0]
@@ -112,6 +114,9 @@ async def shadowfax(message, guid, logger):
         return message, 200
     
     normalizer_response = await get_normalized_curies(list(curies), guid, logger)
+    if normalizer_response is None:
+        logger.error(f"{guid}: Failed to get a good response from Node Normalizer")
+        return message, 500
 
     curie_info = defaultdict(dict)
     for curie, normalizer_info in normalizer_response.items():
@@ -232,6 +237,9 @@ async def shadowfax(message, guid, logger):
     # Build knowledge graph from paths
     aux_graphs = {}
     knowledge_graph = {"nodes": copy.deepcopy(lookup_knowledge_graph["nodes"]), "edges": {}}
+    # making the linter happy
+    source_node_key = ""
+    target_node_key = ""
     for node_key, node in qgraph["nodes"].items():
         if node.get("ids", None) is not None:
             if pinned_node_ids[0] in node["ids"]:
