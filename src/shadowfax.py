@@ -56,13 +56,14 @@ async def shadowfax(message, guid, logger):
     to find nodes that occur in publications with our input nodes, then finding
     paths that connect our input nodes through these intermediate nodes."""
     qgraph = message["message"]["query_graph"]
-    pinned_node_ids = []
+    pinned_node_ids_set = set()
     for node in qgraph["nodes"].values():
         if node.get("ids", None) is not None:
-            pinned_node_ids.append(node["ids"][0])
-    if len(pinned_node_ids) != 2:
-        logger.error(f"{guid}: Pathfinder queries require two pinned nodes.")
+            pinned_node_ids_set.add(node["ids"][0])
+    if len(pinned_node_ids_set) != 2:
+        logger.error(f"{guid}: Pathfinder queries require two different pinned nodes.")
         return message, 500
+    pinned_node_ids = list(pinned_node_ids_set)
     
     intermediate_categories = []
     if qgraph.get("paths", None) is not None:
