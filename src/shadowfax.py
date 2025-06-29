@@ -1,10 +1,12 @@
+"Handles pathfinder queries"
 import asyncio
 from collections import defaultdict
 import copy
 import hashlib
+import httpx
 import os
 import networkx
-import httpx
+
 
 from reasoner_pydantic import Message
 
