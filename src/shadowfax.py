@@ -1,7 +1,6 @@
 import asyncio
 from collections import defaultdict
 import copy
-import uuid
 import hashlib
 import os
 import networkx
@@ -13,8 +12,9 @@ from src.pathfinder.get_cooccurrence import get_the_curies, get_the_pmids
 
 node_norm_url = os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")
 strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
-num_intermediate_hops = 3
+NUM_TOTAL_HOPS = 4
 TOTAL_PUBS = 27840000
+
 
 async def generate_from_strider(message):
     """Generates knowledge graphs from strider."""
@@ -38,49 +38,47 @@ async def get_normalized_curies(curies, guid, logger):
         try:
             normalizer_response = await client.post(
                 url=node_norm_url + "get_normalized_nodes",
-                json={
-                    "curies": list(curies),
-                    "conflate": True,
-                    "description": False,
-                    "drug_chemical_conflate": True
-                }
+                json={"curies": list(curies), "conflate": True, "description": False, "drug_chemical_conflate": True},
             )
             normalizer_response.raise_for_status()
             return normalizer_response.json()
-        except:
+        except Exception:
             logger.info(f"{guid}: Failed to get a response from node norm")
 
 
 async def shadowfax(message, guid, logger):
-    """Processes pathfinder queries. This is done by using literature co-occurrence
-    to find nodes that occur in publications with our input nodes, then finding
-    paths that connect our input nodes through these intermediate nodes."""
+    """Processes pathfinder queries. This is done by using literature
+    co-occurrence to find nodes that occur in publications with our input
+    nodes, then finding paths that connect our input nodes through these
+    intermediate nodes."""
     qgraph = message["message"]["query_graph"]
     pinned_node_ids_set = set()
-    for node in qgraph["nodes"].values():
+    pinned_node_keys = []
+    for node_key, node in qgraph["nodes"].items():
+        pinned_node_keys.append(node_key)
         if node.get("ids", None) is not None:
             pinned_node_ids_set.add(node["ids"][0])
     if len(pinned_node_ids_set) != 2:
-        logger.error(f"{guid}: Pathfinder queries require two different pinned nodes.")
+        logger.error(f"{guid}: Pathfinder queries require two pinned nodes.")
         return message, 500
     pinned_node_ids = list(pinned_node_ids_set)
-    
+
     intermediate_categories = []
     path_key = next(iter(qgraph["paths"].keys()))
     qpath = qgraph["paths"][path_key]
     if qpath.get("constraints", None) is not None:
         constraints = qpath["constraints"]
         if len(constraints) > 1:
-            logger.error(f"{guid}: Pathfinder queries do not support multiple constraints.")
+            logger.error(f"{guid}: Pathfinder queries do not" "support multiple constraints.")
             return message, 500
         if len(constraints) > 0:
             intermediate_categories = constraints[0].get("intermediate_categories", None) or []
         if len(intermediate_categories) > 1:
-            logger.error(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
+            logger.error(f"{guid}: Pathfinder queries do not support multiple" "intermediate categories")
             return message, 500
     else:
         intermediate_categories = ["biolink:NamedThing"]
-    
+
     normalized_pinned_ids = await get_normalized_curies(pinned_node_ids, guid, logger)
     if normalized_pinned_ids is None:
         normalized_pinned_ids = {}
@@ -99,7 +97,7 @@ async def shadowfax(message, guid, logger):
     if source_pubs == 0 or target_pubs == 0 or len(pairwise_pubs) == 0:
         logger.info(f"{guid}: No publications found.")
         return message, 200
-    
+
     # Find other nodes from those shared publications
     curies = set()
     for pub in pairwise_pubs:
@@ -108,13 +106,13 @@ async def shadowfax(message, guid, logger):
             if curie not in [source_node, target_node] and curie not in source_equivalent_ids and curie not in target_equivalent_ids:
                 curies.add(curie)
 
-    if len(curies) == 0: 
+    if len(curies) == 0:
         logger.info(f"{guid}: No curies found.")
         return message, 200
-    
+
     normalizer_response = await get_normalized_curies(list(curies), guid, logger)
     if normalizer_response is None:
-        logger.error(f"{guid}: Failed to get a good response from Node Normalizer")
+        logger.error(f"{guid}: Failed to get a good response" "from Node Normalizer")
         return message, 500
 
     curie_info = defaultdict(dict)
@@ -124,15 +122,12 @@ async def shadowfax(message, guid, logger):
             cooc = len(get_the_pmids([curie, source_node, target_node]))
             num_pubs = len(get_the_pmids([curie]))
             curie_info[curie]["pubs"] = num_pubs
-            curie_info[curie]["score"] = max(0, ((cooc / TOTAL_PUBS) -
-                                                 (source_pubs / TOTAL_PUBS) *
-                                                 (target_pubs / TOTAL_PUBS) *
-                                                 (num_pubs / TOTAL_PUBS)) *
-                                                 (normalizer_info.get(
-                                                     "information_content", 1
-                                                    )
-                                                 / 10000))
-    
+            curie_info[curie]["score"] = max(
+                0,
+                ((cooc / TOTAL_PUBS) - (source_pubs / TOTAL_PUBS) * (target_pubs / TOTAL_PUBS) * (num_pubs / TOTAL_PUBS))
+                * (normalizer_info.get("information_content", 1) / 10000),
+            )
+
     # Find the nodes with most significant co-occurrence
     pruned_curies = []
     while len(pruned_curies) < 50 and len(pruned_curies) < len(curies):
@@ -149,47 +144,33 @@ async def shadowfax(message, guid, logger):
     node_category_mapping[target_category].append(target_node)
     for curie in pruned_curies:
         node_category_mapping[curie_info[curie]["categories"][0]].append(curie)
-    
+
     lookup_nodes = {}
     for category, category_curies in node_category_mapping.items():
-        lookup_nodes[category.removeprefix("biolink:")] = {
-            "ids": category_curies,
-            "categories": [category]
-        }
-    
+        lookup_nodes[category.removeprefix("biolink:")] = {"ids": category_curies, "categories": [category]}
+
     # Create queries matching each category to each other
     strider_multiquery = []
     for subject_index, subject_category in enumerate(lookup_nodes.keys()):
-        for object_category in list(lookup_nodes.keys())[(subject_index + 1):]:
-            lookup_edge = {
-                "subject": subject_category,
-                "object": object_category,
-                "predicates": [
-                    "biolink:related_to"
-                ]
-            }
+        for object_category in list(lookup_nodes.keys())[(subject_index + 1) :]:  # noqa: E501
+            lookup_edge = {"subject": subject_category, "object": object_category, "predicates": ["biolink:related_to"]}
             m = {
                 "message": {
                     "query_graph": {
-                        "nodes": {
-                            subject_category: lookup_nodes[subject_category],
-                            object_category: lookup_nodes[object_category]
-                        },
-                        "edges": {
-                            "e0": lookup_edge
-                        }
+                        "nodes": {subject_category: lookup_nodes[subject_category], object_category: lookup_nodes[object_category]},
+                        "edges": {"e0": lookup_edge},
                     }
                 }
             }
             strider_multiquery.append(m)
     lookup_messages = []
-    logger.debug(f"{guid}: Sending {len(strider_multiquery)} requests to strider.")
+    logger.debug(f"{guid}: Sending {len(strider_multiquery)}" "requests to strider.")
     # We will want to use multistrider here eventually
     for lookup_message in await asyncio.gather(*[generate_from_strider(lookup_query) for lookup_query in strider_multiquery]):
         if lookup_message:
             lookup_message["query_graph"] = {"nodes": {}, "edges": {}}
             lookup_messages.append(lookup_message)
-    logger.debug(f"{guid}: Received {len(lookup_messages)} responses from strider.")
+    logger.debug(f"{guid}: Received {len(lookup_messages)} responses" "from strider.")
 
     merged_lookup_message = Message.parse_obj(lookup_messages[0])
     lookup_results = []
@@ -219,7 +200,7 @@ async def shadowfax(message, guid, logger):
                 else:
                     kg.add_edge(e_subject, e_object, keys=[edge_key])
 
-    paths = networkx.all_simple_paths(kg, source_node, target_node, 4)
+    paths = networkx.all_simple_paths(kg, source_node, target_node, NUM_TOTAL_HOPS)
     num_paths = 0
     result_paths = []
     for path in paths:
@@ -227,7 +208,8 @@ async def shadowfax(message, guid, logger):
         fits_constraint = False
         for curie in path:
             if curie not in [source_node, target_node] and curie in curie_info.keys():
-                # Handles constraints, behavior may change depending decision handling multiple constraints
+                # Handles constraints, behavior may change depending decision
+                # handling multiple constraints
                 if intermediate_categories[0] in curie_info[curie]["categories"]:
                     fits_constraint = True
         if fits_constraint:
@@ -236,43 +218,18 @@ async def shadowfax(message, guid, logger):
     # Build knowledge graph from paths
     aux_graphs = {}
     knowledge_graph = {"nodes": copy.deepcopy(lookup_knowledge_graph["nodes"]), "edges": {}}
-    # making the linter happy
-    source_node_key = ""
-    target_node_key = ""
-    for node_key, node in qgraph["nodes"].items():
-        if node.get("ids", None) is not None:
-            if pinned_node_ids[0] in node["ids"]:
-                source_node_key = node_key
-            elif pinned_node_ids[1] in node["ids"]:
-                target_node_key = node_key
-            else:
-                logger.error(f"{guid}: Additional node in pathfinder query.")
-                return message, 500
 
     result = {
-        "node_bindings": {
-            source_node_key: [
-                {
-                    "id": source_node,
-                    "attributes": []
-                }
-            ],
-            target_node_key: [
-                {
-                    "id": target_node,
-                    "attributes": []
-                }
-            ]
-        },
-        "analyses": []
+        "node_bindings": {pinned_node_keys[0]: [{"id": source_node, "attributes": []}], pinned_node_keys[1]: [{"id": target_node, "attributes": []}]},
+        "analyses": [],
     }
-    
+
     # Builds results from paths according to structure
     for path in result_paths:
         aux_edges = []
         aux_edges_keys = []
         for i, node in enumerate(path[:-1]):
-            next_node = path[i+1]
+            next_node = path[i + 1]
             for kedge_key in kg[node][next_node]["keys"]:
                 edge = lookup_knowledge_graph["edges"][kedge_key]
                 if (node in edge["subject"] or node in edge["object"]) and (next_node in edge["subject"] or next_node in edge["object"]):
@@ -293,23 +250,18 @@ async def shadowfax(message, guid, logger):
         if aux_graph_key not in aux_edges_keys:
             aux_graphs[aux_graph_key] = {"edges": list(aux_edges), "attributes": []}
             aux_edges_keys.append(aux_graph_key)
-        
+
         analysis = {
             "resource_id": "infores:aragorn",
             "path_bindings": {
-                path_key: [
-                    {
-                        "id": aux_graph_key,
-                        "attributes": []
-                    }
-                ],
-            }
+                path_key: [{"id": aux_graph_key, "attributes": []}],
+            },
         }
         result["analyses"].append(analysis)
-        
+
     result_message = {
         "message": {
-            "query_graph": message["message"]["query_graph"],
+            "query_graph":  message["message"]["query_graph"],
             "knowledge_graph": knowledge_graph,
             "results": [result],
             "auxiliary_graphs": aux_graphs
