@@ -3,11 +3,10 @@ import asyncio
 from collections import defaultdict
 import copy
 import hashlib
-import httpx
 import os
+
+import httpx
 import networkx
-
-
 from reasoner_pydantic import Message
 
 from src.pathfinder.get_cooccurrence import get_the_curies, get_the_pmids
@@ -16,6 +15,8 @@ node_norm_url = os.environ.get("NODENORM_URL", "https://nodenormalization-sri.re
 strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
 NUM_TOTAL_HOPS = 4
 TOTAL_PUBS = 27840000
+CURIE_PRUNING_LIMIT = 50
+LIT_CO_FACTOR = 10000
 
 
 async def generate_from_strider(message):
@@ -28,7 +29,7 @@ async def generate_from_strider(message):
             )
             lookup_response.raise_for_status()
             lookup_response = lookup_response.json()
-    except:
+    except Exception:
         lookup_response = {}
     return lookup_response.get("message", {})
 
@@ -71,12 +72,12 @@ async def shadowfax(message, guid, logger):
     if qpath.get("constraints", None) is not None:
         constraints = qpath["constraints"]
         if len(constraints) > 1:
-            logger.error(f"{guid}: Pathfinder queries do not" "support multiple constraints.")
+            logger.error(f"{guid}: Pathfinder queries do not support multiple constraints.")
             return message, 500
         if len(constraints) > 0:
             intermediate_categories = constraints[0].get("intermediate_categories", None) or []
         if len(intermediate_categories) > 1:
-            logger.error(f"{guid}: Pathfinder queries do not support multiple" "intermediate categories")
+            logger.error(f"{guid}: Pathfinder queries do not support multiple intermediate categories")
             return message, 500
     else:
         intermediate_categories = ["biolink:NamedThing"]
@@ -114,7 +115,7 @@ async def shadowfax(message, guid, logger):
 
     normalizer_response = await get_normalized_curies(list(curies), guid, logger)
     if normalizer_response is None:
-        logger.error(f"{guid}: Failed to get a good response" "from Node Normalizer")
+        logger.error(f"{guid}: Failed to get a good response from Node Normalizer")
         return message, 500
 
     curie_info = defaultdict(dict)
@@ -127,12 +128,12 @@ async def shadowfax(message, guid, logger):
             curie_info[curie]["score"] = max(
                 0,
                 ((cooc / TOTAL_PUBS) - (source_pubs / TOTAL_PUBS) * (target_pubs / TOTAL_PUBS) * (num_pubs / TOTAL_PUBS))
-                * (normalizer_info.get("information_content", 1) / 10000),
+                * (normalizer_info.get("information_content", 1) / LIT_CO_FACTOR),
             )
 
     # Find the nodes with most significant co-occurrence
     pruned_curies = []
-    while len(pruned_curies) < 50 and len(pruned_curies) < len(curies):
+    while len(pruned_curies) < CURIE_PRUNING_LIMIT and len(pruned_curies) < len(curies):
         max_cov = 0
         for info in curie_info.values():
             max_cov = max(info["score"], max_cov)
@@ -154,7 +155,7 @@ async def shadowfax(message, guid, logger):
     # Create queries matching each category to each other
     strider_multiquery = []
     for subject_index, subject_category in enumerate(lookup_nodes.keys()):
-        for object_category in list(lookup_nodes.keys())[(subject_index + 1) :]:  # noqa: E501
+        for object_category in list(lookup_nodes.keys())[(subject_index + 1) :]:
             lookup_edge = {"subject": subject_category, "object": object_category, "predicates": ["biolink:related_to"]}
             m = {
                 "message": {
@@ -166,13 +167,13 @@ async def shadowfax(message, guid, logger):
             }
             strider_multiquery.append(m)
     lookup_messages = []
-    logger.debug(f"{guid}: Sending {len(strider_multiquery)}" "requests to strider.")
+    logger.debug(f"{guid}: Sending {len(strider_multiquery)} requests to strider.")
     # We will want to use multistrider here eventually
     for lookup_message in await asyncio.gather(*[generate_from_strider(lookup_query) for lookup_query in strider_multiquery]):
         if lookup_message:
             lookup_message["query_graph"] = {"nodes": {}, "edges": {}}
             lookup_messages.append(lookup_message)
-    logger.debug(f"{guid}: Received {len(lookup_messages)} responses" "from strider.")
+    logger.debug(f"{guid}: Received {len(lookup_messages)} responses from strider.")
 
     merged_lookup_message = Message.parse_obj(lookup_messages[0])
     lookup_results = []
