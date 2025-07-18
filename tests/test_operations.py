@@ -74,39 +74,77 @@ def add_result(message, scores=[0.5]):
     return new_nodes, new_edges, new_auxgraphs
 
 
+def add_result_with_paths_and_support_graphs(message, scores=[0.5]):
+    """Adds a result with path bindings and support graphs on edges."""
+    DISEASE = "MONDO:1234"
+    new_edges = set()
+    new_nodes = set()
+    new_auxgraphs = set()
+    # Add the result with a new answer node
+    newnode_id = add_new_node(message, new_nodes)
+    result = {"node_bindings": {"input":[{"id":DISEASE, "attributes": []}], "output": [{"id": newnode_id, "attributes":[]} ]}, "analyses": []}
+    message["results"].append(result)
+    score = .5
+    # Make an analysis, add an edge_binding to a new creative edge
+    new_edge_id = add_new_edge(message, new_edges, newnode_id, DISEASE)
+    analysis = {"edge_bindings": {"e": [{"id": new_edge_id, "attributes": []}]}, "score": score, "resource_id": "infores:madeup"}
+    # Add a support graph to the creative edge
+    new_auxgraph_id = add_two_hop(message, new_edges, new_nodes, new_auxgraphs, DISEASE, newnode_id)
+    add_support_graph_to_edge(message, new_auxgraph_id, new_edge_id)
+    # Add a support graph to an aux graph edge
+    subclass_node = message["knowledge_graph"]["edges"][new_edge_id]["subject"]
+    new_subclass_edge = message["auxiliary_graphs"][new_auxgraph_id]["edges"][0]
+    new_subclass_auxgraph = add_two_hop(message, new_edges, new_nodes, new_auxgraphs, subclass_node, newnode_id)
+    add_support_graph_to_edge(message, new_subclass_auxgraph, new_subclass_edge)
+    # Put the anslysis in the result
+    result["analyses"].append(analysis)
+    return new_nodes, new_edges, new_auxgraphs
+
 
 @pytest.mark.asyncio
 async def test_deorphaning():
-    """Given two original results, suppose one is filtered. Make sure that the correct edges and nodes are
+    """Given three original results, suppose one is filtered. Make sure that the correct edges and nodes are
     removed from the KG.  We also want to remove auxiliary graphs that are no longer referenced."""
     message = create_message()
+    m = create_message()
     result_1_nodes, result_1_edges, result_1_auxgraphs = add_result(message)
     result_2_nodes, result_2_edges, result_2_auxgraphs = add_result(message)
+    result_3_nodes, result_3_edges, result_3_auxgraphs = add_result_with_paths_and_support_graphs(message)
     assert len(result_1_nodes) == 1 + 1 + 1 # The result node + 1 for the analysis aux graph + 1 for the edge aux graph
     assert len(result_2_nodes) == 1 + 1 + 1 # The result node + 1 for the analysis aux graph + 1 for the edge aux graph
+    assert len(result_3_nodes) == 1 + 1 + 1 # The result node + 1 for the edge aux graph + 1 for the subclass node
     #Now remove the first result
-    message["results"] = message["results"][1:]
+    m["knowledge_graph"] = message["knowledge_graph"]
+    m["query_graph"] = message["query_graph"]
+    m["auxiliary_graphs"] = message["auxiliary_graphs"]
+    m["results"] = message["results"][1:]
     #remove orphans
-    response = {"message": message, "logs": []}
+    response = {"message": m, "logs": []}
     pdresponse = Response(**response)
     await filter_kgraph_orphans(response,{}, "")
     #Make sure that the nodes and edges from the first result are gone
-    message = response["message"]
+    m = response["message"]
     for node_id in result_1_nodes:
-        assert node_id not in message["knowledge_graph"]["nodes"]
+        assert node_id not in m["knowledge_graph"]["nodes"]
     for edge_id in result_1_edges:
-        assert edge_id not in message["knowledge_graph"]["edges"]
+        assert edge_id not in m["knowledge_graph"]["edges"]
     for auxgraph_id in result_1_auxgraphs:
-        assert auxgraph_id not in message["auxiliary_graphs"]
+        assert auxgraph_id not in m["auxiliary_graphs"]
     #Make sure that the nodes and edges from the second result are still there
     for node_id in result_2_nodes:
-        assert node_id in message["knowledge_graph"]["nodes"]
+        assert node_id in m["knowledge_graph"]["nodes"]
     for edge_id in result_2_edges:
-        assert edge_id in message["knowledge_graph"]["edges"]
+        assert edge_id in m["knowledge_graph"]["edges"]
     for auxgraph_id in result_2_auxgraphs:
-        assert auxgraph_id in message["auxiliary_graphs"]
+        assert auxgraph_id in m["auxiliary_graphs"]
+    for node_id in result_3_nodes:
+        assert node_id in m["knowledge_graph"]["nodes"]
+    for edge_id in result_3_edges:
+        assert edge_id in m["knowledge_graph"]["edges"]
+    for auxgraph_id in result_3_auxgraphs:
+        assert auxgraph_id in m["auxiliary_graphs"]
     #The total number of nodes should also include the 1 input node
-    assert len(message["knowledge_graph"]["nodes"]) == len(result_2_nodes) + 1
+    assert len(m["knowledge_graph"]["nodes"]) == len(result_2_nodes) + len(result_3_nodes) + 1
 
 
 @pytest.mark.asyncio
