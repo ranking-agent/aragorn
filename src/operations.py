@@ -78,6 +78,7 @@ async def filter_kgraph_orphans(message,params,guid):
         edges = set()
         auxgraphs = set()
         temp_auxgraphs = set()
+        temp_edges = set()
         # 1. Result node bindings
         for result in results:
             for qnode,knodes in result.get('node_bindings',{}).items():
@@ -86,7 +87,7 @@ async def filter_kgraph_orphans(message,params,guid):
         for result in results:
             for analysis in result.get('analyses',[]):
                 for qedge, kedges in analysis.get('edge_bindings', {}).items():
-                    edges.update([k['id'] for k in kedges])
+                    temp_edges.update([k['id'] for k in kedges])
                 for qpath, path_graphs in analysis.get('path_bindings', {}).items():
                     temp_auxgraphs.update(a["id"] for a in path_graphs)
         # 3. Result.Analysis support graphs
@@ -95,7 +96,8 @@ async def filter_kgraph_orphans(message,params,guid):
                 for auxgraph in analysis.get('support_graphs',[]):
                     temp_auxgraphs.add(auxgraph)
         # 4. Recursively add support graphs from edges and edges from support_graphs
-        for edge in edges:
+        for edge in temp_edges:
+            edges.add(edge)
             edges, auxgraphs, nodes = recursive_filter_edge_support_graphs(edge, edges, auxgraphs, message, nodes)
         # 5. Recursively add edges from support_graphs and support graphs from edges
         for auxgraph in temp_auxgraphs:
