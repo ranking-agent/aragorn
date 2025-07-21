@@ -1,5 +1,5 @@
 # leverage the renci python base image
-FROM ghcr.io/translatorsri/renci-python-image:3.12.4
+FROM ghcr.io/translatorsri/renci-python-image:3.11.5
 
 #Set the branch
 ARG BRANCH_NAME=main
