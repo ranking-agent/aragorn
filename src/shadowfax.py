@@ -4,6 +4,7 @@ from collections import defaultdict
 import copy
 import hashlib
 import os
+import json
 
 import httpx
 import networkx
@@ -17,7 +18,11 @@ NUM_TOTAL_HOPS = 4
 TOTAL_PUBS = 27840000
 CURIE_PRUNING_LIMIT = 50
 LIT_CO_FACTOR = 10000
+INFORMATION_CONTENT_THRESHOLD = 75
 
+blocklist = []
+with open("blocklist.json", "r") as f:
+    blocklist = json.load(f)
 
 async def generate_from_strider(message):
     """Generates knowledge graphs from strider."""
@@ -121,15 +126,15 @@ async def shadowfax(message, guid, logger):
     curie_info = defaultdict(dict)
     for curie, normalizer_info in normalizer_response.items():
         if normalizer_info:
-            curie_info[curie]["categories"] = normalizer_info.get("type", ["biolink:NamedThing"])
-            cooc = len(get_the_pmids([curie, source_node, target_node]))
-            num_pubs = len(get_the_pmids([curie]))
-            curie_info[curie]["pubs"] = num_pubs
-            curie_info[curie]["score"] = max(
-                0,
-                ((cooc / TOTAL_PUBS) - (source_pubs / TOTAL_PUBS) * (target_pubs / TOTAL_PUBS) * (num_pubs / TOTAL_PUBS))
-                * (normalizer_info.get("information_content", 1) / LIT_CO_FACTOR),
-            )
+            if (normalizer_info.get("information_content", 101) > INFORMATION_CONTENT_THRESHOLD) and curie not in blocklist:
+                curie_info[curie]["categories"] = normalizer_info.get("type", ["biolink:NamedThing"])
+                cooc = len(get_the_pmids([curie, source_node, target_node]))
+                num_pubs = len(get_the_pmids([curie]))
+                curie_info[curie]["pubs"] = num_pubs
+                curie_info[curie]["score"] = max(
+                    0,
+                    ((cooc / TOTAL_PUBS) - (source_pubs / TOTAL_PUBS) * (target_pubs / TOTAL_PUBS) * (num_pubs / TOTAL_PUBS))
+                )
 
     # Find the nodes with most significant co-occurrence
     pruned_curies = []
