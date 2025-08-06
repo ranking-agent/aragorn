@@ -11,7 +11,7 @@ import networkx
 from reasoner_pydantic import Message
 
 from src.pathfinder.get_cooccurrence import get_the_curies, get_the_pmids
-from src.operations import recursive_maintain_edge_support_graphs
+from src.operations import recursive_get_edge_support_graphs
 
 node_norm_url = os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")
 strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
@@ -255,7 +255,7 @@ async def shadowfax(message, guid, logger):
                 single_edges, single_support_graphs, single_nodes = set(), set(), set()
                 # get nodes and edges from path
                 try:
-                    single_edges, single_support_graphs, single_nodes = recursive_maintain_edge_support_graphs(
+                    single_edges, single_support_graphs, single_nodes = recursive_get_edge_support_graphs(
                         kedge_key,
                         single_edges,
                         single_support_graphs,
