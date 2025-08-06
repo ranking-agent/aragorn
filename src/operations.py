@@ -32,29 +32,36 @@ async def filter_results_top_n(message,params,guid):
     return message,200
 
 
-def recursive_filter_edge_support_graphs(edge, edges, auxgraphs, message, nodes):
+def recursive_filter_edge_support_graphs(edge, edges, auxgraphs, message_edges, message_auxgraphs, nodes, guid):
     """Recursive method to find auxiliary graphs to keep when filtering. Each auxiliary
     graph then has its edges filterd."""
-    for attribute in message.get('message',{}).get('knowledge_graph', {}).get('edges', {}).get(edge, {}).get('attributes', {}):
+    edges.add(edge)
+    nodes.add(message_edges[edge]["subject"])
+    nodes.add(message_edges[edge]["object"])
+    for attribute in message_edges.get(edge, {}).get('attributes', {}):
         if attribute.get('attribute_type_id', None) == 'biolink:support_graphs':
             for auxgraph in attribute.get('value', []):
-                auxgraphs.add(auxgraph)
-                edges, auxgraphs, nodes = recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, message, nodes)
+                if auxgraph not in message_auxgraphs:
+                    raise KeyError(f"{guid}: auxgraph {auxgraph} not in auxiliary_graphs")
+                try:
+                    edges, auxgraphs, nodes = recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, message_edges, message_auxgraphs, nodes, guid)
+                except KeyError as e:
+                    raise e
     return edges, auxgraphs, nodes
 
 
-def recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, message, nodes):
+def recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, message_edges, message_auxgraphs, nodes, guid):
     """Recursive method to find edges to keep when filtering. Each edge then
     has support graphs filtered."""
-    aux_edges = message.get('message', {}).get('auxiliary_graphs', {}).get(auxgraph, {}).get('edges', [])
+    auxgraphs.add(auxgraph)
+    aux_edges = message_auxgraphs.get(auxgraph, {}).get('edges', [])
     for aux_edge in aux_edges:
-        if aux_edge not in message["message"]["knowledge_graph"]["edges"]:
-            logger.warning(f"{guid}: aux_edge {aux_edge} not in knowledge_graph.edges")
-            continue
-        edges.add(aux_edge)
-        nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["subject"])
-        nodes.add(message["message"]["knowledge_graph"]["edges"][aux_edge]["object"])
-        edges, auxgraphs, nodes = recursive_filter_edge_support_graphs(aux_edge, edges, auxgraphs, message, nodes)
+        if aux_edge not in message_edges:
+            raise KeyError(f"{guid}: aux_edge {aux_edge} not in knowledge_graph.edges")
+        try:
+            edges, auxgraphs, nodes = recursive_filter_edge_support_graphs(aux_edge, edges, auxgraphs, message_edges, message_auxgraphs, nodes, guid)
+        except KeyError as e:
+            raise e
     return edges, auxgraphs, nodes
 
 async def filter_kgraph_orphans(message,params,guid):
@@ -73,6 +80,8 @@ async def filter_kgraph_orphans(message,params,guid):
     #First, find all the result nodes and edges
     try:
         logger.info(f'{guid}: filtering kgraph.')
+        kg_edges = message.get('message',{}).get('knowledge_graph',{}).get('edges',{})
+        message_auxgraphs = message["message"].get("auxiliary_graphs",{})
         results = message.get('message',{}).get('results',[])
         nodes = set()
         edges = set()
@@ -97,18 +106,23 @@ async def filter_kgraph_orphans(message,params,guid):
                     temp_auxgraphs.add(auxgraph)
         # 4. Recursively add support graphs from edges and edges from support_graphs
         for edge in temp_edges:
-            edges.add(edge)
-            edges, auxgraphs, nodes = recursive_filter_edge_support_graphs(edge, edges, auxgraphs, message, nodes)
+            try:
+                edges, auxgraphs, nodes = recursive_filter_edge_support_graphs(edge, edges, auxgraphs, kg_edges, message_auxgraphs, nodes, guid)
+            except KeyError as e:
+                logger.warning(e)
+                continue
         # 5. Recursively add edges from support_graphs and support graphs from edges
         for auxgraph in temp_auxgraphs:
-            auxgraphs.add(auxgraph)
-            edges, auxgraphs, nodes = recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, message, nodes)
+            try:
+                edges, auxgraphs, nodes = recursive_filter_auxgraph_edges(auxgraph, edges, auxgraphs, kg_edges, message_auxgraphs, nodes, guid)
+            except KeyError as e:
+                logger.warning(e)
+                continue
         #now remove all knowledge_graph nodes and edges that are not in our nodes and edges sets.
         kg_nodes = message.get('message',{}).get('knowledge_graph',{}).get('nodes',{})
         message['message']['knowledge_graph']['nodes'] = { nid: ndata for nid, ndata in kg_nodes.items() if nid in nodes }
-        kg_edges = message.get('message',{}).get('knowledge_graph',{}).get('edges',{})
         message['message']['knowledge_graph']['edges'] = { eid: edata for eid, edata in kg_edges.items() if eid in edges }
-        message["message"]["auxiliary_graphs"] = { auxgraph: adata for auxgraph, adata in message["message"].get("auxiliary_graphs",{}).items() if auxgraph in auxgraphs }
+        message["message"]["auxiliary_graphs"] = { auxgraph: adata for auxgraph, adata in message_auxgraphs.items() if auxgraph in auxgraphs }
         logger.info(f'{guid}: returning filtered kgraph.')
         return message,200
     except Exception as e:
