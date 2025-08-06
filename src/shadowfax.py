@@ -11,6 +11,7 @@ import networkx
 from reasoner_pydantic import Message
 
 from src.pathfinder.get_cooccurrence import get_the_curies, get_the_pmids
+from src.operations import recursive_filter_auxgraph_edges, recursive_filter_edge_support_graphs
 
 node_norm_url = os.environ.get("NODENORM_URL", "https://nodenormalization-sri.renci.org/")
 strider_url = os.environ.get("STRIDER_URL", "https://strider.renci.org/")
@@ -18,7 +19,7 @@ NUM_TOTAL_HOPS = 4
 TOTAL_PUBS = 27840000
 CURIE_PRUNING_LIMIT = 50
 LIT_CO_FACTOR = 10000
-INFORMATION_CONTENT_THRESHOLD = 75
+INFORMATION_CONTENT_THRESHOLD = 85
 
 blocklist = []
 with open("blocklist.json", "r") as f:
@@ -192,23 +193,31 @@ async def shadowfax(message, guid, logger):
     lookup_knowledge_graph = merged_lookup_message_dict.get("knowledge_graph", {"nodes": {}, "edges": {}})
     lookup_aux_graphs = merged_lookup_message_dict.get("auxiliary_graphs", {})
 
+    non_support_edges = []
+    for edge_key, edge in lookup_knowledge_graph["edges"].items():
+        add_edge = True
+        for support_graph in lookup_aux_graphs.values():
+            if edge_key in support_graph:
+                add_edge = False
+            elif edge ["predicate"] == "biolink:subclass_of":
+                # see if we can get paths from nodes that utilize support graphs
+                add_edge = False
+        if add_edge:
+            non_support_edges.append(edge_key)
+
     # Build a large kg and find paths
-    kg = networkx.Graph()
-    kg.add_nodes_from([source_node, target_node])
-    for lookup_result in lookup_results:
-        for edge_binding in lookup_result["analyses"][0]["edge_bindings"]["e0"]:
-            edge_key = edge_binding["id"]
-            edge = lookup_knowledge_graph["edges"][edge_key]
-            e_subject = edge["subject"]
-            e_object = edge["object"]
+    path_graph = networkx.Graph()
+    path_graph.add_nodes_from([source_node, target_node])
+    for edge_key in non_support_edges:
+        edge = lookup_knowledge_graph["edges"][edge_key]
+        e_subject = edge["subject"]
+        e_object = edge["object"]
+        if path_graph.has_edge(e_subject, e_object):
+            path_graph[e_subject][e_object]["keys"].append(edge_key)
+        else:
+            path_graph.add_edge(e_subject, e_object, keys=[edge_key])
 
-            if e_subject not in [source_node, target_node] or e_object not in [source_node, target_node]:
-                if kg.has_edge(e_subject, e_object):
-                    kg[e_subject][e_object]["keys"].append(edge_key)
-                else:
-                    kg.add_edge(e_subject, e_object, keys=[edge_key])
-
-    paths = networkx.all_simple_paths(kg, source_node, target_node, NUM_TOTAL_HOPS)
+    paths = networkx.all_simple_paths(path_graph, source_node, target_node, NUM_TOTAL_HOPS)
     num_paths = 0
     result_paths = []
     for path in paths:
@@ -225,38 +234,98 @@ async def shadowfax(message, guid, logger):
 
     # Build knowledge graph from paths
     aux_graphs = {}
-    knowledge_graph = {"nodes": copy.deepcopy(lookup_knowledge_graph["nodes"]), "edges": {}}
 
     result = {
         "node_bindings": {pinned_node_keys[0]: [{"id": source_node, "attributes": []}], pinned_node_keys[1]: [{"id": target_node, "attributes": []}]},
         "analyses": [],
     }
 
-    # Builds results from paths according to structure
     for path in result_paths:
         aux_edges = []
         aux_edges_keys = []
+        path_edges, path_support_graphs, path_nodes = set(), set(), set()
+        support_node_graph_mapping = defaultdict(set)
+        support_node_edge_mapping = defaultdict(set)
+        missing_hop = False
+        hop_count = 0
+        hop_edge_map = defaultdict(set)
         for i, node in enumerate(path[:-1]):
+            hop_count += 1
             next_node = path[i + 1]
-            for kedge_key in kg[node][next_node]["keys"]:
-                edge = lookup_knowledge_graph["edges"][kedge_key]
-                if (node in edge["subject"] or node in edge["object"]) and (next_node in edge["subject"] or next_node in edge["object"]):
-                    knowledge_graph["edges"][kedge_key] = edge
-                    # Handles support graphs from subclassing
-                    for attribute in edge["attributes"]:
-                        if attribute.get("attribute_type_id") == "biolink:support_graphs":
-                            for support_graph in attribute.get("value", []):
-                                aux_graphs[support_graph] = lookup_aux_graphs[support_graph]
-                                for support_edge in lookup_aux_graphs[support_graph].get("edges", []):
-                                    knowledge_graph["edges"][support_edge] = lookup_knowledge_graph["edges"][support_edge]
-                    if kedge_key not in aux_edges:
-                        aux_edges.append(kedge_key)
+            single_aux_edges = set()
+            for kedge_key in path_graph[node][next_node]["keys"]:
+                single_edges, single_support_graphs, single_nodes = set(), set(), set()
+                # get nodes and edges from path
+                try:
+                    single_edges, single_support_graphs, single_nodes = recursive_filter_edge_support_graphs(
+                        kedge_key,
+                        single_edges,
+                        single_support_graphs,
+                        lookup_knowledge_graph["edges"],
+                        lookup_aux_graphs,
+                        single_nodes,
+                        guid
+                    )
+                except KeyError as e:
+                    logger.warning(e)
+                    continue
+                for single_support_graph in single_support_graphs:
+                    # map support graphs to component nodes
+                    for edge_id in lookup_aux_graphs[single_support_graph]["edges"]:
+                        support_node_graph_mapping[lookup_knowledge_graph["edges"][edge_id]["subject"]].add(single_support_graph)
+                        support_node_graph_mapping[lookup_knowledge_graph["edges"][edge_id]["object"]].add(single_support_graph)
+                for edge_id in single_edges:
+                    support_node_edge_mapping[lookup_knowledge_graph["edges"][edge_id]["subject"]].add(edge_id)
+                    support_node_edge_mapping[lookup_knowledge_graph["edges"][edge_id]["object"]].add(edge_id)
+                    hop_edge_map[hop_count].add(edge_id)
+                check = True
+                for path_node in single_nodes:
+                    if path_node != node and path_node in path_nodes:
+                        # if a node is repeated, remove all associated edges from path
+                        check = False
+                        for single_support_graph in support_node_graph_mapping[path_node]:
+                            if single_support_graph in path_support_graphs:
+                                path_support_graphs.remove(single_support_graph)
+                        for edge_id in support_node_edge_mapping[path_node]:
+                            if edge_id in path_edges:
+                                path_edges.remove(edge_id)
+                            if edge_id in aux_edges:
+                                aux_edges.remove(edge_id)
+                            for hop_edges in hop_edge_map.values():
+                                if edge_id in hop_edges:
+                                    hop_edges.remove(edge_id)
+                            
+                if check:
+                    path_edges.update(single_edges)
+                    path_support_graphs.update(single_support_graphs)
+                    # Don't add the current node in since we have more edges for this hop
+                    path_nodes.update({single_node for single_node in single_nodes if (single_node != node and single_node != next_node)})
+                    single_aux_edges.add(kedge_key)
+
+            # Now add node in to check for repeats later
+            path_nodes.add(node)
+
+            # check if we have completely removed all edges from one of the hops in a path
+            if len(single_aux_edges) == 0:
+                missing_hop = True
+            for hop_edges in hop_edge_map.values():
+                if len(hop_edges) == 0:
+                    missing_hop = True
+
+            if missing_hop:
+                break
+            aux_edges.extend(single_aux_edges)
+        
+        # If a hop is missing, path is no longer valid, cannot be added
+        if missing_hop:
+            continue
+        
         sha256 = hashlib.sha256()
         for x in set(aux_edges):
             sha256.update(bytes(x, encoding="utf-8"))
         aux_graph_key = sha256.hexdigest()
         if aux_graph_key not in aux_edges_keys:
-            aux_graphs[aux_graph_key] = {"edges": list(aux_edges), "attributes": []}
+            lookup_aux_graphs[aux_graph_key] = {"edges": list(aux_edges), "attributes": []}
             aux_edges_keys.append(aux_graph_key)
 
         analysis = {
@@ -270,9 +339,9 @@ async def shadowfax(message, guid, logger):
     result_message = {
         "message": {
             "query_graph":  message["message"]["query_graph"],
-            "knowledge_graph": knowledge_graph,
+            "knowledge_graph": lookup_knowledge_graph,
             "results": [result],
-            "auxiliary_graphs": aux_graphs
+            "auxiliary_graphs": lookup_aux_graphs
         }
     }
 
