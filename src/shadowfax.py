@@ -139,14 +139,7 @@ async def shadowfax(message, guid, logger):
 
     # Find the nodes with most significant co-occurrence
     pruned_curies = []
-    while len(pruned_curies) < CURIE_PRUNING_LIMIT and len(pruned_curies) < len(curie_info.keys()):
-        max_cov = 0
-        for info in curie_info.values():
-            max_cov = max(info["score"], max_cov)
-        for curie, info in curie_info.items():
-            if info["score"] == max_cov:
-                pruned_curies.append(curie)
-                info["score"] = -1
+    pruned_curies = sorted(curie_info.keys(), key=lambda x: curie_info[x]["score"])[:CURIE_PRUNING_LIMIT]
 
     node_category_mapping = defaultdict(list)
     node_category_mapping[source_category].append(source_node)
