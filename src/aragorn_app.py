@@ -15,16 +15,11 @@ from fastapi import Body, FastAPI, BackgroundTasks, Path, HTTPException
 from src.openapi_constructor import construct_open_api_schema
 from src.common import async_query, sync_query, status_query
 from src.default_queries import default_input_sync, default_input_async
-from src.otel_config import configure_otel
 from src.results_cache import ResultsCache
 
 # declare the FastAPI details
 title = "ARAGORN"
 ARAGORN_APP = FastAPI(title=title)
-
-# configures open telemetry iff enabled.
-service_name = os.environ.get('OTEL_SERVICE_NAME', 'ARAGORN') + '-' + title
-configure_otel(service_name=service_name, APP=ARAGORN_APP)
 
 # Set up default logger.
 with pkg_resources.resource_stream("src", "logging.yml") as f:
